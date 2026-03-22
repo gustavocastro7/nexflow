@@ -29,7 +29,7 @@ export interface CostCenter {
 export interface Invoice {
   id: string;
   workspace_id: string;
-  carrier: string;
+  operator: string;
   source_phone?: string;
   destination_phone?: string;
   item_date?: string;

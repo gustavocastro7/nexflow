@@ -50,12 +50,14 @@ class AuthController {
   async login(req, res) {
     try {
       const { email, password } = req.body;
+      console.log(`Login attempt for email: ${email}`);
 
       if (!email || !password) {
         return res.status(400).json({ error: 'Email and password are required' });
       }
 
       const { user, token } = await AuthService.authenticate(email, password);
+      console.log(`User authenticated: ${user.email}`);
 
       return res.json({
         user: {
@@ -69,6 +71,7 @@ class AuthController {
         token,
       });
     } catch (error) {
+      console.error(`Login error: ${error.message}`);
       return res.status(401).json({ error: error.message });
     }
   }

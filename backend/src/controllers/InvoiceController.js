@@ -234,7 +234,7 @@ class InvoiceController {
 
   async index(req, res) {
     try {
-      const { workspaceId, operator, mes, ano } = req.query;
+      const { workspaceId, operator, mes, ano, page, limit } = req.query;
       if (!workspaceId) return res.status(400).json({ error: 'Workspace ID é obrigatório' });
 
       const where = { workspace_id: workspaceId };
@@ -246,10 +246,32 @@ class InvoiceController {
         where.item_date = { [Op.between]: [startDate, endDate] };
       }
 
-      const faturas = await Invoice.findAll({ 
-        where,
-        order: [['item_date', 'DESC'], ['item_time', 'DESC']]
-      });
+      const order = [['item_date', 'DESC'], ['item_time', 'DESC'], ['id', 'ASC']];
+
+      // Paginated response
+      if (page !== undefined || limit !== undefined) {
+        const pageNum = Math.max(1, parseInt(page, 10) || 1);
+        const pageSize = Math.min(200, Math.max(1, parseInt(limit, 10) || 50));
+        const offset = (pageNum - 1) * pageSize;
+
+        const { rows, count } = await Invoice.findAndCountAll({
+          where,
+          order,
+          limit: pageSize,
+          offset,
+        });
+
+        return res.json({
+          data: rows,
+          page: pageNum,
+          limit: pageSize,
+          total: count,
+          hasMore: offset + rows.length < count,
+        });
+      }
+
+      // Legacy: full list
+      const faturas = await Invoice.findAll({ where, order });
       return res.json(faturas);
     } catch (error) {
       console.error(error);

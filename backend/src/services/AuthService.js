@@ -9,17 +9,22 @@ class AuthService {
       include: [{ model: UserConfig, as: 'config' }]
     });
 
+    console.log(`Authenticating user: ${email}`);
+
     if (!user) {
+      console.log(`User not found: ${email}`);
       throw new Error('User not found');
     }
 
     if (user.active === false) {
+      console.log(`User deactivated: ${email}`);
       throw new Error('User deactivated. Please contact the administrator.');
     }
 
     const isValid = await user.checkPassword(password);
 
     if (!isValid) {
+      console.log(`Invalid password for user: ${email}`);
       throw new Error('Invalid password');
     }
 
@@ -34,16 +39,21 @@ class AuthService {
       await config.update({ last_login: new Date() });
     }
 
+    console.log(`User config updated for: ${email}`);
+
     const token = jwt.sign(
       { id: user.id, email: user.email, profile: user.profile },
-      process.env.JWT_SECRET,
+      process.env.JWT_SECRET || 'your_jwt_secret_key',
       { expiresIn: '1d' }
     );
 
-    // Re-fetch user with config if not already present or updated
-    user.config = config;
+    console.log(`Token generated for: ${email}`);
 
-    return { user, token };
+    // Return as plain objects to avoid Sequelize instance issues
+    const userJson = user.toJSON();
+    userJson.config = config.toJSON();
+
+    return { user: userJson, token };
   }
 }
 

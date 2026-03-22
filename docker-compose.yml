@@ -26,6 +26,7 @@ services:
       - DB_NAME=nexflow_db
       - DB_USER=nexflow_user
       - DB_PASS=nexflow_password
+      - JWT_SECRET=your_jwt_secret_key
       - ADMIN_EMAIL=gustavocastro73@gmail.com
       - ADMIN_PASSWORD=castro
     ports:
