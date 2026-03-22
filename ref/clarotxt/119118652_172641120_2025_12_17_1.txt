@@ -1,0 +1,19 @@
+USAFLEX INDUSTRIA E COMERCIO SA - 86900925000104
+R MARECHAL DEODORO DA FONSECA, 530  - CASA DE PEDRA
+95650-000 RS IGREJINHA
+N° Cliente: 119118652
+
+Período de Referência: 21/11/2025 a 20/12/2025
+Data de Vencimento: 17/01/2026 - Filtro:   - (Todos)
+Valor: R$ 357,48
+Nota Fiscal Claro:001529712/122025:71 PIS: Aliquota: 0,65 Base de Calculo: 3,54 Valor Imposto: 0,02
+Nota Fiscal Claro:001529712/122025:71 ICMS: Aliquota: 17,00 Base de Calculo: 4,27 Valor Imposto: 0,73
+Nota Fiscal Claro:001529712/122025:71 COFINS: Aliquota: 3,00 Base de Calculo: 3,54 Valor Imposto: 0,11
+Nota Fiscal Claro:/122025 Documento Financeiro: Aliquota: 0,00 Base de Calculo: 0,00 Valor Imposto: 353,21
+
+Identificação para débito automático: 172641120
+
+Tel;Seção;Data;Hora;Origem(UF)-Destino;Número;Duração/Quantidade;Tarifa;Valor;Valor Cobrado;Nome;CC;Matrícula;Sub-Seção;Tipo Imposto;Descrição;Cargo;Nome Local Origem;Nome Local Destino;Código Local Origem;Código Local Destino
+51 99451-1108;Plano de Internet Wi-Fi 50GB : 21/11/2025 a 23/11/2025;21/11/2025;;;;;0,00;4,27;4,27;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+51 99451-1108;Multa por Quebra de Contrato : 24/11/2025 a 24/11/2025;24/11/2025;;;;;0,00;350;350;;;;Outros;;;;;;;
+51 99451-1108;Skeelo E-Book Light : 21/11/2025 a 23/11/2025;21/11/2025;;;;;0,00;3,21;3,21;;;;Mensalidades e Pacotes Promocionais;;;;;;;

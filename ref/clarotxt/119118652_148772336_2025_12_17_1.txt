@@ -1,0 +1,433 @@
+USAFLEX INDUSTRIA E COMERCIO SA - 86900925000104
+R. MARECHAL DEODORO DA FONSECA, 530  - CASA DA PEDRA     
+95650-000 RS IGREJINHA
+N° Cliente: 119118652
+
+Período de Referência: 21/11/2025 a 20/12/2025
+Data de Vencimento: 17/01/2026 - Filtro:   - (Todos)
+Valor: R$ 697,33
+Nota Fiscal Claro:301874712/122025:B47 ICMS: Aliquota: 18,00 Base de Calculo: 200,43 Valor Imposto: 36,08
+Nota Fiscal Claro:301874712/122025:B47 PIS: Aliquota: 0,65 Base de Calculo: 164,35 Valor Imposto: 1,07
+Nota Fiscal Claro:301874712/122025:B47 COFINS: Aliquota: 3,00 Base de Calculo: 164,35 Valor Imposto: 4,93
+Nota Fiscal Claro:301874712/122025:B47 COFINS: Aliquota: 7,60 Base de Calculo: 14,77 Valor Imposto: 1,12
+Nota Fiscal Claro:301874712/122025:B47 PIS: Aliquota: 1,65 Base de Calculo: 14,77 Valor Imposto: 0,23
+Nota Fiscal Claro:313557992/122025 Documento Financeiro: Aliquota: 0,00 Base de Calculo: 0,00 Valor Imposto: 459,09
+
+Identificação para débito automático: 148772336
+
+Tel;Seção;Data;Hora;Origem(UF)-Destino;Número;Duração/Quantidade;Tarifa;Valor;Valor Cobrado;Nome;CC;Matrícula;Sub-Seção;Tipo Imposto;Descrição;Cargo;Nome Local Origem;Nome Local Destino;Código Local Origem;Código Local Destino
+11 98995-8291;Pacote Mobilidade : 21/11/2025 a 24/11/2025;21/11/2025;;;;;0,00;0;0;;;;Franquias e Planos;;;;;;;
+11 98999-5533;Pacote Mobilidade : 21/11/2025 a 24/11/2025;21/11/2025;;;;;0,00;0;0;;;;Franquias e Planos;;;;;;;
+11 98997-9473;App incluso na oferta - Claro monitor lite : 21/11/2025 a 25/11/2025;21/11/2025;;;;;0,00;0;0;;;;Franquias e Planos;;;;;;;
+11 99016-0634;Pacote Mobilidade : 21/11/2025 a 27/11/2025;21/11/2025;;;;;0,00;0;0;;;;Franquias e Planos;;;;;;;
+11 99010-6432;Pacote Redes Sociais 5GB : 21/11/2025 a 25/11/2025;21/11/2025;;;;;0,00;0;0;;;;Franquias e Planos;;;;;;;
+11 99003-2212;Pacote Redes Sociais 5GB : 21/11/2025 a 25/11/2025;21/11/2025;;;;;0,00;0;0;;;;Franquias e Planos;;;;;;;
+11 99016-0634;App incluso na oferta - Claro monitor lite : 28/11/2025 a 20/12/2025;28/11/2025;;;;;0,00;0;0;;;;Franquias e Planos;;;;;;;
+11 99012-7274;Pacote Redes Sociais 5GB : 21/11/2025 a 20/12/2025;21/11/2025;;;;;0,00;0;0;;;;Franquias e Planos;;;;;;;
+11 98997-9473;Pacote Mobilidade : 21/11/2025 a 25/11/2025;21/11/2025;;;;;0,00;0;0;;;;Franquias e Planos;;;;;;;
+11 99013-0254;Pacote Redes Sociais 5GB : 21/11/2025 a 24/11/2025;21/11/2025;;;;;0,00;0;0;;;;Franquias e Planos;;;;;;;
+11 99011-2580;Pacote Mobilidade : 21/11/2025 a 25/11/2025;21/11/2025;;;;;0,00;0;0;;;;Franquias e Planos;;;;;;;
+11 99002-3085;App incluso na oferta - Claro monitor lite : 21/11/2025 a 20/12/2025;21/11/2025;;;;;0,00;0;0;;;;Franquias e Planos;;;;;;;
+11 99013-0254;App incluso na oferta - Claro monitor lite : 21/11/2025 a 24/11/2025;21/11/2025;;;;;0,00;0;0;;;;Franquias e Planos;;;;;;;
+11 99011-2580;App incluso na oferta - Claro monitor lite : 21/11/2025 a 25/11/2025;21/11/2025;;;;;0,00;0;0;;;;Franquias e Planos;;;;;;;
+11 99015-3726;App incluso na oferta - Claro monitor lite : 21/11/2025 a 20/12/2025;21/11/2025;;;;;0,00;0;0;;;;Franquias e Planos;;;;;;;
+11 99016-0634;Pacote Redes Sociais 5GB : 28/11/2025 a 20/12/2025;28/11/2025;;;;;0,00;0;0;;;;Franquias e Planos;;;;;;;
+11 99016-0634;Pacote Mobilidade : 28/11/2025 a 20/12/2025;28/11/2025;;;;;0,00;0;0;;;;Franquias e Planos;;;;;;;
+11 99015-3726;Pacote Mobilidade : 21/11/2025 a 20/12/2025;21/11/2025;;;;;0,00;0;0;;;;Franquias e Planos;;;;;;;
+11 99003-2212;App incluso na oferta - Claro monitor lite : 21/11/2025 a 25/11/2025;21/11/2025;;;;;0,00;0;0;;;;Franquias e Planos;;;;;;;
+11 99015-4895;App incluso na oferta - Claro monitor lite : 21/11/2025 a 25/11/2025;21/11/2025;;;;;0,00;0;0;;;;Franquias e Planos;;;;;;;
+11 99010-6432;Pacote Mobilidade : 21/11/2025 a 25/11/2025;21/11/2025;;;;;0,00;0;0;;;;Franquias e Planos;;;;;;;
+11 99005-3956;Pacote Redes Sociais 5GB : 21/11/2025 a 20/12/2025;21/11/2025;;;;;0,00;0;0;;;;Franquias e Planos;;;;;;;
+11 99005-3956;Pacote Mobilidade : 21/11/2025 a 20/12/2025;21/11/2025;;;;;0,00;0;0;;;;Franquias e Planos;;;;;;;
+11 99011-9953;Pacote Mobilidade : 21/11/2025 a 20/12/2025;21/11/2025;;;;;0,00;0;0;;;;Franquias e Planos;;;;;;;
+11 99011-2580;Pacote Redes Sociais 5GB : 21/11/2025 a 25/11/2025;21/11/2025;;;;;0,00;0;0;;;;Franquias e Planos;;;;;;;
+11 99010-6432;App incluso na oferta - Claro monitor lite : 21/11/2025 a 25/11/2025;21/11/2025;;;;;0,00;0;0;;;;Franquias e Planos;;;;;;;
+11 99002-3085;Pacote Mobilidade : 21/11/2025 a 20/12/2025;21/11/2025;;;;;0,00;0;0;;;;Franquias e Planos;;;;;;;
+11 99015-4895;Pacote Mobilidade : 21/11/2025 a 25/11/2025;21/11/2025;;;;;0,00;0;0;;;;Franquias e Planos;;;;;;;
+11 99015-3726;Pacote Redes Sociais 5GB : 21/11/2025 a 20/12/2025;21/11/2025;;;;;0,00;0;0;;;;Franquias e Planos;;;;;;;
+11 99016-0634;App incluso na oferta - Claro monitor lite : 21/11/2025 a 27/11/2025;21/11/2025;;;;;0,00;0;0;;;;Franquias e Planos;;;;;;;
+11 98999-5533;Pacote Redes Sociais 5GB : 21/11/2025 a 24/11/2025;21/11/2025;;;;;0,00;0;0;;;;Franquias e Planos;;;;;;;
+11 99015-4895;Pacote Redes Sociais 5GB : 21/11/2025 a 25/11/2025;21/11/2025;;;;;0,00;0;0;;;;Franquias e Planos;;;;;;;
+11 99011-9953;Pacote Redes Sociais 5GB : 21/11/2025 a 20/12/2025;21/11/2025;;;;;0,00;0;0;;;;Franquias e Planos;;;;;;;
+11 99013-0254;Pacote Mobilidade : 21/11/2025 a 24/11/2025;21/11/2025;;;;;0,00;0;0;;;;Franquias e Planos;;;;;;;
+11 99016-0634;Pacote Redes Sociais 5GB : 21/11/2025 a 27/11/2025;21/11/2025;;;;;0,00;0;0;;;;Franquias e Planos;;;;;;;
+11 99012-7274;App incluso na oferta - Claro monitor lite : 21/11/2025 a 20/12/2025;21/11/2025;;;;;0,00;0;0;;;;Franquias e Planos;;;;;;;
+11 99003-2212;Pacote Mobilidade : 21/11/2025 a 25/11/2025;21/11/2025;;;;;0,00;0;0;;;;Franquias e Planos;;;;;;;
+11 98995-8291;Pacote Redes Sociais 5GB : 21/11/2025 a 24/11/2025;21/11/2025;;;;;0,00;0;0;;;;Franquias e Planos;;;;;;;
+11 98997-9473;Pacote Redes Sociais 5GB : 21/11/2025 a 25/11/2025;21/11/2025;;;;;0,00;0;0;;;;Franquias e Planos;;;;;;;
+11 99002-3085;Pacote Redes Sociais 5GB : 21/11/2025 a 20/12/2025;21/11/2025;;;;;0,00;0;0;;;;Franquias e Planos;;;;;;;
+11 99012-7274;Pacote Mobilidade : 21/11/2025 a 20/12/2025;21/11/2025;;;;;0,00;0;0;;;;Franquias e Planos;;;;;;;
+11 99005-3956;App incluso na oferta - Claro monitor lite : 21/11/2025 a 20/12/2025;21/11/2025;;;;;0,00;0;0;;;;Franquias e Planos;;;;;;;
+11 98995-8291;App incluso na oferta - Claro monitor lite : 21/11/2025 a 24/11/2025;21/11/2025;;;;;0,00;0;0;;;;Franquias e Planos;;;;;;;
+11 98999-5533;App incluso na oferta - Claro monitor lite : 21/11/2025 a 24/11/2025;21/11/2025;;;;;0,00;0;0;;;;Franquias e Planos;;;;;;;
+11 99011-9953;App incluso na oferta - Claro monitor lite : 21/11/2025 a 20/12/2025;21/11/2025;;;;;0,00;0;0;;;;Franquias e Planos;;;;;;;
+11 99015-4895;Claro Recado Premium : 21/11/2025 a 25/11/2025;21/11/2025;;;;;0,00;,35;,35;;;;Mensalidades e Pacotes Promocionais;ISS;;;;;;
+11 99012-7274;Claro Recado Premium : 01/12/2025 a 20/12/2025;01/12/2025;;;;;0,00;1,33;1,33;;;;Mensalidades e Pacotes Promocionais;ISS;;;;;;
+11 99011-2580;Claro Recado Premium : 21/11/2025 a 25/11/2025;21/11/2025;;;;;0,00;,35;,35;;;;Mensalidades e Pacotes Promocionais;ISS;;;;;;
+11 99015-3726;Claro Recado Premium : 21/11/2025 a 30/11/2025;21/11/2025;;;;;0,00;,7;,7;;;;Mensalidades e Pacotes Promocionais;ISS;;;;;;
+11 99011-9953;Claro Pós 6GB : 01/12/2025 a 20/12/2025;01/12/2025;;;;;0,00;,89;,89;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99002-3085;Claro Pós 6GB : 21/11/2025 a 30/11/2025;21/11/2025;;;;;0,00;,47;,47;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99010-6432;Claro Pós 6GB : 21/11/2025 a 25/11/2025;21/11/2025;;;;;0,00;,23;,23;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99013-0254;Claro Pós 6GB : 21/11/2025 a 24/11/2025;21/11/2025;;;;;0,00;,19;,19;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99002-3085;Claro Pós 6GB : 21/11/2025 a 30/11/2025;21/11/2025;;;;;0,00;1,91;1,91;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99013-0254;Claro Pós 6GB : 21/11/2025 a 24/11/2025;21/11/2025;;;;;0,00;,76;,76;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99016-0634;Claro Pós 6GB : 01/12/2025 a 20/12/2025;01/12/2025;;;;;0,00;3,62;3,62;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99003-2212;Claro Pós 6GB : 21/11/2025 a 25/11/2025;21/11/2025;;;;;0,00;,95;,95;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99011-9953;Claro Pós 6GB : 01/12/2025 a 20/12/2025;01/12/2025;;;;;0,00;3,62;3,62;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99011-9953;Claro Pós 6GB : 21/11/2025 a 30/11/2025;21/11/2025;;;;;0,00;2,38;2,38;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99016-0634;Claro Pós 6GB : 21/11/2025 a 27/11/2025;21/11/2025;;;;;0,00;1,67;1,67;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99002-3085;Gestor Online : 01/12/2025 a 20/12/2025;01/12/2025;;;;;0,00;3,33;3,33;;;;Mensalidades e Pacotes Promocionais;;;;;;;
+11 99002-3085;Claro Pós 6GB : 01/12/2025 a 20/12/2025;01/12/2025;;;;;0,00;5,41;5,41;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99010-6432;Claro Pós 6GB : 21/11/2025 a 25/11/2025;21/11/2025;;;;;0,00;1,43;1,43;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99015-3726;Skeelo E-Book Pocket : 21/11/2025 a 30/11/2025;21/11/2025;;;;;0,00;2,14;2,14;;;;Mensalidades e Pacotes Promocionais;;;;;;;
+11 99016-0634;Skeelo E-Book Pocket : 01/12/2025 a 20/12/2025;01/12/2025;;;;;0,00;3,93;3,93;;;;Mensalidades e Pacotes Promocionais;;;;;;;
+11 99012-7274;Skeelo E-Book Pocket : 21/11/2025 a 30/11/2025;21/11/2025;;;;;0,00;2,14;2,14;;;;Mensalidades e Pacotes Promocionais;;;;;;;
+11 99015-4895;Claro Pós 6GB : 21/11/2025 a 25/11/2025;21/11/2025;;;;;0,00;,23;,23;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99016-0634;Claro Pós 6GB : 21/11/2025 a 27/11/2025;21/11/2025;;;;;0,00;,33;,33;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99002-3085;Claro Recado Premium : 01/12/2025 a 20/12/2025;01/12/2025;;;;;0,00;1,33;1,33;;;;Mensalidades e Pacotes Promocionais;ISS;;;;;;
+11 99011-9953;Claro Recado Premium : 01/12/2025 a 20/12/2025;01/12/2025;;;;;0,00;1,33;1,33;;;;Mensalidades e Pacotes Promocionais;ISS;;;;;;
+11 99011-9953;Claro Recado Premium : 21/11/2025 a 30/11/2025;21/11/2025;;;;;0,00;,7;,7;;;;Mensalidades e Pacotes Promocionais;ISS;;;;;;
+11 98995-8291;Claro Pós 6GB : 21/11/2025 a 24/11/2025;21/11/2025;;;;;0,00;,76;,76;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 98999-5533;Claro Pós 6GB : 21/11/2025 a 24/11/2025;21/11/2025;;;;;0,00;,76;,76;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99012-7274;Claro Pós 6GB : 21/11/2025 a 30/11/2025;21/11/2025;;;;;0,00;1,91;1,91;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99016-0634;Claro Pós 6GB : 28/11/2025 a 30/11/2025;28/11/2025;;;;;0,00;,57;,57;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99003-2212;Claro Pós 6GB : 21/11/2025 a 25/11/2025;21/11/2025;;;;;0,00;,95;,95;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99012-7274;Claro Pós 6GB : 01/12/2025 a 20/12/2025;01/12/2025;;;;;0,00;3,6;3,6;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99010-6432;Claro Pós 6GB : 21/11/2025 a 25/11/2025;21/11/2025;;;;;0,00;1,19;1,19;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99011-9953;Claro Pós 6GB : 01/12/2025 a 20/12/2025;01/12/2025;;;;;0,00;4,51;4,51;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 98995-8291;Gestor Online : 21/11/2025 a 24/11/2025;21/11/2025;;;;;0,00;,73;,73;;;;Mensalidades e Pacotes Promocionais;;;;;;;
+11 98999-5533;Gestor Online : 21/11/2025 a 24/11/2025;21/11/2025;;;;;0,00;,73;,73;;;;Mensalidades e Pacotes Promocionais;;;;;;;
+11 99005-3956;Gestor Online : 21/11/2025 a 30/11/2025;21/11/2025;;;;;0,00;1,84;1,84;;;;Mensalidades e Pacotes Promocionais;;;;;;;
+11 99003-2212;Gestor Online : 21/11/2025 a 25/11/2025;21/11/2025;;;;;0,00;,92;,92;;;;Mensalidades e Pacotes Promocionais;;;;;;;
+11 99012-7274;Gestor Online : 21/11/2025 a 30/11/2025;21/11/2025;;;;;0,00;1,84;1,84;;;;Mensalidades e Pacotes Promocionais;;;;;;;
+11 99015-3726;Gestor Online : 21/11/2025 a 30/11/2025;21/11/2025;;;;;0,00;1,84;1,84;;;;Mensalidades e Pacotes Promocionais;;;;;;;
+11 99012-7274;Claro Pós 6GB : 21/11/2025 a 30/11/2025;21/11/2025;;;;;0,00;2,86;2,86;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 98999-5533;Claro Pós 6GB : 21/11/2025 a 24/11/2025;21/11/2025;;;;;0,00;1,14;1,14;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99002-3085;Skeelo E-Book Pocket : 21/11/2025 a 30/11/2025;21/11/2025;;;;;0,00;2,14;2,14;;;;Mensalidades e Pacotes Promocionais;;;;;;;
+11 98999-5533;Skeelo E-Book Pocket : 21/11/2025 a 24/11/2025;21/11/2025;;;;;0,00;,85;,85;;;;Mensalidades e Pacotes Promocionais;;;;;;;
+11 99013-0254;Skeelo E-Book Pocket : 21/11/2025 a 24/11/2025;21/11/2025;;;;;0,00;,85;,85;;;;Mensalidades e Pacotes Promocionais;;;;;;;
+11 99011-9953;Skeelo E-Book Pocket : 01/12/2025 a 20/12/2025;01/12/2025;;;;;0,00;3,93;3,93;;;;Mensalidades e Pacotes Promocionais;;;;;;;
+11 99005-3956;Claro Pós 6GB : 21/11/2025 a 30/11/2025;21/11/2025;;;;;0,00;,47;,47;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99012-7274;Claro Pós 6GB : 21/11/2025 a 30/11/2025;21/11/2025;;;;;0,00;,47;,47;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99012-7274;Claro Pós 6GB : 01/12/2025 a 20/12/2025;01/12/2025;;;;;0,00;3,62;3,62;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99011-2580;Claro Pós 6GB : 21/11/2025 a 25/11/2025;21/11/2025;;;;;0,00;,95;,95;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 98995-8291;Claro Pós 6GB : 21/11/2025 a 24/11/2025;21/11/2025;;;;;0,00;,76;,76;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 98997-9473;Claro Pós 6GB : 21/11/2025 a 25/11/2025;21/11/2025;;;;;0,00;,95;,95;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99011-9953;Claro Pós 6GB : 21/11/2025 a 30/11/2025;21/11/2025;;;;;0,00;1,9;1,9;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99013-0254;Claro Pós 6GB : 21/11/2025 a 24/11/2025;21/11/2025;;;;;0,00;,76;,76;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99015-3726;Claro Pós 6GB : 21/11/2025 a 30/11/2025;21/11/2025;;;;;0,00;1,9;1,9;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99002-3085;Claro Pós 6GB : 21/11/2025 a 30/11/2025;21/11/2025;;;;;0,00;2,38;2,38;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99002-3085;Claro Pós 6GB : 01/12/2025 a 20/12/2025;01/12/2025;;;;;0,00;4,51;4,51;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99003-2212;Claro Pós 6GB : 21/11/2025 a 25/11/2025;21/11/2025;;;;;0,00;1,19;1,19;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99016-0634;Claro Pós 6GB : 28/11/2025 a 30/11/2025;28/11/2025;;;;;0,00;,71;,71;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99005-3956;Claro Pós 6GB : 21/11/2025 a 30/11/2025;21/11/2025;;;;;0,00;2,38;2,38;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99013-0254;Claro Pós 6GB : 21/11/2025 a 24/11/2025;21/11/2025;;;;;0,00;,95;,95;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99016-0634;Gestor Online : 21/11/2025 a 27/11/2025;21/11/2025;;;;;0,00;1,29;1,29;;;;Mensalidades e Pacotes Promocionais;;;;;;;
+11 99011-2580;Gestor Online : 21/11/2025 a 25/11/2025;21/11/2025;;;;;0,00;,92;,92;;;;Mensalidades e Pacotes Promocionais;;;;;;;
+11 99015-3726;Claro Pós 6GB : 21/11/2025 a 30/11/2025;21/11/2025;;;;;0,00;2,86;2,86;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99016-0634;Claro Pós 6GB : 28/11/2025 a 30/11/2025;28/11/2025;;;;;0,00;,85;,85;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99011-2580;Claro Pós 6GB : 21/11/2025 a 25/11/2025;21/11/2025;;;;;0,00;1,43;1,43;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99015-4895;Claro Pós 6GB : 21/11/2025 a 25/11/2025;21/11/2025;;;;;0,00;1,43;1,43;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 98995-8291;Claro Pós 6GB : 21/11/2025 a 24/11/2025;21/11/2025;;;;;0,00;1,14;1,14;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99015-3726;Claro Pós 6GB : 01/12/2025 a 20/12/2025;01/12/2025;;;;;0,00;5,41;5,41;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99013-0254;Claro Pós 6GB : 21/11/2025 a 24/11/2025;21/11/2025;;;;;0,00;1,14;1,14;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99015-3726;Skeelo E-Book Pocket : 01/12/2025 a 20/12/2025;01/12/2025;;;;;0,00;3,93;3,93;;;;Mensalidades e Pacotes Promocionais;;;;;;;
+11 99015-4895;Skeelo E-Book Pocket : 21/11/2025 a 25/11/2025;21/11/2025;;;;;0,00;1,07;1,07;;;;Mensalidades e Pacotes Promocionais;;;;;;;
+11 99003-2212;Skeelo E-Book Pocket : 21/11/2025 a 25/11/2025;21/11/2025;;;;;0,00;1,07;1,07;;;;Mensalidades e Pacotes Promocionais;;;;;;;
+11 98997-9473;Skeelo E-Book Pocket : 21/11/2025 a 25/11/2025;21/11/2025;;;;;0,00;1,07;1,07;;;;Mensalidades e Pacotes Promocionais;;;;;;;
+11 98997-9473;Claro Pós 6GB : 21/11/2025 a 25/11/2025;21/11/2025;;;;;0,00;,23;,23;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99003-2212;Claro Pós 6GB : 21/11/2025 a 25/11/2025;21/11/2025;;;;;0,00;,23;,23;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99002-3085;Claro Pós 6GB : 01/12/2025 a 20/12/2025;01/12/2025;;;;;0,00;3,62;3,62;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99010-6432;Claro Pós 6GB : 21/11/2025 a 25/11/2025;21/11/2025;;;;;0,00;,95;,95;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99016-0634;Claro Pós 6GB : 28/11/2025 a 30/11/2025;28/11/2025;;;;;0,00;,57;,57;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 98999-5533;Claro Recado Premium : 21/11/2025 a 24/11/2025;21/11/2025;;;;;0,00;,28;,28;;;;Mensalidades e Pacotes Promocionais;ISS;;;;;;
+11 99005-3956;Claro Recado Premium : 01/12/2025 a 20/12/2025;01/12/2025;;;;;0,00;1,33;1,33;;;;Mensalidades e Pacotes Promocionais;ISS;;;;;;
+11 99003-2212;Claro Recado Premium : 21/11/2025 a 25/11/2025;21/11/2025;;;;;0,00;,35;,35;;;;Mensalidades e Pacotes Promocionais;ISS;;;;;;
+11 99016-0634;Claro Recado Premium : 28/11/2025 a 30/11/2025;28/11/2025;;;;;0,00;,21;,21;;;;Mensalidades e Pacotes Promocionais;ISS;;;;;;
+11 99002-3085;Claro Pós 6GB : 21/11/2025 a 30/11/2025;21/11/2025;;;;;0,00;1,9;1,9;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99010-6432;Claro Pós 6GB : 21/11/2025 a 25/11/2025;21/11/2025;;;;;0,00;,95;,95;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99011-2580;Claro Pós 6GB : 21/11/2025 a 25/11/2025;21/11/2025;;;;;0,00;1,19;1,19;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99016-0634;Claro Pós 6GB : 01/12/2025 a 20/12/2025;01/12/2025;;;;;0,00;4,51;4,51;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99012-7274;Claro Pós 6GB : 01/12/2025 a 20/12/2025;01/12/2025;;;;;0,00;4,51;4,51;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99015-3726;Claro Pós 6GB : 21/11/2025 a 30/11/2025;21/11/2025;;;;;0,00;2,38;2,38;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99005-3956;Gestor Online : 01/12/2025 a 20/12/2025;01/12/2025;;;;;0,00;3,33;3,33;;;;Mensalidades e Pacotes Promocionais;;;;;;;
+11 99016-0634;Gestor Online : 01/12/2025 a 20/12/2025;01/12/2025;;;;;0,00;3,33;3,33;;;;Mensalidades e Pacotes Promocionais;;;;;;;
+11 99016-0634;Claro Pós 6GB : 01/12/2025 a 20/12/2025;01/12/2025;;;;;0,00;5,41;5,41;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99012-7274;Skeelo E-Book Pocket : 01/12/2025 a 20/12/2025;01/12/2025;;;;;0,00;3,93;3,93;;;;Mensalidades e Pacotes Promocionais;;;;;;;
+11 99011-2580;Claro Pós 6GB : 21/11/2025 a 25/11/2025;21/11/2025;;;;;0,00;,23;,23;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99015-3726;Claro Pós 6GB : 21/11/2025 a 30/11/2025;21/11/2025;;;;;0,00;,47;,47;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99015-4895;Claro Pós 6GB : 21/11/2025 a 25/11/2025;21/11/2025;;;;;0,00;,95;,95;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99011-9953;Claro Pós 6GB : 21/11/2025 a 30/11/2025;21/11/2025;;;;;0,00;1,91;1,91;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99016-0634;Claro Recado Premium : 01/12/2025 a 20/12/2025;01/12/2025;;;;;0,00;1,33;1,33;;;;Mensalidades e Pacotes Promocionais;ISS;;;;;;
+11 99010-6432;Claro Recado Premium : 21/11/2025 a 25/11/2025;21/11/2025;;;;;0,00;,35;,35;;;;Mensalidades e Pacotes Promocionais;ISS;;;;;;
+11 99016-0634;Claro Pós 6GB : 21/11/2025 a 27/11/2025;21/11/2025;;;;;0,00;1,33;1,33;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 98999-5533;Claro Pós 6GB : 21/11/2025 a 24/11/2025;21/11/2025;;;;;0,00;,95;,95;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99010-6432;Gestor Online : 21/11/2025 a 25/11/2025;21/11/2025;;;;;0,00;,92;,92;;;;Mensalidades e Pacotes Promocionais;;;;;;;
+11 99002-3085;Claro Pós 6GB : 21/11/2025 a 30/11/2025;21/11/2025;;;;;0,00;2,86;2,86;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99005-3956;Claro Pós 6GB : 01/12/2025 a 20/12/2025;01/12/2025;;;;;0,00;5,41;5,41;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99005-3956;Skeelo E-Book Pocket : 21/11/2025 a 30/11/2025;21/11/2025;;;;;0,00;2,14;2,14;;;;Mensalidades e Pacotes Promocionais;;;;;;;
+11 98995-8291;Skeelo E-Book Pocket : 21/11/2025 a 24/11/2025;21/11/2025;;;;;0,00;,85;,85;;;;Mensalidades e Pacotes Promocionais;;;;;;;
+11 99015-3726;Claro Pós 6GB : 01/12/2025 a 20/12/2025;01/12/2025;;;;;0,00;,89;,89;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99012-7274;Claro Pós 6GB : 01/12/2025 a 20/12/2025;01/12/2025;;;;;0,00;,89;,89;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99016-0634;Claro Pós 6GB : 28/11/2025 a 30/11/2025;28/11/2025;;;;;0,00;,14;,14;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99011-2580;Claro Pós 6GB : 21/11/2025 a 25/11/2025;21/11/2025;;;;;0,00;,95;,95;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99015-3726;Claro Pós 6GB : 21/11/2025 a 30/11/2025;21/11/2025;;;;;0,00;1,91;1,91;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 98995-8291;Claro Recado Premium : 21/11/2025 a 24/11/2025;21/11/2025;;;;;0,00;,28;,28;;;;Mensalidades e Pacotes Promocionais;ISS;;;;;;
+11 99002-3085;Claro Recado Premium : 21/11/2025 a 30/11/2025;21/11/2025;;;;;0,00;,7;,7;;;;Mensalidades e Pacotes Promocionais;ISS;;;;;;
+11 99005-3956;Claro Recado Premium : 21/11/2025 a 30/11/2025;21/11/2025;;;;;0,00;,7;,7;;;;Mensalidades e Pacotes Promocionais;ISS;;;;;;
+11 99012-7274;Claro Recado Premium : 21/11/2025 a 30/11/2025;21/11/2025;;;;;0,00;,7;,7;;;;Mensalidades e Pacotes Promocionais;ISS;;;;;;
+11 99013-0254;Claro Recado Premium : 21/11/2025 a 24/11/2025;21/11/2025;;;;;0,00;,28;,28;;;;Mensalidades e Pacotes Promocionais;ISS;;;;;;
+11 99016-0634;Claro Recado Premium : 21/11/2025 a 27/11/2025;21/11/2025;;;;;0,00;,49;,49;;;;Mensalidades e Pacotes Promocionais;ISS;;;;;;
+11 99005-3956;Claro Pós 6GB : 01/12/2025 a 20/12/2025;01/12/2025;;;;;0,00;3,6;3,6;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99016-0634;Claro Pós 6GB : 01/12/2025 a 20/12/2025;01/12/2025;;;;;0,00;3,6;3,6;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99005-3956;Claro Pós 6GB : 21/11/2025 a 30/11/2025;21/11/2025;;;;;0,00;1,9;1,9;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99015-4895;Claro Pós 6GB : 21/11/2025 a 25/11/2025;21/11/2025;;;;;0,00;,95;,95;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99005-3956;Claro Pós 6GB : 01/12/2025 a 20/12/2025;01/12/2025;;;;;0,00;4,51;4,51;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 98995-8291;Claro Pós 6GB : 21/11/2025 a 24/11/2025;21/11/2025;;;;;0,00;,95;,95;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99015-4895;Claro Pós 6GB : 21/11/2025 a 25/11/2025;21/11/2025;;;;;0,00;1,19;1,19;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99011-9953;Gestor Online : 01/12/2025 a 20/12/2025;01/12/2025;;;;;0,00;3,33;3,33;;;;Mensalidades e Pacotes Promocionais;;;;;;;
+11 99015-3726;Gestor Online : 01/12/2025 a 20/12/2025;01/12/2025;;;;;0,00;3,33;3,33;;;;Mensalidades e Pacotes Promocionais;;;;;;;
+11 99015-4895;Gestor Online : 21/11/2025 a 25/11/2025;21/11/2025;;;;;0,00;,92;,92;;;;Mensalidades e Pacotes Promocionais;;;;;;;
+11 99013-0254;Gestor Online : 21/11/2025 a 24/11/2025;21/11/2025;;;;;0,00;,73;,73;;;;Mensalidades e Pacotes Promocionais;;;;;;;
+11 99011-9953;Claro Pós 6GB : 01/12/2025 a 20/12/2025;01/12/2025;;;;;0,00;5,41;5,41;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99016-0634;Skeelo E-Book Pocket : 21/11/2025 a 27/11/2025;21/11/2025;;;;;0,00;1,5;1,5;;;;Mensalidades e Pacotes Promocionais;;;;;;;
+11 99011-9953;Skeelo E-Book Pocket : 21/11/2025 a 30/11/2025;21/11/2025;;;;;0,00;2,14;2,14;;;;Mensalidades e Pacotes Promocionais;;;;;;;
+11 99005-3956;Skeelo E-Book Pocket : 01/12/2025 a 20/12/2025;01/12/2025;;;;;0,00;3,93;3,93;;;;Mensalidades e Pacotes Promocionais;;;;;;;
+11 99011-9953;Claro Pós 6GB : 21/11/2025 a 30/11/2025;21/11/2025;;;;;0,00;,47;,47;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 98995-8291;Claro Pós 6GB : 21/11/2025 a 24/11/2025;21/11/2025;;;;;0,00;,19;,19;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99016-0634;Claro Pós 6GB : 01/12/2025 a 20/12/2025;01/12/2025;;;;;0,00;,89;,89;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 98997-9473;Claro Pós 6GB : 21/11/2025 a 25/11/2025;21/11/2025;;;;;0,00;,95;,95;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99005-3956;Claro Pós 6GB : 21/11/2025 a 30/11/2025;21/11/2025;;;;;0,00;1,91;1,91;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99016-0634;Claro Pós 6GB : 21/11/2025 a 27/11/2025;21/11/2025;;;;;0,00;1,33;1,33;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99015-3726;Claro Pós 6GB : 01/12/2025 a 20/12/2025;01/12/2025;;;;;0,00;3,62;3,62;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99015-3726;Claro Recado Premium : 01/12/2025 a 20/12/2025;01/12/2025;;;;;0,00;1,33;1,33;;;;Mensalidades e Pacotes Promocionais;ISS;;;;;;
+11 98999-5533;Claro Pós 6GB : 21/11/2025 a 24/11/2025;21/11/2025;;;;;0,00;,76;,76;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99002-3085;Claro Pós 6GB : 01/12/2025 a 20/12/2025;01/12/2025;;;;;0,00;3,6;3,6;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99015-3726;Claro Pós 6GB : 01/12/2025 a 20/12/2025;01/12/2025;;;;;0,00;3,6;3,6;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99015-3726;Claro Pós 6GB : 01/12/2025 a 20/12/2025;01/12/2025;;;;;0,00;4,51;4,51;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99002-3085;Gestor Online : 21/11/2025 a 30/11/2025;21/11/2025;;;;;0,00;1,84;1,84;;;;Mensalidades e Pacotes Promocionais;;;;;;;
+11 99011-9953;Gestor Online : 21/11/2025 a 30/11/2025;21/11/2025;;;;;0,00;1,84;1,84;;;;Mensalidades e Pacotes Promocionais;;;;;;;
+11 99016-0634;Gestor Online : 28/11/2025 a 30/11/2025;28/11/2025;;;;;0,00;,55;,55;;;;Mensalidades e Pacotes Promocionais;;;;;;;
+11 99012-7274;Gestor Online : 01/12/2025 a 20/12/2025;01/12/2025;;;;;0,00;3,33;3,33;;;;Mensalidades e Pacotes Promocionais;;;;;;;
+11 99011-9953;Claro Pós 6GB : 21/11/2025 a 30/11/2025;21/11/2025;;;;;0,00;2,86;2,86;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99016-0634;Claro Pós 6GB : 21/11/2025 a 27/11/2025;21/11/2025;;;;;0,00;2;2;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99011-2580;Skeelo E-Book Pocket : 21/11/2025 a 25/11/2025;21/11/2025;;;;;0,00;1,07;1,07;;;;Mensalidades e Pacotes Promocionais;;;;;;;
+11 99002-3085;Skeelo E-Book Pocket : 01/12/2025 a 20/12/2025;01/12/2025;;;;;0,00;3,93;3,93;;;;Mensalidades e Pacotes Promocionais;;;;;;;
+11 98999-5533;Claro Pós 6GB : 21/11/2025 a 24/11/2025;21/11/2025;;;;;0,00;,19;,19;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99002-3085;Claro Pós 6GB : 01/12/2025 a 20/12/2025;01/12/2025;;;;;0,00;,89;,89;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99005-3956;Claro Pós 6GB : 01/12/2025 a 20/12/2025;01/12/2025;;;;;0,00;,89;,89;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99005-3956;Claro Pós 6GB : 01/12/2025 a 20/12/2025;01/12/2025;;;;;0,00;3,62;3,62;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 98997-9473;Claro Recado Premium : 21/11/2025 a 25/11/2025;21/11/2025;;;;;0,00;,35;,35;;;;Mensalidades e Pacotes Promocionais;ISS;;;;;;
+11 99011-9953;Claro Pós 6GB : 01/12/2025 a 20/12/2025;01/12/2025;;;;;0,00;3,6;3,6;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99012-7274;Claro Pós 6GB : 21/11/2025 a 30/11/2025;21/11/2025;;;;;0,00;1,9;1,9;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 98997-9473;Claro Pós 6GB : 21/11/2025 a 25/11/2025;21/11/2025;;;;;0,00;1,19;1,19;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99012-7274;Claro Pós 6GB : 21/11/2025 a 30/11/2025;21/11/2025;;;;;0,00;2,38;2,38;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 98997-9473;Gestor Online : 21/11/2025 a 25/11/2025;21/11/2025;;;;;0,00;,92;,92;;;;Mensalidades e Pacotes Promocionais;;;;;;;
+11 99012-7274;Claro Pós 6GB : 01/12/2025 a 20/12/2025;01/12/2025;;;;;0,00;5,41;5,41;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99003-2212;Claro Pós 6GB : 21/11/2025 a 25/11/2025;21/11/2025;;;;;0,00;1,43;1,43;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99005-3956;Claro Pós 6GB : 21/11/2025 a 30/11/2025;21/11/2025;;;;;0,00;2,86;2,86;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 98997-9473;Claro Pós 6GB : 21/11/2025 a 25/11/2025;21/11/2025;;;;;0,00;1,43;1,43;;;;Mensalidades e Pacotes Promocionais;ICMS;;;;;;
+11 99016-0634;Skeelo E-Book Pocket : 28/11/2025 a 30/11/2025;28/11/2025;;;;;0,00;,64;,64;;;;Mensalidades e Pacotes Promocionais;;;;;;;
+11 99010-6432;Skeelo E-Book Pocket : 21/11/2025 a 25/11/2025;21/11/2025;;;;;0,00;1,07;1,07;;;;Mensalidades e Pacotes Promocionais;;;;;;;
+11 99003-2212;Multa por Quebra de Contrato : 26/11/2025 a 26/11/2025;26/11/2025;;;;;0,00;50;50;;;;Outros;;;;;;;
+11 98999-5533;Multa por Quebra de Contrato : 25/11/2025 a 25/11/2025;25/11/2025;;;;;0,00;50;50;;;;Outros;;;;;;;
+11 99013-0254;Multa por Quebra de Contrato : 25/11/2025 a 25/11/2025;25/11/2025;;;;;0,00;50;50;;;;Outros;;;;;;;
+11 99015-4895;Multa por Quebra de Contrato : 26/11/2025 a 26/11/2025;26/11/2025;;;;;0,00;50;50;;;;Outros;;;;;;;
+11 99011-2580;Multa por Quebra de Contrato : 26/11/2025 a 26/11/2025;26/11/2025;;;;;0,00;50;50;;;;Outros;;;;;;;
+11 98997-9473;Multa por Quebra de Contrato : 26/11/2025 a 26/11/2025;26/11/2025;;;;;0,00;50;50;;;;Outros;;;;;;;
+11 99010-6432;Multa por Quebra de Contrato : 26/11/2025 a 26/11/2025;26/11/2025;;;;;0,00;50;50;;;;Outros;;;;;;;
+11 98995-8291;Multa por Quebra de Contrato : 25/11/2025 a 25/11/2025;25/11/2025;;;;;0,00;50;50;;;;Outros;;;;;;;
+11 99016-0634;Internet (MB);13/12/2025;13:02:38;;;,125;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99016-0634;Internet (MB);13/12/2025;13:29:28;;;,097656;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);02/12/2025;00:46:58;;;,990234;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);02/12/2025;00:52:21;;;,039062;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);02/12/2025;06:01:00;;;2,230468;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);02/12/2025;06:46:15;;;75,286132;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);02/12/2025;06:52:37;;;,253906;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);02/12/2025;09:18:46;;;,360351;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);02/12/2025;10:42:12;;;,009765;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Download;;;;00011;0
+11 99015-3726;Internet (MB);03/12/2025;00:14:45;;;,072265;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);03/12/2025;00:34:40;;;,908203;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);03/12/2025;02:02:30;;;,024414;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);03/12/2025;04:34:49;;;4,318359;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);03/12/2025;05:39:44;;;,28125;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);03/12/2025;07:14:52;;;,392578;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);03/12/2025;09:50:35;;;,158203;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);04/12/2025;00:56:18;;;,08789;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);04/12/2025;07:23:50;;;66,713867;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);04/12/2025;07:29:59;;;1,332031;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);04/12/2025;07:36:23;;;,257812;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);04/12/2025;09:38:47;;;,352539;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);04/12/2025;15:11:16;;;,009765;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Download;;;;00011;0
+11 99015-3726;Internet (MB);05/12/2025;00:43:41;;;,08496;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);05/12/2025;07:12:44;;;,266601;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);05/12/2025;11:49:25;;;82,877929;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);05/12/2025;11:52:45;;;,08789;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);05/12/2025;13:27:02;;;,344726;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);06/12/2025;00:02:03;;;,09082;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);06/12/2025;06:47:13;;;,094726;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);08/12/2025;14:34:13;;;,009765;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);08/12/2025;14:34:14;;;,15625;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);09/12/2025;00:34:24;;;,08496;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);09/12/2025;07:14:29;;;,235351;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);10/12/2025;00:44:42;;;,076171;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);10/12/2025;06:34:47;;;,24707;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);10/12/2025;07:25:41;;;21,486328;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);10/12/2025;07:27:11;;;2,001953;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);10/12/2025;09:21:41;;;,276367;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);11/12/2025;00:24:35;;;,582031;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);11/12/2025;00:35:00;;;,099609;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);11/12/2025;07:25:00;;;49,289062;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);11/12/2025;07:45:28;;;,444335;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);11/12/2025;08:05:05;;;,301757;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);12/12/2025;00:00:57;;;,08789;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);12/12/2025;07:05:00;;;,217773;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);12/12/2025;11:32:49;;;1,154296;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);12/12/2025;11:35:27;;;,019531;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);12/12/2025;12:48:26;;;,009765;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Download;;;;00011;0
+11 99015-3726;Internet (MB);15/12/2025;13:23:53;;;,009765;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);15/12/2025;13:23:55;;;,173828;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);16/12/2025;00:53:02;;;,356445;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);17/12/2025;00:33:39;;;,077148;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);17/12/2025;06:44:43;;;,256835;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);17/12/2025;10:38:35;;;,298828;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);18/12/2025;01:10:01;;;,088867;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);18/12/2025;07:50:07;;;,201171;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);18/12/2025;14:14:01;;;,018554;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99016-0634;Internet (MB);08/12/2025;19:51:52;;;39,792968;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99016-0634;Internet (MB);08/12/2025;19:52:37;;;5,375976;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99016-0634;Internet (MB);08/12/2025;19:54:18;;;5,564453;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99016-0634;Internet (MB);09/12/2025;07:16:55;;;1,399414;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99016-0634;Internet (MB);09/12/2025;07:16:55;;;5,080078;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99016-0634;Internet (MB);09/12/2025;07:17:10;;;11,338867;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99016-0634;Internet (MB);10/12/2025;08:05:39;;;,583007;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99016-0634;Internet (MB);10/12/2025;15:02:15;;;,40332;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99016-0634;Internet (MB);11/12/2025;11:45:04;;;,057617;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99012-7274;Internet (MB);09/12/2025;00:28:50;;;,300781;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99012-7274;Internet (MB);09/12/2025;07:50:44;;;5,517578;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99012-7274;Internet (MB);09/12/2025;08:26:29;;;3,924804;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99012-7274;Internet (MB);09/12/2025;11:42:51;;;,064453;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99012-7274;Internet (MB);10/12/2025;00:00:51;;;1,899414;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99012-7274;Internet (MB);10/12/2025;00:11:08;;;,085937;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99012-7274;Internet (MB);10/12/2025;07:59:02;;;9,763671;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99012-7274;Internet (MB);10/12/2025;08:24:00;;;2,289062;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99012-7274;Internet (MB);10/12/2025;21:39:47;;;,009765;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Download;;;;00011;0
+11 99012-7274;Internet (MB);11/12/2025;00:30:06;;;1,208007;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99012-7274;Internet (MB);11/12/2025;06:45:40;;;,02539;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99012-7274;Internet (MB);11/12/2025;08:01:20;;;8,024414;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99012-7274;Internet (MB);11/12/2025;08:15:14;;;,814453;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99012-7274;Internet (MB);11/12/2025;09:21:09;;;,14746;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99012-7274;Internet (MB);12/12/2025;00:24:14;;;1,612304;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99012-7274;Internet (MB);12/12/2025;01:37:56;;;,05664;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99012-7274;Internet (MB);12/12/2025;07:24:59;;;9,561523;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99012-7274;Internet (MB);12/12/2025;07:40:34;;;,142578;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99012-7274;Internet (MB);13/12/2025;00:49:01;;;1,15039;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99012-7274;Internet (MB);13/12/2025;03:58:35;;;,176757;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99012-7274;Internet (MB);13/12/2025;08:07:53;;;2,142578;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99012-7274;Internet (MB);13/12/2025;11:05:08;;;,017578;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99013-0254;Internet (MB);18/11/2025;14:22:16;;;,016601;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99013-0254;Internet (MB);19/11/2025;07:40:39;;;8,348632;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99013-0254;Internet (MB);19/11/2025;08:34:38;;;8,878906;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99013-0254;Internet (MB);19/11/2025;10:19:31;;;2,588867;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99013-0254;Internet (MB);20/11/2025;00:06:02;;;,505859;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99013-0254;Internet (MB);20/11/2025;02:32:05;;;,036132;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99013-0254;Internet (MB);20/11/2025;06:07:28;;;4,360351;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99013-0254;Internet (MB);20/11/2025;08:34:58;;;1,173828;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99013-0254;Internet (MB);21/11/2025;00:06:14;;;,457031;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99013-0254;Internet (MB);21/11/2025;03:07:54;;;,333984;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99013-0254;Internet (MB);21/11/2025;08:06:04;;;4,238281;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99013-0254;Internet (MB);21/11/2025;08:08:17;;;1,973632;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99013-0254;Internet (MB);22/11/2025;00:06:15;;;,136718;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99013-0254;Internet (MB);22/11/2025;02:05:52;;;,098632;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99013-0254;Internet (MB);22/11/2025;08:06:31;;;4,478515;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99013-0254;Internet (MB);22/11/2025;08:08:54;;;,949218;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99013-0254;Internet (MB);23/11/2025;00:06:00;;;1,0625;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99013-0254;Internet (MB);23/11/2025;00:20:01;;;,287109;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99013-0254;Internet (MB);23/11/2025;08:06:29;;;,009765;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);19/11/2025;17:50:48;;;,704101;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);19/11/2025;18:02:55;;;,012695;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);21/11/2025;10:34:44;;;,03125;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);26/11/2025;04:42:49;;;1,037109;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);26/11/2025;05:32:15;;;,078125;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);26/11/2025;06:39:30;;;61,447265;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);26/11/2025;09:19:47;;;,467773;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);26/11/2025;18:30:44;;;,65625;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);27/11/2025;00:18:33;;;,254882;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);27/11/2025;00:24:34;;;1,541992;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);27/11/2025;07:06:59;;;2,222656;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);27/11/2025;10:13:04;;;,989257;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);27/11/2025;22:59:14;;;,17871;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);28/11/2025;00:25:29;;;1,663085;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);28/11/2025;00:44:24;;;,71875;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);28/11/2025;06:45:23;;;2,168945;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);28/11/2025;07:26:21;;;108,351562;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);28/11/2025;09:15:04;;;,296875;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);01/12/2025;10:18:21;;;29,108398;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);01/12/2025;10:18:23;;;,12207;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);01/12/2025;11:36:35;;;2,951171;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);01/12/2025;11:36:38;;;,346679;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99015-3726;Internet (MB);01/12/2025;14:34:40;;;,009765;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Download;;;;00011;0
+11 98995-8291;Internet (MB);18/11/2025;21:33:11;;;,033203;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 98995-8291;Internet (MB);18/11/2025;22:05:22;;;,146484;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 98995-8291;Internet (MB);19/11/2025;00:05:18;;;16,583007;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 98995-8291;Internet (MB);19/11/2025;01:34:09;;;13,450195;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 98995-8291;Internet (MB);19/11/2025;09:15:47;;;,478515;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 98995-8291;Internet (MB);19/11/2025;21:52:00;;;,30957;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 98995-8291;Internet (MB);19/11/2025;22:29:11;;;,050781;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 98995-8291;Internet (MB);20/11/2025;00:27:45;;;,052734;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 98995-8291;Internet (MB);20/11/2025;13:46:02;;;,020507;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 98995-8291;Internet (MB);21/11/2025;07:33:49;;;17,34375;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 98995-8291;Internet (MB);21/11/2025;08:14:02;;;1,274414;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 98995-8291;Internet (MB);22/11/2025;00:11:55;;;1,86914;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 98995-8291;Internet (MB);22/11/2025;00:50:56;;;,445312;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 98995-8291;Internet (MB);22/11/2025;07:11:43;;;27,730468;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 98995-8291;Internet (MB);22/11/2025;10:26:31;;;11,752929;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 98995-8291;Internet (MB);22/11/2025;10:27:09;;;18,609375;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 98995-8291;Internet (MB);23/11/2025;00:11:59;;;,763671;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 98995-8291;Internet (MB);23/11/2025;00:18:45;;;,207031;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 98995-8291;Internet (MB);23/11/2025;07:10:49;;;2,398437;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 98995-8291;Internet (MB);23/11/2025;12:21:05;;;,913085;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 98995-8291;Internet (MB);24/11/2025;00:10:43;;;,745117;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 98995-8291;Internet (MB);24/11/2025;00:43:05;;;,375976;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 98995-8291;Internet (MB);24/11/2025;07:11:25;;;23,368164;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 98995-8291;Internet (MB);24/11/2025;12:12:10;;;1,961914;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 98995-8291;Internet (MB);25/11/2025;00:10:48;;;,609375;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 98995-8291;Internet (MB);25/11/2025;03:24:58;;;,098632;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 98995-8291;Internet (MB);25/11/2025;07:10:36;;;3,55664;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 98995-8291;Internet (MB);25/11/2025;08:55:03;;;1,139648;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 98999-5533;Internet (MB);19/11/2025;09:59:18;;;71,845703;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 98999-5533;Internet (MB);19/11/2025;12:23:13;;;9,901367;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 98999-5533;Internet (MB);19/11/2025;12:52:05;;;,345703;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 98999-5533;Internet (MB);19/11/2025;14:20:02;;;,350585;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 98999-5533;Internet (MB);20/11/2025;09:26:13;;;31,149414;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 98999-5533;Internet (MB);20/11/2025;09:51:39;;;2,471679;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 98999-5533;Internet (MB);21/11/2025;08:04:19;;;6,675781;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 98999-5533;Internet (MB);21/11/2025;08:05:01;;;1,392578;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 98999-5533;Internet (MB);21/11/2025;08:06:05;;;,589843;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 98999-5533;Internet (MB);21/11/2025;09:25:03;;;,009765;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Download;;;;00011;0
+11 98999-5533;Internet (MB);22/11/2025;07:54:13;;;,017578;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 98999-5533;Internet (MB);24/11/2025;09:41:06;;;7,511718;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 98999-5533;Internet (MB);24/11/2025;09:43:34;;;2,094726;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99012-7274;Internet (MB);04/12/2025;09:18:00;;;22,99707;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99012-7274;Internet (MB);04/12/2025;09:18:32;;;20,703125;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99012-7274;Internet (MB);04/12/2025;09:22:11;;;153,673828;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99012-7274;Internet (MB);05/12/2025;00:00:10;;;,888671;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99012-7274;Internet (MB);05/12/2025;06:05:06;;;,168945;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99012-7274;Internet (MB);05/12/2025;07:50:06;;;3,256835;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99012-7274;Internet (MB);05/12/2025;08:33:59;;;1,65332;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99012-7274;Internet (MB);05/12/2025;22:14:09;;;,088867;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99012-7274;Internet (MB);06/12/2025;00:00:47;;;1,504882;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99012-7274;Internet (MB);06/12/2025;00:03:25;;;,245117;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99012-7274;Internet (MB);06/12/2025;07:52:52;;;2,828125;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99012-7274;Internet (MB);06/12/2025;12:08:51;;;,92871;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99012-7274;Internet (MB);07/12/2025;00:01:49;;;18,261718;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99012-7274;Internet (MB);07/12/2025;00:16:09;;;57,756835;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99012-7274;Internet (MB);07/12/2025;07:25:50;;;2,761718;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99012-7274;Internet (MB);07/12/2025;10:21:45;;;18,271484;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99012-7274;Internet (MB);07/12/2025;10:58:09;;;,232421;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99012-7274;Internet (MB);08/12/2025;00:01:44;;;,975585;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99012-7274;Internet (MB);08/12/2025;00:21:44;;;,640625;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99012-7274;Internet (MB);08/12/2025;08:11:48;;;3,013671;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99012-7274;Internet (MB);08/12/2025;09:38:48;;;1,700195;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99012-7274;Internet (MB);08/12/2025;23:44:29;;;,044921;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0
+11 99012-7274;Internet (MB);09/12/2025;00:00:35;;;2,14746;0,00;0;0;;;;Serviços (Torpedos, Hits, Jogos, etc.);;Navegação Web;;;;00011;0

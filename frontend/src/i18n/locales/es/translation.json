@@ -1,0 +1,69 @@
+{
+  "common": {
+    "dashboard": "Tablero",
+    "cost_centers": "Centros de Costo",
+    "invoices": "Facturas",
+    "reports": "Informes",
+    "users": "Usuarios",
+    "profile": "Mi Perfil",
+    "workspaces": "Mis Espacios de Trabajo",
+    "logout": "Cerrar sesión",
+    "active_workspace": "Espacio de Trabajo Activo",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "actions": "Acciones",
+    "status": "Estado",
+    "active": "Activo",
+    "inactive": "Inactivo",
+    "name": "Nombre",
+    "email": "Correo electrónico",
+    "role": "Rol",
+    "password": "Contraseña",
+    "login": "Acceder",
+    "register": "Registrar",
+    "welcome": "Bienvenido",
+    "settings": "Ajustes"
+  },
+  "login": {
+    "title": "Acceda a su cuenta",
+    "subtitle": "Gestión inteligente de facturas y centros de costo.",
+    "email_label": "Dirección de Correo Electrónico",
+    "password_label": "Contraseña de Acceso",
+    "button": "Entrar al Sistema",
+    "no_account": "¿No tiene una cuenta?",
+    "register_here": "Regístrese aquí",
+    "error": "Error al iniciar sesión",
+    "error_user_not_identified": "Usuario no identificado. Por favor, inicie sesión de nuevo.",
+    "toggle_password_visibility": "Alternar visibilidad de la contraseña"
+  },
+  "workspaces": {
+    "error_loading": "Error al cargar los espacios de trabajo asociados.",
+    "no_workspaces": "No está asociado a ningún espacio de trabajo activo.",
+    "contact_admin": "Póngase en contacto con su administrador para solicitar acceso."
+  },
+  "sidebar": {
+    "dashboard": "Tablero",
+    "cost_centers": "Centros de Costo",
+    "invoices": "Facturas",
+    "reports": "Informes",
+    "users": "Usuarios"
+  },
+  "profile": {
+    "title": "Configuración de la Cuenta",
+    "subtitle": "Gestione su seguridad, preferencias y acceso a los entornos.",
+    "my_profile": "Mi Perfil",
+    "workspaces": "Espacios de Trabajo",
+    "admin_jedi": "Administración Jedi",
+    "basic_info": "Información Básica",
+    "security": "Seguridad de la Cuenta",
+    "full_name": "Nombre Completo",
+    "current_password": "Contraseña Actual",
+    "new_password": "Nueva Contraseña",
+    "confirm_password": "Confirmar Nueva Contraseña",
+    "save_profile": "Guardar Perfil",
+    "change_password": "Cambiar Contraseña",
+    "error_loading": "Error al cargar los datos del perfil"
+  }
+}

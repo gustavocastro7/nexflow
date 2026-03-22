@@ -1,0 +1,56 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: nexflow-postgres-debug
+    environment:
+      POSTGRES_USER: nexflow_user
+      POSTGRES_PASSWORD: nexflow_password
+      POSTGRES_DB: nexflow_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_debug_data:/var/lib/postgresql/data
+    restart: always
+
+  backend:
+    image: node:22-alpine
+    container_name: nexflow-backend-debug
+    working_dir: /app
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - PORT=3100
+      - DB_HOST=postgres
+      - DB_NAME=nexflow_db
+      - DB_USER=nexflow_user
+      - DB_PASS=nexflow_password
+      - ADMIN_EMAIL=gustavocastro73@gmail.com
+      - ADMIN_PASSWORD=castro
+    ports:
+      - "3100:3100"
+    command: >
+      sh -c "npm install && npm run dev"
+    depends_on:
+      - postgres
+
+  frontend:
+    image: node:22-alpine
+    container_name: nexflow-frontend-debug
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - VITE_PROXY_TARGET=http://backend:3100
+    ports:
+      - "8086:8085"
+    command: >
+      sh -c "npm install && npm run dev"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_debug_data:

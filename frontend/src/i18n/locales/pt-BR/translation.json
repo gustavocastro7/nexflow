@@ -1,0 +1,69 @@
+{
+  "common": {
+    "dashboard": "Dashboard",
+    "cost_centers": "Centros de Custo",
+    "invoices": "Faturas",
+    "reports": "Relatórios",
+    "users": "Usuários",
+    "profile": "Meu Perfil",
+    "workspaces": "Meus Workspaces",
+    "logout": "Sair",
+    "active_workspace": "Workspace Ativo",
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "edit": "Editar",
+    "delete": "Excluir",
+    "actions": "Ações",
+    "status": "Status",
+    "active": "Ativo",
+    "inactive": "Inativo",
+    "name": "Nome",
+    "email": "E-mail",
+    "role": "Papel",
+    "password": "Senha",
+    "login": "Entrar",
+    "register": "Registrar",
+    "welcome": "Bem-vindo",
+    "settings": "Configurações"
+  },
+  "login": {
+    "title": "Acesse sua conta",
+    "subtitle": "Gestão inteligente de faturas e centros de custo.",
+    "email_label": "Endereço de E-mail",
+    "password_label": "Senha de Acesso",
+    "button": "Entrar no Sistema",
+    "no_account": "Não tem uma conta?",
+    "register_here": "Registre-se aqui",
+    "error": "Erro ao realizar login",
+    "error_user_not_identified": "Usuário não identificado. Por favor, faça login novamente.",
+    "toggle_password_visibility": "Alternar visibilidade da senha"
+  },
+  "workspaces": {
+    "error_loading": "Erro ao carregar workspaces associados.",
+    "no_workspaces": "Você não está associado a nenhum workspace ativo.",
+    "contact_admin": "Contate seu administrador para solicitar acesso."
+  },
+  "sidebar": {
+    "dashboard": "Dashboard",
+    "cost_centers": "Centros de Custo",
+    "invoices": "Faturas",
+    "reports": "Relatórios",
+    "users": "Usuários"
+  },
+  "profile": {
+    "title": "Configurações de Conta",
+    "subtitle": "Gerencie sua segurança, preferências e acesso aos ambientes.",
+    "my_profile": "Meu Perfil",
+    "workspaces": "Workspaces",
+    "admin_jedi": "Administração Jedi",
+    "basic_info": "Informações Básicas",
+    "security": "Segurança da Conta",
+    "full_name": "Nome Completo",
+    "current_password": "Senha Atual",
+    "new_password": "Nova Senha",
+    "confirm_password": "Confirmar Nova Senha",
+    "save_profile": "Salvar Perfil",
+    "change_password": "Alterar Senha",
+    "error_loading": "Erro ao carregar dados do perfil"
+  }
+}
