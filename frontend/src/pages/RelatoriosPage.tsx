@@ -1,336 +1,331 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  Box, 
-  Typography, 
-  Container, 
-  Paper, 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableContainer, 
-  TableHead, 
-  TableRow,
-  Button,
-  CircularProgress,
-  Alert,
-  Stack,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  TextField,
-  Tabs,
-  Tab,
-  useTheme,
-  alpha,
-  Grid
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import {
+  Box, Typography, Paper, Table, TableBody, TableCell, TableContainer,
+  TableHead, TableRow, IconButton, Alert, Stack, FormControl, Select,
+  MenuItem, TextField, Tabs, Tab, useTheme, alpha, InputAdornment, Tooltip, Button,
 } from '@mui/material';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
-import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import SearchIcon from '@mui/icons-material/Search';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
 import apiClient from '../api/client';
-import type { Workspace, CostCenter } from '../types';
+import InfiniteScroll from '../components/InfiniteScroll';
+import type { Workspace } from '../types';
 
-interface ReportSummary {
+interface PhoneLineRow {
   id: string;
-  name: string;
+  costCenterCode: string;
+  costCenterName: string;
+  phoneNumber: string;
+  responsibleName: string;
+  responsibleId: string;
+}
+
+interface ConsumptionCCRow {
+  costCenterCode: string;
+  costCenterName: string;
+  referenceMonth: string;
   total: number;
 }
 
-interface ReportDetail {
-  phone: string;
-  costCenter: string;
+interface ConsumptionRespRow {
+  responsibleName: string;
+  responsibleId: string;
+  phoneNumber: string;
+  costCenterCode: string;
+  costCenterName: string;
   total: number;
-  recordCount: number;
 }
 
-interface ReportGeneral {
-  id: string | number;
-  operator: string;
-  phone: string;
-  date: string;
-  service: string;
-  value: number;
-  costCenter: string;
+interface PageResponse<T> {
+  items: T[];
+  total: number;
+  hasMore: boolean;
+  grandTotal?: number;
 }
+
+type ReportType = 0 | 1 | 2;
+
+const REPORT_ENDPOINTS: Record<ReportType, string> = {
+  0: '/reports/phone-lines',
+  1: '/reports/consumption-by-cost-center',
+  2: '/reports/consumption-by-responsible',
+};
+
+const REPORT_LABELS: Record<ReportType, string> = {
+  0: 'Phone Lines',
+  1: 'Consumption by Cost Center',
+  2: 'Consumption by Responsible',
+};
+
+const fmtMoney = (v: number) =>
+  `R$ ${(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
 
 const RelatoriosPage: React.FC = () => {
   const theme = useTheme();
-  const [viewTab, setViewTab] = useState(0); 
-  const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState<ReportType>(0);
+  const [rows, setRows] = useState<any[]>([]);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  
-  const [summary, setSummary] = useState<ReportSummary[]>([]);
-  const [details, setDetails] = useState<ReportDetail[]>([]);
-  const [general, setGeneral] = useState<ReportGeneral[]>([]);
-  const [costCenters, setCostCenters] = useState<CostCenter[]>([]);
+  const [search, setSearch] = useState('');
+  const [refMonth, setRefMonth] = useState('');
+  const [months, setMonths] = useState<string[]>([]);
+  const [grandTotal, setGrandTotal] = useState(0);
 
-  const [month, setMonth] = useState('');
-  const [year, setYear] = useState(new Date().getFullYear().toString());
-  const [costCenterId, setCostCenterId] = useState('');
-  const [phone, setPhone] = useState('');
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [rootEl, setRootEl] = useState<Element | null>(null);
 
   const getActiveWorkspace = (): Workspace | null => {
     try {
-      const wsData = sessionStorage.getItem('activeWorkspace');
-      return wsData ? JSON.parse(wsData) : null;
-    } catch (e: unknown) {
-      console.error('Error parsing activeWorkspace in RelatoriosPage', e);
+      const d = sessionStorage.getItem('activeWorkspace');
+      return d ? JSON.parse(d) : null;
+    } catch {
       return null;
     }
   };
-  const activeWorkspace = getActiveWorkspace();
+  const ws = getActiveWorkspace();
 
-  const fetchCostCenters = useCallback(async () => {
-    if (!activeWorkspace?.id) return;
-    try {
-      const response = await apiClient.get<CostCenter[]>(`/cost-centers?workspaceId=${activeWorkspace.id}`);
-      setCostCenters(Array.isArray(response.data) ? response.data : []);
-    } catch (err: unknown) {
-      console.error('Error fetching cost centers in RelatoriosPage', err);
-    }
-  }, [activeWorkspace?.id]);
+  useEffect(() => { setRootEl(containerRef.current); }, []);
 
-  const fetchData = useCallback(async () => {
-    if (!activeWorkspace?.id) {
-      setLoading(false);
-      return;
-    }
+  // Load available reference months
+  useEffect(() => {
+    if (!ws?.id) return;
+    apiClient.get<string[]>(`/reports/reference-months?workspaceId=${ws.id}`)
+      .then(r => {
+        setMonths(r.data);
+        if (r.data.length && !refMonth) setRefMonth(r.data[0]);
+      })
+      .catch(() => {});
+  }, [ws?.id]);
+
+  const fetchPage = useCallback(async (pageNum: number, reset: boolean) => {
+    if (!ws?.id) return;
+    if (tab === 2 && !refMonth) return;
+
     setLoading(true);
     setError('');
     try {
-      console.log('RelatoriosPage: Fetching report data for workspace', activeWorkspace.id);
       const params = new URLSearchParams({
-        workspaceId: activeWorkspace.id,
-        mes: month,
-        ano: year,
-        centroCustoId: costCenterId,
-        telefone: phone
+        workspaceId: ws.id,
+        page: String(pageNum),
+        search,
       });
-      const response = await apiClient.get<{ summary: ReportSummary[]; details: ReportDetail[]; general: ReportGeneral[] }>(`/reports/spending-by-cc?${params}`);
-      
-      console.log('RelatoriosPage: Data received', response.data);
-      setSummary(response.data.summary || []);
-      setDetails(response.data.details || []);
-      setGeneral(response.data.general || []);
-    } catch (err: unknown) {
-      console.error('RelatoriosPage: Error fetching report data', err);
-      setError('Error loading report data. Please check your connection or try again later.');
+      if (tab === 2) params.set('referenceMonth', refMonth);
+
+      const { data } = await apiClient.get<PageResponse<any>>(
+        `${REPORT_ENDPOINTS[tab]}?${params}`
+      );
+
+      setRows(prev => reset ? data.items : [...prev, ...data.items]);
+      setHasMore(data.hasMore);
+      setPage(pageNum);
+      if (data.grandTotal !== undefined) setGrandTotal(data.grandTotal);
+    } catch (e) {
+      console.error('Report fetch error', e);
+      setError('Error loading report data.');
     } finally {
       setLoading(false);
     }
-  }, [activeWorkspace?.id, month, year, costCenterId, phone]);
+  }, [ws?.id, tab, search, refMonth]);
 
+  const refresh = useCallback(() => {
+    setRows([]);
+    setPage(0);
+    setHasMore(true);
+    setGrandTotal(0);
+    fetchPage(0, true);
+  }, [fetchPage]);
+
+  useEffect(() => { refresh(); }, [tab, refMonth]);
+
+  // Debounced search
   useEffect(() => {
-    fetchCostCenters();
-    fetchData();
-  }, [fetchCostCenters, fetchData]);
+    const t = setTimeout(refresh, 400);
+    return () => clearTimeout(t);
+  }, [search]);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    fetchData();
+  const loadMore = () => {
+    if (!loading && hasMore) fetchPage(page + 1, false);
   };
 
   const exportCSV = () => {
-    try {
-      let headers: string[] = [];
-      let rows: (string | number)[][] = [];
-      const fileName = `report_${viewTab === 0 ? 'summary_cc' : viewTab === 1 ? 'summary_phone' : 'general'}`;
+    let headers: string[];
+    let mapper: (r: any) => (string | number)[];
 
-      if (viewTab === 0) {
-        headers = ['Cost Center', 'Total (R$)'];
-        rows = summary.map(item => [item.name, item.total || 0]);
-      } else if (viewTab === 1) {
-        headers = ['Phone', 'Cost Center', 'Record Count', 'Total (R$)'];
-        rows = details.map(item => [item.phone, item.costCenter, item.recordCount || 0, item.total || 0]);
-      } else {
-        headers = ['Carrier', 'Phone', 'Date', 'Service', 'Value (R$)', 'Cost Center'];
-        rows = general.map(item => [item.operator, item.phone, item.date, item.service, item.value || 0, item.costCenter]);
-      }
-
-      const csvContent = [
-        headers.join(';'),
-        ...rows.map(row => row.map(v => typeof v === 'number' ? v.toFixed(2).replace('.', ',') : v).join(';'))
-      ].join('\n');
-
-      const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.setAttribute('href', url);
-      link.setAttribute('download', `${fileName}_${activeWorkspace?.name}.csv`);
-      link.click();
-    } catch (err) {
-      console.error('CSV Export error:', err);
-      setError('Failed to export CSV');
+    if (tab === 0) {
+      headers = ['CC Code', 'CC Name', 'Phone', 'Responsible', 'ID'];
+      mapper = (r: PhoneLineRow) => [r.costCenterCode, r.costCenterName, r.phoneNumber, r.responsibleName, r.responsibleId];
+    } else if (tab === 1) {
+      headers = ['CC Code', 'CC Name', 'Reference Month', 'Total (R$)'];
+      mapper = (r: ConsumptionCCRow) => [r.costCenterCode, r.costCenterName, r.referenceMonth, r.total];
+    } else {
+      headers = ['Responsible', 'ID', 'Phone', 'CC Code', 'CC Name', 'Total (R$)'];
+      mapper = (r: ConsumptionRespRow) => [r.responsibleName, r.responsibleId, r.phoneNumber, r.costCenterCode, r.costCenterName, r.total];
     }
+
+    const lines = [
+      headers.join(';'),
+      ...rows.map(r => mapper(r).map(v => typeof v === 'number' ? v.toFixed(2).replace('.', ',') : `"${v}"`).join(';')),
+    ];
+    if (tab === 2) lines.push(`"TOTAL";;;;;"${grandTotal.toFixed(2).replace('.', ',')}"`);
+
+    const blob = new Blob(['\ufeff' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `report_${REPORT_LABELS[tab].replace(/ /g, '_')}_${ws?.name}.csv`;
+    a.click();
   };
 
-  const exportPDF = () => {
-    try {
-      const doc = new jsPDF();
-      const title = `Report ${viewTab === 0 ? 'Summary by CC' : viewTab === 1 ? 'Summary by Phone' : 'General'}`;
-      
-      doc.setFontSize(11.2);
-      doc.text(title, 14, 15);
-      doc.setFontSize(6.4);
-      doc.text(`Workspace: ${activeWorkspace?.name} | Filters: Year ${year}${month ? ', Month ' + month : ''}`, 14, 22);
-
-      let tableColumn: string[] = [];
-      let tableRows: any[][] = [];
-
-      if (viewTab === 0) {
-        tableColumn = ['Cost Center', 'Total (R$)'];
-        tableRows = summary.map(item => [item.name, (item.total || 0).toLocaleString('pt-BR')]);
-      } else if (viewTab === 1) {
-        tableColumn = ['Phone', 'CC', 'Qty', 'Total'];
-        tableRows = details.map(item => [item.phone, item.costCenter, item.recordCount || 0, (item.total || 0).toLocaleString('pt-BR')]);
-      } else {
-        tableColumn = ['Date', 'Carrier', 'Phone', 'Service', 'Value'];
-        tableRows = general.map(item => [item.date, item.operator, item.phone, (item.service || '').substring(0, 30), (item.value || 0).toLocaleString('pt-BR')]);
-      }
-
-      autoTable(doc, {
-        head: [tableColumn],
-        body: tableRows,
-        startY: 25,
-        styles: { fontSize: 5.6, font: 'helvetica' },
-        headStyles: { fillColor: [32, 172, 172] }
-      });
-
-      doc.save(`${title.replace(/ /g, '_')}.pdf`);
-    } catch (err) {
-      console.error('PDF Export error:', err);
-      setError('Failed to export PDF');
-    }
-  };
-
-  if (!activeWorkspace) {
-    return (
-      <Container maxWidth="md" sx={{ mt: 10 }}>
-        <Alert severity="warning">No active workspace selected. Please select a workspace to view reports.</Alert>
-      </Container>
-    );
+  if (!ws) {
+    return <Box sx={{ p: 4 }}><Alert severity="warning">Select a workspace to view reports.</Alert></Box>;
   }
 
+  const renderHead = () => {
+    if (tab === 0) return (
+      <TableRow>
+        <TableCell>CC Code</TableCell><TableCell>CC Name</TableCell>
+        <TableCell>Phone</TableCell><TableCell>Responsible</TableCell><TableCell>ID</TableCell>
+      </TableRow>
+    );
+    if (tab === 1) return (
+      <TableRow>
+        <TableCell>CC Code</TableCell><TableCell>CC Name</TableCell>
+        <TableCell>Reference Month</TableCell><TableCell align="right">Total</TableCell>
+      </TableRow>
+    );
+    return (
+      <TableRow>
+        <TableCell>Responsible</TableCell><TableCell>ID</TableCell><TableCell>Phone</TableCell>
+        <TableCell>CC Code</TableCell><TableCell>CC Name</TableCell><TableCell align="right">Total</TableCell>
+      </TableRow>
+    );
+  };
+
+  const renderRow = (r: any, i: number) => {
+    if (tab === 0) {
+      const p = r as PhoneLineRow;
+      return (
+        <TableRow key={p.id} hover>
+          <TableCell sx={{ fontWeight: 700 }}>{p.costCenterCode}</TableCell>
+          <TableCell>{p.costCenterName}</TableCell>
+          <TableCell sx={{ fontWeight: 600 }}>{p.phoneNumber}</TableCell>
+          <TableCell>{p.responsibleName}</TableCell>
+          <TableCell>{p.responsibleId}</TableCell>
+        </TableRow>
+      );
+    }
+    if (tab === 1) {
+      const c = r as ConsumptionCCRow;
+      return (
+        <TableRow key={i} hover>
+          <TableCell sx={{ fontWeight: 700 }}>{c.costCenterCode}</TableCell>
+          <TableCell>{c.costCenterName}</TableCell>
+          <TableCell>{c.referenceMonth}</TableCell>
+          <TableCell align="right" sx={{ fontWeight: 700, color: theme.palette.primary.main }}>{fmtMoney(c.total)}</TableCell>
+        </TableRow>
+      );
+    }
+    const v = r as ConsumptionRespRow;
+    return (
+      <TableRow key={i} hover>
+        <TableCell sx={{ fontWeight: 700 }}>{v.responsibleName}</TableCell>
+        <TableCell>{v.responsibleId}</TableCell>
+        <TableCell sx={{ fontWeight: 600 }}>{v.phoneNumber}</TableCell>
+        <TableCell>{v.costCenterCode}</TableCell>
+        <TableCell>{v.costCenterName}</TableCell>
+        <TableCell align="right" sx={{ fontWeight: 700, color: theme.palette.primary.main }}>{fmtMoney(v.total)}</TableCell>
+      </TableRow>
+    );
+  };
+
   return (
-    <Box sx={{ width: '100%', p: 0 }}>
-      <Container maxWidth={false} sx={{ py: 4 }}>
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', p: 2, gap: 1.5 }}>
+      {/* Compact header */}
+      <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
+        <Typography variant="h6" sx={{ fontWeight: 800, mr: 1 }}>Reports</Typography>
 
-              <Box sx={{ mb: 4 }}>
-                <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>Analytical Reports</Typography>
-                <Typography variant="body1" color="textSecondary">
-                  Detailed consumption analysis and cost distribution in <b>{activeWorkspace.name}</b>.
-                </Typography>
-              </Box>
-        <Tabs 
-          value={viewTab} 
-          onChange={(_, v) => setViewTab(v)}
-          sx={{ 
-            '& .MuiTabs-indicator': { height: 4, borderRadius: '4px 4px 0 0' },
-            '& .MuiTab-root': { fontWeight: 700, fontSize: '0.9rem' }
-          }}
+        <Tabs
+          value={tab}
+          onChange={(_, v) => setTab(v)}
+          sx={{ minHeight: 36, '& .MuiTab-root': { minHeight: 36, py: 0.5, fontSize: '0.8rem', fontWeight: 700 } }}
         >
-          <Tab label="Summary by CC" />
-          <Tab label="Summary by Phone" />
-          <Tab label="Overview" />
+          <Tab label="Phone Lines" />
+          <Tab label="By Cost Center" />
+          <Tab label="By Responsible" />
         </Tabs>
-        
-        <Stack direction="row" spacing={1}>
-          <Button variant="outlined" startIcon={<FileDownloadIcon />} onClick={exportCSV} color="primary" sx={{ borderRadius: 2 }}>CSV</Button>
-          <Button variant="outlined" startIcon={<PictureAsPdfIcon />} onClick={exportPDF} color="error" sx={{ borderRadius: 2 }}>PDF</Button>
-        </Stack>
 
-      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+        <Box sx={{ flex: 1 }} />
 
-      {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}><CircularProgress /></Box>
-      ) : (
-        <TableContainer component={Paper} sx={{ overflow: 'hidden' }}>
-          <Table stickyHeader>
-            <TableHead>
-              {viewTab === 0 && (
-                <TableRow>
-                  <TableCell>Cost Center</TableCell>
-                  <TableCell align="right">Total Investment</TableCell>
-                </TableRow>
-              )}
-              {viewTab === 1 && (
-                <TableRow>
-                  <TableCell>Phone</TableCell>
-                  <TableCell>Cost Center</TableCell>
-                  <TableCell align="center">Records</TableCell>
-                  <TableCell align="right">Total</TableCell>
-                </TableRow>
-              )}
-              {viewTab === 2 && (
-                <TableRow>
-                  <TableCell>Date</TableCell>
-                  <TableCell>Carrier</TableCell>
-                  <TableCell>Phone</TableCell>
-                  <TableCell>Service/Description</TableCell>
-                  <TableCell>CC</TableCell>
-                  <TableCell align="right">Value</TableCell>
-                </TableRow>
-              )}
-            </TableHead>
-            <TableBody>
-              {viewTab === 0 && summary.map(item => (
-                <TableRow key={item.id} hover>
-                  <TableCell sx={{ fontWeight: 600 }}>{item.name}</TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 800, color: theme.palette.primary.main }}>
-                    R$ {(item.total || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                  </TableCell>
-                </TableRow>
-              ))}
-              {viewTab === 1 && details.map((item, idx) => (
-                <TableRow key={idx} hover>
-                  <TableCell sx={{ fontWeight: 700 }}>{item.phone}</TableCell>
-                  <TableCell>
-                    <Typography variant="body2" sx={{ fontWeight: 500, color: theme.palette.text.secondary }}>{item.costCenter}</Typography>
-                  </TableCell>
-                  <TableCell align="center">{item.recordCount || 0}</TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 800, color: theme.palette.primary.main }}>
-                    R$ {(item.total || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                  </TableCell>
-                </TableRow>
-              ))}
-              {viewTab === 2 && general.map((item, idx) => (
-                <TableRow key={idx} hover>
-                  <TableCell sx={{ whiteSpace: 'nowrap' }}>{item.date ? new Date(item.date).toLocaleDateString('pt-BR') : '-'}</TableCell>
-                  <TableCell>
-                    <Box sx={{ 
-                      display: 'inline-block', px: 1, py: 0.25, borderRadius: 1, fontSize: '0.75rem', fontWeight: 700,
-                      bgcolor: (item.operator === 'claro' || item.operator === 'claro_txt') ? alpha('#E11D48', 0.1) : alpha('#7C3AED', 0.1),
-                      color: (item.operator === 'claro' || item.operator === 'claro_txt') ? '#E11D48' : '#7C3AED',
-                      textTransform: 'uppercase'
-                    }}>{item.operator || 'Unknown'}</Box>
-                  </TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>{item.phone}</TableCell>
-                  <TableCell sx={{ fontSize: '0.825rem', color: theme.palette.text.secondary }}>{item.service}</TableCell>
-                  <TableCell sx={{ fontSize: '0.825rem' }}>{item.costCenter}</TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 700 }}>R$ {(item.value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</TableCell>
-                </TableRow>
-              ))}
-              
-              <TableRow sx={{ bgcolor: alpha(theme.palette.primary.main, 0.05) }}>
-                <TableCell colSpan={viewTab === 2 ? 5 : viewTab === 1 ? 3 : 1} sx={{ fontWeight: 900, py: 3 }}>FINAL SUMMARY</TableCell>
-                {viewTab === 0 && (
-                  <TableCell align="right" sx={{ fontWeight: 900, color: theme.palette.primary.main, fontSize: '1.1rem' }}>R$ {summary.reduce((a, b) => a + (b.total || 0), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</TableCell>
+        {tab === 2 && (
+          <FormControl size="small" sx={{ minWidth: 140 }}>
+            <Select
+              value={refMonth}
+              onChange={e => setRefMonth(e.target.value)}
+              displayEmpty
+            >
+              <MenuItem value="" disabled>Ref. Month</MenuItem>
+              {months.map(m => <MenuItem key={m} value={m}>{m}</MenuItem>)}
+            </Select>
+          </FormControl>
+        )}
+
+        <TextField
+          size="small"
+          placeholder="Search CC code, name, responsible or phone…"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          sx={{ width: 320 }}
+          InputProps={{
+            startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment>
+          }}
+        />
+
+        <Tooltip title="Refresh">
+          <IconButton onClick={refresh} size="small" color="primary"><RefreshIcon /></IconButton>
+        </Tooltip>
+
+        <Button
+          size="small"
+          variant="outlined"
+          startIcon={<FileDownloadIcon />}
+          onClick={exportCSV}
+          disabled={rows.length === 0}
+        >
+          CSV
+        </Button>
+      </Stack>
+
+      {error && <Alert severity="error" onClose={() => setError('')}>{error}</Alert>}
+
+      {/* Large viewing area */}
+      <Paper sx={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <TableContainer ref={containerRef} sx={{ flex: 1, overflow: 'auto' }}>
+          <InfiniteScroll loadMore={loadMore} hasMore={hasMore} loading={loading} root={rootEl}>
+            <Table stickyHeader size="small">
+              <TableHead>{renderHead()}</TableHead>
+              <TableBody>
+                {rows.length === 0 && !loading ? (
+                  <TableRow>
+                    <TableCell colSpan={6} align="center" sx={{ py: 8, color: 'text.disabled' }}>
+                      No data found.
+                    </TableCell>
+                  </TableRow>
+                ) : rows.map(renderRow)}
+
+                {tab === 2 && rows.length > 0 && !hasMore && (
+                  <TableRow sx={{ bgcolor: alpha(theme.palette.primary.main, 0.08) }}>
+                    <TableCell colSpan={5} sx={{ fontWeight: 900 }}>TOTAL EXPENSES</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 900, color: theme.palette.primary.main, fontSize: '1rem' }}>
+                      {fmtMoney(grandTotal)}
+                    </TableCell>
+                  </TableRow>
                 )}
-                {viewTab === 1 && (
-                  <TableCell align="right" sx={{ fontWeight: 900, color: theme.palette.primary.main, fontSize: '1.1rem' }}>R$ {details.reduce((a, b) => a + (b.total || 0), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</TableCell>
-                )}
-                {viewTab === 2 && (
-                  <TableCell align="right" sx={{ fontWeight: 900, color: theme.palette.primary.main, fontSize: '1.1rem' }}>R$ {general.reduce((a, b) => a + (b.value || 0), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</TableCell>
-                )}
-              </TableRow>
-            </TableBody>
-          </Table>
+              </TableBody>
+            </Table>
+          </InfiniteScroll>
         </TableContainer>
-      )}
-    </Container>
+      </Paper>
     </Box>
   );
 };

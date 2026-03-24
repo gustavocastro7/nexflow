@@ -21,9 +21,19 @@ export interface Workspace {
 
 export interface CostCenter {
   id: string;
+  code?: string;
   name: string;
   description?: string;
   phones: string[];
+}
+
+export interface PhoneLine {
+  id: string;
+  phone_number: string;
+  responsible_name?: string;
+  responsible_id?: string;
+  cost_center_id?: string;
+  workspace_id: string;
 }
 
 export interface Invoice {

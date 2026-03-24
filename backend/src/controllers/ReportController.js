@@ -1,6 +1,23 @@
 const Invoice = require('../models/Invoice');
 const CostCenter = require('../models/CostCenter');
-const { Op, fn, col } = require('sequelize');
+const PhoneLine = require('../models/PhoneLine');
+const sequelize = require('../config/database');
+const { Op, fn, col, literal } = require('sequelize');
+
+const PAGE_SIZE = 50;
+
+function buildSearchClause(search) {
+  if (!search) return {};
+  const like = { [Op.iLike]: `%${search}%` };
+  return {
+    [Op.or]: [
+      { '$costCenter.code$': like },
+      { '$costCenter.name$': like },
+      { responsible_name: like },
+      { phone_number: like },
+    ]
+  };
+}
 
 class ReportController {
   async getDashboardStats(req, res) {
@@ -139,7 +156,163 @@ class ReportController {
       return res.status(500).json({ error: 'Error generating report' });
     }
   }
+
+  // Report 1: General phone number list
+  async getPhoneLines(req, res) {
+    try {
+      const { workspaceId, search, page = 0 } = req.query;
+      if (!workspaceId) return res.status(400).json({ error: 'Workspace ID is required' });
+
+      const offset = parseInt(page, 10) * PAGE_SIZE;
+
+      const { rows, count } = await PhoneLine.findAndCountAll({
+        where: { workspace_id: workspaceId, ...buildSearchClause(search) },
+        include: [{ model: CostCenter, as: 'costCenter', attributes: ['id', 'code', 'name'] }],
+        order: [[{ model: CostCenter, as: 'costCenter' }, 'code', 'ASC'], ['phone_number', 'ASC']],
+        limit: PAGE_SIZE,
+        offset,
+      });
+
+      const items = rows.map(r => ({
+        id: r.id,
+        costCenterCode: r.costCenter?.code || '',
+        costCenterName: r.costCenter?.name || 'Unallocated',
+        phoneNumber: r.phone_number,
+        responsibleName: r.responsible_name || '',
+        responsibleId: r.responsible_id || '',
+      }));
+
+      return res.json({ items, total: count, hasMore: offset + rows.length < count });
+    } catch (error) {
+      console.error('PhoneLines Report Error:', error);
+      return res.status(500).json({ error: 'Error generating phone lines report' });
+    }
+  }
+
+  // Report 2: Consumption by cost center (grouped by reference month)
+  async getConsumptionByCostCenter(req, res) {
+    try {
+      const { workspaceId, search, page = 0 } = req.query;
+      if (!workspaceId) return res.status(400).json({ error: 'Workspace ID is required' });
+
+      const offset = parseInt(page, 10) * PAGE_SIZE;
+      const like = search ? `%${search}%` : null;
+
+      const baseSql = `
+        FROM invoices i
+        JOIN phone_lines pl ON pl.phone_number = i.source_phone AND pl.workspace_id = i.workspace_id
+        JOIN cost_centers cc ON cc.id = pl.cost_center_id
+        WHERE i.workspace_id = :workspaceId
+          ${like ? "AND (cc.code ILIKE :like OR cc.name ILIKE :like OR pl.responsible_name ILIKE :like OR pl.phone_number ILIKE :like)" : ""}
+        GROUP BY cc.id, cc.code, cc.name, TO_CHAR(i.item_date, 'YYYY-MM')
+      `;
+
+      const [rows] = await sequelize.query(`
+        SELECT cc.id AS cc_id, cc.code AS cc_code, cc.name AS cc_name,
+               TO_CHAR(i.item_date, 'YYYY-MM') AS reference_month,
+               SUM(i.charged_value) AS total
+        ${baseSql}
+        ORDER BY reference_month DESC, cc.code ASC
+        LIMIT :limit OFFSET :offset
+      `, { replacements: { workspaceId, like, limit: PAGE_SIZE, offset } });
+
+      const [[{ count }]] = await sequelize.query(
+        `SELECT COUNT(*)::int AS count FROM (SELECT 1 ${baseSql}) t`,
+        { replacements: { workspaceId, like } }
+      );
+
+      const items = rows.map(r => ({
+        costCenterCode: r.cc_code || '',
+        costCenterName: r.cc_name,
+        referenceMonth: r.reference_month,
+        total: parseFloat(r.total || 0),
+      }));
+
+      return res.json({ items, total: count, hasMore: offset + rows.length < count });
+    } catch (error) {
+      console.error('ConsumptionByCC Report Error:', error);
+      return res.status(500).json({ error: 'Error generating consumption by cost center report' });
+    }
+  }
+
+  // Report 3: Consumption by responsible person (requires reference month)
+  async getConsumptionByResponsible(req, res) {
+    try {
+      const { workspaceId, referenceMonth, search, page = 0 } = req.query;
+      if (!workspaceId) return res.status(400).json({ error: 'Workspace ID is required' });
+      if (!referenceMonth) return res.status(400).json({ error: 'Reference month is required' });
+
+      const offset = parseInt(page, 10) * PAGE_SIZE;
+      const like = search ? `%${search}%` : null;
+
+      const whereSql = `
+        WHERE pl.workspace_id = :workspaceId
+          AND TO_CHAR(i.item_date, 'YYYY-MM') = :referenceMonth
+          ${like ? "AND (cc.code ILIKE :like OR cc.name ILIKE :like OR pl.responsible_name ILIKE :like OR pl.phone_number ILIKE :like)" : ""}
+      `;
+
+      const fromSql = `
+        FROM phone_lines pl
+        LEFT JOIN cost_centers cc ON cc.id = pl.cost_center_id
+        LEFT JOIN invoices i ON i.source_phone = pl.phone_number AND i.workspace_id = pl.workspace_id
+        ${whereSql}
+        GROUP BY pl.responsible_name, pl.responsible_id, pl.phone_number, cc.code, cc.name
+      `;
+
+      const [rows] = await sequelize.query(`
+        SELECT pl.responsible_name, pl.responsible_id, pl.phone_number,
+               cc.code AS cc_code, cc.name AS cc_name,
+               COALESCE(SUM(i.charged_value), 0) AS total
+        ${fromSql}
+        ORDER BY pl.responsible_name ASC, pl.phone_number ASC
+        LIMIT :limit OFFSET :offset
+      `, { replacements: { workspaceId, referenceMonth, like, limit: PAGE_SIZE, offset } });
+
+      const [[{ count, grand_total }]] = await sequelize.query(`
+        SELECT COUNT(*)::int AS count, COALESCE(SUM(t.total), 0) AS grand_total
+        FROM (SELECT COALESCE(SUM(i.charged_value), 0) AS total ${fromSql}) t
+      `, { replacements: { workspaceId, referenceMonth, like } });
+
+      const items = rows.map(r => ({
+        responsibleName: r.responsible_name || '',
+        responsibleId: r.responsible_id || '',
+        phoneNumber: r.phone_number,
+        costCenterCode: r.cc_code || '',
+        costCenterName: r.cc_name || 'Unallocated',
+        total: parseFloat(r.total || 0),
+      }));
+
+      return res.json({
+        items,
+        total: count,
+        grandTotal: parseFloat(grand_total || 0),
+        hasMore: offset + rows.length < count,
+      });
+    } catch (error) {
+      console.error('ConsumptionByResponsible Report Error:', error);
+      return res.status(500).json({ error: 'Error generating consumption by responsible report' });
+    }
+  }
+
+  // List of available reference months (for the selector)
+  async getReferenceMonths(req, res) {
+    try {
+      const { workspaceId } = req.query;
+      if (!workspaceId) return res.status(400).json({ error: 'Workspace ID is required' });
+
+      const [rows] = await sequelize.query(`
+        SELECT DISTINCT TO_CHAR(item_date, 'YYYY-MM') AS month
+        FROM invoices
+        WHERE workspace_id = :workspaceId AND item_date IS NOT NULL
+        ORDER BY month DESC
+      `, { replacements: { workspaceId } });
+
+      return res.json(rows.map(r => r.month));
+    } catch (error) {
+      console.error('ReferenceMonths Error:', error);
+      return res.status(500).json({ error: 'Error fetching reference months' });
+    }
+  }
 }
 
 module.exports = new ReportController();
-exports = new ReportController();

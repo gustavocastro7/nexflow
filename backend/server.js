@@ -9,8 +9,11 @@ async function startServer() {
     await sequelize.authenticate();
     console.log('PostgreSQL connected successfully.');
     
+    // Ensure all models are registered before sync
+    require('./src/models/PhoneLine');
+
     // Sync models
-    await sequelize.sync({ force: false });
+    await sequelize.sync({ force: false, alter: true });
     console.log('Database synced.');
 
     // Seed jedi and default workspace

@@ -5,6 +5,7 @@ const CostCenter = require('../models/CostCenter');
 const UserWorkspace = require('../models/UserWorkspace');
 const RawInvoice = require('../models/RawInvoice');
 const Invoice = require('../models/Invoice');
+const PhoneLine = require('../models/PhoneLine');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
@@ -76,10 +77,21 @@ class MockSeeder {
           name: 'Teleen Consultoria',
           schema_name: 'teleen_consultoria',
           costCenters: [
-            { name: 'Diretoria', phones: ['11900001111', '11900002222'] },
-            { name: 'TI / Operações', phones: ['11900003333', '11900004444'] },
-            { name: 'Vendas', phones: ['11900005555', '11900006666'] },
-            { name: 'Financeiro', phones: ['11900007777'] }
+            { code: 'CC-001', name: 'Diretoria', phones: [
+              { number: '11900001111', respName: 'Ana Souza', respId: 'EMP-001' },
+              { number: '11900002222', respName: 'Ana Souza', respId: 'EMP-001' },
+            ] },
+            { code: 'CC-002', name: 'TI / Operações', phones: [
+              { number: '11900003333', respName: 'Bruno Lima', respId: 'EMP-002' },
+              { number: '11900004444', respName: 'Carla Dias', respId: 'EMP-003' },
+            ] },
+            { code: 'CC-003', name: 'Vendas', phones: [
+              { number: '11900005555', respName: 'Diego Alves', respId: 'EMP-004' },
+              { number: '11900006666', respName: 'Diego Alves', respId: 'EMP-004' },
+            ] },
+            { code: 'CC-004', name: 'Financeiro', phones: [
+              { number: '11900007777', respName: 'Elisa Rocha', respId: 'EMP-005' },
+            ] }
           ],
           users: [],
           claroInvoices: [
@@ -104,15 +116,31 @@ class MockSeeder {
         await sequelize.query(`CREATE SCHEMA IF NOT EXISTS "${wsInfo.schema_name}"`);
 
         for (const ccData of wsInfo.costCenters) {
-          await CostCenter.findOrCreate({
+          const phoneNumbers = ccData.phones.map(p => p.number);
+          const [cc] = await CostCenter.findOrCreate({
             where: { name: ccData.name, workspace_id: ws.id },
             defaults: {
+              code: ccData.code,
               name: ccData.name,
               description: `Cost center for ${ccData.name}`,
-              phones: ccData.phones,
+              phones: phoneNumbers,
               workspace_id: ws.id
             }
           });
+          if (!cc.code) await cc.update({ code: ccData.code });
+
+          for (const p of ccData.phones) {
+            await PhoneLine.findOrCreate({
+              where: { phone_number: p.number, workspace_id: ws.id },
+              defaults: {
+                phone_number: p.number,
+                responsible_name: p.respName,
+                responsible_id: p.respId,
+                cost_center_id: cc.id,
+                workspace_id: ws.id,
+              }
+            });
+          }
         }
 
         const rawClaro = await RawInvoice.findOrCreate({
