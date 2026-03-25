@@ -28,15 +28,18 @@ class ReportController {
         return res.status(400).json({ error: 'Workspace ID is required' });
       }
 
-      const [costCentersCount, invoicesCount, totalSpent] = await Promise.all([
+      const [costCentersCount, claroCount, vivoCount, claroTxtCount, totalSpent] = await Promise.all([
         CostCenter.count({ where: { workspace_id: workspaceId } }),
-        Invoice.count({ where: { workspace_id: workspaceId } }),
+        Invoice.count({ where: { workspace_id: workspaceId, operator: 'claro' } }),
+        Invoice.count({ where: { workspace_id: workspaceId, operator: 'vivo' } }),
+        Invoice.count({ where: { workspace_id: workspaceId, operator: 'claro_txt' } }),
         Invoice.sum('charged_value', { where: { workspace_id: workspaceId } })
       ]);
 
       return res.json({
         costCenters: costCentersCount,
-        invoicesCount: invoicesCount,
+        claroInvoices: claroCount + claroTxtCount,
+        vivoInvoices: vivoCount,
         totalSpent: parseFloat(totalSpent) || 0
       });
     } catch (error) {
@@ -53,98 +56,93 @@ class ReportController {
         return res.status(400).json({ error: 'Workspace ID is required' });
       }
 
-      const filter = { workspace_id: workspaceId };
+      const replacements = { workspaceId };
+      let whereSql = 'WHERE i.workspace_id = :workspaceId';
 
       if (mes && ano) {
         const startDate = `${ano}-${mes.padStart(2, '0')}-01`;
         const endDate = new Date(ano, mes, 0).toISOString().split('T')[0];
-        filter.item_date = { [Op.between]: [startDate, endDate] };
+        whereSql += ' AND i.item_date BETWEEN :startDate AND :endDate';
+        replacements.startDate = startDate;
+        replacements.endDate = endDate;
       } else if (ano) {
-        filter.item_date = { [Op.between]: [`${ano}-01-01`, `${ano}-12-31`] };
+        whereSql += " AND i.item_date BETWEEN :anoStart AND :anoEnd";
+        replacements.anoStart = `${ano}-01-01`;
+        replacements.anoEnd = `${ano}-12-31`;
       }
 
       if (telefone) {
-        filter.source_phone = telefone;
+        whereSql += ' AND i.source_phone = :telefone';
+        replacements.telefone = telefone;
       }
 
-      const [costCenters, allInvoices] = await Promise.all([
-        CostCenter.findAll({
-          where: { 
-            workspace_id: workspaceId,
-            ...(centroCustoId && centroCustoId !== 'unallocated' ? { id: centroCustoId } : {})
-          }
-        }),
-        Invoice.findAll({ where: filter })
-      ]);
+      // Fetch all invoices with their cost center association
+      const [allInvoices] = await sequelize.query(`
+        SELECT 
+          i.id, i.operator, i.source_phone, i.item_date, i.item_time, 
+          i.description, i.charged_value,
+          cc.id AS cc_id, cc.name AS cc_name
+        FROM invoices i
+        LEFT JOIN phone_lines pl ON pl.phone_number = i.source_phone AND pl.workspace_id = i.workspace_id
+        LEFT JOIN cost_centers cc ON cc.id = pl.cost_center_id
+        ${whereSql}
+      `, { replacements });
 
-      const normalize = (tel) => tel ? String(tel).replace(/\D/g, '') : '';
-
-      // 2. Map CC to their spending
-      let summary = costCenters.map(cc => {
-        const ccPhones = (cc.phones || []).map(normalize);
-
-        const spending = allInvoices
-          .filter(f => ccPhones.includes(normalize(f.source_phone)))
-          .reduce((acc, f) => acc + parseFloat(f.charged_value || 0), 0);
-
-        return {
-          id: cc.id,
-          name: cc.name, // Renamed from name
-          total: spending,
-          phones: cc.phones || [] // Renamed from telefones
-        };
+      // Calculate summary by cost center
+      const summaryMap = new Map();
+      
+      allInvoices.forEach(f => {
+        const ccId = f.cc_id || 'unallocated';
+        const ccName = f.cc_name || 'Unallocated';
+        
+        if (!summaryMap.has(ccId)) {
+          summaryMap.set(ccId, { id: ccId, name: ccName, total: 0, phones: new Set() });
+        }
+        
+        const s = summaryMap.get(ccId);
+        s.total += parseFloat(f.charged_value || 0);
+        if (f.source_phone) s.phones.add(f.source_phone);
       });
 
-      // Handle unallocated
-      if (!centroCustoId || centroCustoId === 'unallocated') {
-        const allCcPhonesNormalized = costCenters.flatMap(cc => (cc.phones || []).map(normalize));
-        const unallocatedItems = allInvoices.filter(f => !allCcPhonesNormalized.includes(normalize(f.source_phone)));
-        const unallocatedTotal = unallocatedItems.reduce((acc, f) => acc + parseFloat(f.charged_value || 0), 0);
+      let summary = Array.from(summaryMap.values()).map(s => ({
+        ...s,
+        phones: Array.from(s.phones)
+      }));
 
-        if (unallocatedTotal > 0) {
-          summary.push({
-            id: 'unallocated',
-            name: 'Unallocated', // Renamed from Não Alocado
-            total: unallocatedTotal,
-            phones: []
+      // If a specific cost center was requested, filter the summary
+      if (centroCustoId) {
+        summary = summary.filter(s => s.id === centroCustoId);
+      }
+
+      // Generate detailed data (per phone)
+      const detailsMap = new Map();
+      allInvoices.forEach(f => {
+        const phone = f.source_phone || 'Unknown';
+        if (!detailsMap.has(phone)) {
+          detailsMap.set(phone, { 
+            phone, 
+            costCenter: f.cc_name || 'Unallocated', 
+            total: 0, 
+            recordCount: 0 
           });
         }
-      }
-
-      // 3. Generate detailed data (per phone)
-      const details = [];
-      const allPhones = [...new Set(allInvoices.map(f => f.source_phone).filter(Boolean))];
-
-      allPhones.forEach(phone => {
-        const normalizedPhone = normalize(phone);
-        const cc = summary.find(s => s.id !== 'unallocated' && s.phones.map(normalize).includes(normalizedPhone));
-
-        const phoneItems = allInvoices.filter(f => normalize(f.source_phone) === normalizedPhone);
-        const total = phoneItems.reduce((acc, f) => acc + parseFloat(f.charged_value || 0), 0);
-
-        details.push({
-          phone: phone, // Renamed from telefone
-          costCenter: cc ? cc.name : 'Unallocated', // Renamed from centroCusto and Não Alocado
-          total: total,
-          recordCount: phoneItems.length // Renamed from qtdRegistros
-        });
+        const d = detailsMap.get(phone);
+        d.total += parseFloat(f.charged_value || 0);
+        d.recordCount++;
       });
+      const details = Array.from(detailsMap.values());
 
-      // 4. General records
-      const general = allInvoices.map(f => {
-        const normalizedPhone = normalize(f.source_phone);
-        const cc = summary.find(s => s.id !== 'unallocated' && s.phones.map(normalize).includes(normalizedPhone));
-        return {
-          id: f.id,
-          operator: f.operator, // Renamed from operadora
-          phone: f.source_phone, // Renamed from telefone
-          date: f.item_date, // Renamed from data
-          time: f.item_time, // Renamed from hora
-          service: f.description, // Renamed from servico
-          value: parseFloat(f.charged_value || 0), // Renamed from valor
-          costCenter: cc ? cc.name : 'Unallocated' // Renamed from centroCusto and Não Alocado
-        };
-      }).sort((a, b) => new Date(b.date) - new Date(a.date));
+      // General records
+      const general = allInvoices.map(f => ({
+        id: f.id,
+        operator: f.operator,
+        phone: f.source_phone,
+        date: f.item_date,
+        time: f.item_time,
+        service: f.description,
+        value: parseFloat(f.charged_value || 0),
+        costCenter: f.cc_name || 'Unallocated'
+      })).sort((a, b) => new Date(b.date) - new Date(a.date));
 
       return res.json({
         summary,
@@ -164,22 +162,69 @@ class ReportController {
       if (!workspaceId) return res.status(400).json({ error: 'Workspace ID is required' });
 
       const offset = parseInt(page, 10) * PAGE_SIZE;
+      const searchPattern = search ? `%${search}%` : null;
 
-      const { rows, count } = await PhoneLine.findAndCountAll({
-        where: { workspace_id: workspaceId, ...buildSearchClause(search) },
-        include: [{ model: CostCenter, as: 'costCenter', attributes: ['id', 'code', 'name'] }],
-        order: [[{ model: CostCenter, as: 'costCenter' }, 'code', 'ASC'], ['phone_number', 'ASC']],
-        limit: PAGE_SIZE,
-        offset,
+      const baseSql = `
+        FROM (
+          SELECT DISTINCT source_phone, workspace_id 
+          FROM invoices 
+          WHERE workspace_id = :workspaceId AND source_phone IS NOT NULL AND source_phone != ''
+          UNION
+          SELECT DISTINCT phone_number as source_phone, workspace_id 
+          FROM phone_lines 
+          WHERE workspace_id = :workspaceId
+        ) AS unique_phones
+        LEFT JOIN phone_lines pl ON pl.phone_number = unique_phones.source_phone AND pl.workspace_id = unique_phones.workspace_id
+        LEFT JOIN cost_centers cc ON cc.id = pl.cost_center_id
+        WHERE 1=1
+        ${searchPattern ? `AND (
+          unique_phones.source_phone ILIKE :search OR 
+          pl.responsible_name ILIKE :search OR 
+          cc.name ILIKE :search OR 
+          cc.code ILIKE :search
+        )` : ''}
+      `;
+
+      const [rows] = await sequelize.query(`
+        SELECT 
+          unique_phones.source_phone AS "phoneNumber",
+          pl.id AS id,
+          COALESCE(pl.responsible_name, (
+            SELECT original_user 
+            FROM invoices inv 
+            WHERE inv.source_phone = unique_phones.source_phone 
+              AND inv.workspace_id = unique_phones.workspace_id 
+              AND inv.original_user IS NOT NULL 
+              AND inv.original_user != ''
+            LIMIT 1
+          )) AS "responsibleName",
+          pl.responsible_id AS "responsibleId",
+          cc.code AS "costCenterCode",
+          COALESCE(cc.name, 'Unallocated') AS "costCenterName"
+        ${baseSql}
+        ORDER BY cc.code ASC NULLS LAST, unique_phones.source_phone ASC
+        LIMIT :limit OFFSET :offset
+      `, { 
+        replacements: { 
+          workspaceId, 
+          search: searchPattern, 
+          limit: PAGE_SIZE, 
+          offset 
+        } 
       });
 
+      const [[{ count }]] = await sequelize.query(`
+        SELECT COUNT(*)::int AS count
+        ${baseSql}
+      `, { replacements: { workspaceId, search: searchPattern } });
+
       const items = rows.map(r => ({
-        id: r.id,
-        costCenterCode: r.costCenter?.code || '',
-        costCenterName: r.costCenter?.name || 'Unallocated',
-        phoneNumber: r.phone_number,
-        responsibleName: r.responsible_name || '',
-        responsibleId: r.responsible_id || '',
+        id: r.id || `temp-${r.phoneNumber}`,
+        costCenterCode: r.costCenterCode || '',
+        costCenterName: r.costCenterName,
+        phoneNumber: r.phoneNumber,
+        responsibleName: r.responsibleName || '',
+        responsibleId: r.responsibleId || '',
       }));
 
       return res.json({ items, total: count, hasMore: offset + rows.length < count });
@@ -200,19 +245,19 @@ class ReportController {
 
       const baseSql = `
         FROM invoices i
-        JOIN phone_lines pl ON pl.phone_number = i.source_phone AND pl.workspace_id = i.workspace_id
-        JOIN cost_centers cc ON cc.id = pl.cost_center_id
+        LEFT JOIN phone_lines pl ON pl.phone_number = i.source_phone AND pl.workspace_id = i.workspace_id
+        LEFT JOIN cost_centers cc ON cc.id = pl.cost_center_id
         WHERE i.workspace_id = :workspaceId
-          ${like ? "AND (cc.code ILIKE :like OR cc.name ILIKE :like OR pl.responsible_name ILIKE :like OR pl.phone_number ILIKE :like)" : ""}
+          ${like ? "AND (cc.code ILIKE :like OR cc.name ILIKE :like OR pl.responsible_name ILIKE :like OR i.source_phone ILIKE :like)" : ""}
         GROUP BY cc.id, cc.code, cc.name, TO_CHAR(i.item_date, 'YYYY-MM')
       `;
 
       const [rows] = await sequelize.query(`
-        SELECT cc.id AS cc_id, cc.code AS cc_code, cc.name AS cc_name,
+        SELECT cc.id AS cc_id, cc.code AS cc_code, COALESCE(cc.name, 'Unallocated') AS cc_name,
                TO_CHAR(i.item_date, 'YYYY-MM') AS reference_month,
                SUM(i.charged_value) AS total
         ${baseSql}
-        ORDER BY reference_month DESC, cc.code ASC
+        ORDER BY reference_month DESC, cc_code ASC NULLS LAST
         LIMIT :limit OFFSET :offset
       `, { replacements: { workspaceId, like, limit: PAGE_SIZE, offset } });
 
@@ -246,31 +291,35 @@ class ReportController {
       const like = search ? `%${search}%` : null;
 
       const whereSql = `
-        WHERE pl.workspace_id = :workspaceId
+        WHERE i.workspace_id = :workspaceId
           AND TO_CHAR(i.item_date, 'YYYY-MM') = :referenceMonth
-          ${like ? "AND (cc.code ILIKE :like OR cc.name ILIKE :like OR pl.responsible_name ILIKE :like OR pl.phone_number ILIKE :like)" : ""}
+          ${like ? "AND (cc.code ILIKE :like OR cc.name ILIKE :like OR pl.responsible_name ILIKE :like OR i.source_phone ILIKE :like OR i.original_user ILIKE :like)" : ""}
       `;
 
       const fromSql = `
-        FROM phone_lines pl
+        FROM invoices i
+        LEFT JOIN phone_lines pl ON pl.phone_number = i.source_phone AND pl.workspace_id = i.workspace_id
         LEFT JOIN cost_centers cc ON cc.id = pl.cost_center_id
-        LEFT JOIN invoices i ON i.source_phone = pl.phone_number AND i.workspace_id = pl.workspace_id
         ${whereSql}
-        GROUP BY pl.responsible_name, pl.responsible_id, pl.phone_number, cc.code, cc.name
+        GROUP BY i.source_phone, pl.responsible_name, i.original_user, pl.responsible_id, cc.code, cc.name
       `;
 
       const [rows] = await sequelize.query(`
-        SELECT pl.responsible_name, pl.responsible_id, pl.phone_number,
-               cc.code AS cc_code, cc.name AS cc_name,
-               COALESCE(SUM(i.charged_value), 0) AS total
+        SELECT 
+          i.source_phone AS phone_number,
+          COALESCE(pl.responsible_name, i.original_user, '') AS responsible_name,
+          pl.responsible_id,
+          cc.code AS cc_code, 
+          COALESCE(cc.name, 'Unallocated') AS cc_name,
+          SUM(i.charged_value) AS total
         ${fromSql}
-        ORDER BY pl.responsible_name ASC, pl.phone_number ASC
+        ORDER BY responsible_name ASC, i.source_phone ASC
         LIMIT :limit OFFSET :offset
       `, { replacements: { workspaceId, referenceMonth, like, limit: PAGE_SIZE, offset } });
 
       const [[{ count, grand_total }]] = await sequelize.query(`
         SELECT COUNT(*)::int AS count, COALESCE(SUM(t.total), 0) AS grand_total
-        FROM (SELECT COALESCE(SUM(i.charged_value), 0) AS total ${fromSql}) t
+        FROM (SELECT SUM(i.charged_value) AS total ${fromSql}) t
       `, { replacements: { workspaceId, referenceMonth, like } });
 
       const items = rows.map(r => ({
@@ -278,7 +327,7 @@ class ReportController {
         responsibleId: r.responsible_id || '',
         phoneNumber: r.phone_number,
         costCenterCode: r.cc_code || '',
-        costCenterName: r.cc_name || 'Unallocated',
+        costCenterName: r.cc_name,
         total: parseFloat(r.total || 0),
       }));
 
