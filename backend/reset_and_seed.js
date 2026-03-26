@@ -34,12 +34,29 @@ async function resetAndSeed() {
     });
     console.log('🏢 Workspace "Nexflow Matriz" criado.');
 
+    const CostCenter = require('./src/models/CostCenter');
+    await CostCenter.create({
+      name: 'Matriz',
+      code: 'MATRIZ',
+      description: 'Centro de Custo Padrão',
+      workspace_id: nexflowMatriz.id
+    });
+    console.log('💰 Centro de Custo "Matriz" criado para Nexflow.');
+
     const teleen = await Workspace.create({
       name: 'Teleen Consultoria',
       schema_name: 'teleen_consultoria',
       status: 'active'
     });
     console.log('🏢 Workspace "Teleen Consultoria" criado.');
+
+    await CostCenter.create({
+      name: 'Matriz',
+      code: 'MATRIZ',
+      description: 'Centro de Custo Padrão',
+      workspace_id: teleen.id
+    });
+    console.log('💰 Centro de Custo "Matriz" criado para Teleen.');
 
     // 5. Criar os usuários Jedi
     const gustavo = await User.create({

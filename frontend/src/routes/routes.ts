@@ -6,6 +6,7 @@ export const ROUTES = {
   COST_CENTERS: '/cost-centers', // Renamed from CENTROS_CUSTO
   INVOICES: '/invoices',         // Renamed from FATURAS
   REPORTS: '/reports',           // Renamed from RELATORIOS
+  COLLABORATORS: '/collaborators',
   PROFILE: '/profile',
   ADMIN_ROLES: '/admin/roles',
   USERS: '/users',

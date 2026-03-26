@@ -14,6 +14,8 @@ const securityRoutes = require('./routes/securityRoutes');
 const centroCustoRoutes = require('./routes/centroCustoRoutes');
 const faturaRoutes = require('./routes/invoiceRoutes');
 const reportRoutes = require('./routes/reportRoutes');
+const collaboratorRoutes = require('./routes/collaboratorRoutes');
+const phoneLineRoutes = require('./routes/phoneLineRoutes');
 
 const app = express();
 
@@ -40,7 +42,7 @@ const swaggerOptions = {
     },
     servers: [
       {
-        url: 'http://localhost:3000',
+        url: '/api',
       },
     ],
     components: {
@@ -53,28 +55,35 @@ const swaggerOptions = {
       },
     },
   },
-  apis: ['./src/routes/*.js'],
+  apis: [], // Empty for now to avoid ENOMEM in Docker
 };
 
 const swaggerDocs = swaggerJsdoc(swaggerOptions);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 // API Routes
-app.use('/auth', authRoutes);
-app.use('/users', userRoutes);
-app.use('/roles', roleRoutes);
-app.use('/workspaces', workspaceRoutes);
-app.use('/security', securityRoutes);
-app.use('/cost-centers', centroCustoRoutes);
-app.use('/invoices', faturaRoutes);
-app.use('/reports', reportRoutes);
+const apiRouter = express.Router();
+
+apiRouter.use('/auth', authRoutes);
+apiRouter.use('/users', userRoutes);
+apiRouter.use('/roles', roleRoutes);
+apiRouter.use('/workspaces', workspaceRoutes);
+apiRouter.use('/security', securityRoutes);
+apiRouter.use('/cost-centers', centroCustoRoutes);
+apiRouter.use('/invoices', faturaRoutes);
+apiRouter.use('/reports', reportRoutes);
+apiRouter.use('/collaborators', collaboratorRoutes);
+apiRouter.use('/phone-lines', phoneLineRoutes);
+
+app.use('/api', apiRouter);
 
 // Fallback for SPA (Redirect all other routes to index.html)
 app.get('*path', (req, res) => {
-  const apiPrefixes = ['/auth', '/users', '/roles', '/workspaces', '/security', '/cost-centers', '/invoices', '/reports', '/api-docs'];
-  if (apiPrefixes.some(prefix => req.originalUrl.startsWith(prefix))) {
+  // If the request starts with /api, it's a 404 for the API
+  if (req.originalUrl.startsWith('/api')) {
     return res.status(404).json({ error: 'Not found' });
   }
+  // Otherwise, serve the frontend index.html
   res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 

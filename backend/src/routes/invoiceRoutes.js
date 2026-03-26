@@ -41,6 +41,8 @@ routes.get('/', InvoiceController.index);
 // Compatibility
 routes.get('/claro', InvoiceController.indexClaro);
 routes.get('/vivo', InvoiceController.indexVivo);
+routes.get('/raw', InvoiceController.listRawInvoices);
+routes.delete('/:id', InvoiceController.destroy);
 
 module.exports = routes;
 

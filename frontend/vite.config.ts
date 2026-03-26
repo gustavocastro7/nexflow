@@ -11,16 +11,12 @@ export default defineConfig({
     port: 8085,
     host: true,
     allowedHosts: ['.ngrok-free.app'],
+    hmr: {
+      clientPort: 8086,
+    },
     proxy: {
-      '/api-config': target,
-      '/auth': target,
-      '/users': target,
-      '/roles': target,
-      '/workspaces': target,
-      '/security': target,
-      '/cost-centers': target,
-      '/invoices': target,
-      '/reports': target,
+      '/api': target,
+      '/api-docs': target,
     }
   },
   test: {

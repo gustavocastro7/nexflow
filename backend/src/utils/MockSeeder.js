@@ -6,6 +6,7 @@ const UserWorkspace = require('../models/UserWorkspace');
 const RawInvoice = require('../models/RawInvoice');
 const Invoice = require('../models/Invoice');
 const PhoneLine = require('../models/PhoneLine');
+const Collaborator = require('../models/Collaborator');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
@@ -26,6 +27,16 @@ class MockSeeder {
       });
       console.log('🏢 Workspace "Nexflow Matriz" created or found.');
 
+      await CostCenter.findOrCreate({
+        where: { name: 'Matriz', workspace_id: nexflowMatriz.id },
+        defaults: {
+          code: 'MATRIZ',
+          name: 'Matriz',
+          description: 'Centro de Custo Padrão',
+          workspace_id: nexflowMatriz.id
+        }
+      });
+
       const [teleen] = await Workspace.findOrCreate({
         where: { schema_name: 'teleen_consultoria' },
         defaults: {
@@ -35,6 +46,16 @@ class MockSeeder {
         }
       });
       console.log('🏢 Workspace "Teleen Consultoria" created or found.');
+
+      await CostCenter.findOrCreate({
+        where: { name: 'Matriz', workspace_id: teleen.id },
+        defaults: {
+          code: 'MATRIZ',
+          name: 'Matriz',
+          description: 'Centro de Custo Padrão',
+          workspace_id: teleen.id
+        }
+      });
 
 
       // 2. Create Users
@@ -130,12 +151,22 @@ class MockSeeder {
           if (!cc.code) await cc.update({ code: ccData.code });
 
           for (const p of ccData.phones) {
+            const [collaborator] = await Collaborator.findOrCreate({
+              where: { name: p.respName, workspace_id: ws.id },
+              defaults: {
+                name: p.respName,
+                external_id: p.respId,
+                workspace_id: ws.id,
+              }
+            });
+
             await PhoneLine.findOrCreate({
               where: { phone_number: p.number, workspace_id: ws.id },
               defaults: {
                 phone_number: p.number,
                 responsible_name: p.respName,
                 responsible_id: p.respId,
+                collaborator_id: collaborator.id,
                 cost_center_id: cc.id,
                 workspace_id: ws.id,
               }

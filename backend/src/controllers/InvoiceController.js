@@ -1,6 +1,9 @@
 const crypto = require('crypto');
 const RawInvoice = require('../models/RawInvoice');
 const Invoice = require('../models/Invoice');
+const CostCenter = require('../models/CostCenter');
+const PhoneLine = require('../models/PhoneLine');
+const Workspace = require('../models/Workspace');
 const { Op } = require('sequelize');
 
 class InvoiceController {
@@ -11,6 +14,87 @@ class InvoiceController {
     this.index = this.index.bind(this);
     this.indexClaro = this.indexClaro.bind(this);
     this.indexVivo = this.indexVivo.bind(this);
+    this.listRawInvoices = this.listRawInvoices.bind(this);
+    this.destroy = this.destroy.bind(this);
+  }
+
+  async destroy(req, res) {
+    try {
+      const { id } = req.params;
+      const { workspaceId } = req.query;
+
+      if (!workspaceId) {
+        return res.status(400).json({ error: 'Workspace ID é obrigatório' });
+      }
+
+      const rawInvoice = await RawInvoice.findOne({
+        where: { id, workspace_id: workspaceId }
+      });
+
+      if (!rawInvoice) {
+        return res.status(404).json({ error: 'Fatura não encontrada' });
+      }
+
+      // Delete associated items first (or rely on CASCADE if set, but manual is safer here)
+      await Invoice.destroy({
+        where: { raw_invoice_id: id, workspace_id: workspaceId }
+      });
+
+      await rawInvoice.destroy();
+
+      return res.json({ message: 'Fatura e itens removidos com sucesso' });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ error: 'Erro ao remover fatura' });
+    }
+  }
+
+  async listRawInvoices(req, res) {
+    try {
+      const { workspaceId } = req.query;
+      if (!workspaceId) return res.status(400).json({ error: 'Workspace ID é obrigatório' });
+
+      const raws = await RawInvoice.findAll({
+        where: { workspace_id: workspaceId },
+        attributes: ['id', 'operator', 'content', 'created_at'],
+        order: [['created_at', 'DESC']]
+      });
+
+      return res.json(raws);
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ error: 'Erro ao listar faturas importadas' });
+    }
+  }
+
+  async _ensurePhoneLine(phoneNumber, workspaceId) {
+    if (!phoneNumber) return;
+    
+    // Check if phone line already exists
+    const existing = await PhoneLine.findOne({ 
+      where: { phone_number: phoneNumber, workspace_id: workspaceId } 
+    });
+    
+    if (!existing) {
+      // Find or create Matriz cost center
+      const [matriz] = await CostCenter.findOrCreate({
+        where: { name: 'Matriz', workspace_id: workspaceId },
+        defaults: {
+          code: 'MATRIZ',
+          name: 'Matriz',
+          description: 'Centro de Custo Padrão',
+          workspace_id: workspaceId
+        }
+      });
+      
+      // Create new phone line associated with Matriz
+      await PhoneLine.create({
+        phone_number: phoneNumber,
+        cost_center_id: matriz.id,
+        workspace_id: workspaceId,
+        responsible_name: 'Novo Número (Auto)'
+      });
+    }
   }
 
   async importClaro(req, res) {
@@ -37,6 +121,7 @@ class InvoiceController {
 
       const lines = content.split('\n');
       const items = [];
+      const processedPhones = new Set();
 
       for (const line of lines) {
         if (line.startsWith('30')) {
@@ -47,6 +132,11 @@ class InvoiceController {
           const item_time = `${hora_servico_raw.substring(0, 2)}:${hora_servico_raw.substring(2, 4)}:${hora_servico_raw.substring(4, 6)}`;
           const description = line.substring(49, 93).trim();
           const total_value = parseFloat(line.substring(93, 106)) / 100;
+
+          if (source_phone && !processedPhones.has(source_phone)) {
+            await this._ensurePhoneLine(source_phone, workspaceId);
+            processedPhones.add(source_phone);
+          }
 
           items.push({
             workspace_id: workspaceId,
@@ -94,6 +184,7 @@ class InvoiceController {
 
       const lines = content.split('\n');
       const items = [];
+      const processedPhones = new Set();
 
       const startIndex = lines[0].includes('Data') ? 1 : 0;
 
@@ -109,12 +200,18 @@ class InvoiceController {
             item_date = `${y}-${m}-${d}`;
           }
 
+          const phone = parts[2];
+          if (phone && !processedPhones.has(phone)) {
+            await this._ensurePhoneLine(phone, workspaceId);
+            processedPhones.add(phone);
+          }
+
           items.push({
             workspace_id: workspaceId,
             operator: 'vivo',
             item_date,
             item_time: parts[1],
-            source_phone: parts[2],
+            source_phone: phone,
             destination_phone: parts[3],
             duration: parts[4],
             description: parts[5],
@@ -176,6 +273,9 @@ class InvoiceController {
         return parseFloat(cleanVal) || 0;
       };
 
+      // Set of phones already processed in this import to avoid redundant checks
+      const processedPhones = new Set();
+
       for (const line of lines) {
         if (line.startsWith('Tel;Se')) {
           startParsing = true;
@@ -193,11 +293,17 @@ class InvoiceController {
             const total_value = parseValue(parts[8]);
             const charged_value = parseValue(parts[9]);
             const quantity = parseValue(parts[6]);
+            const phone = parts[0];
+
+            if (phone && !processedPhones.has(phone)) {
+              await this._ensurePhoneLine(phone, workspaceId);
+              processedPhones.add(phone);
+            }
 
             items.push({
               workspace_id: workspaceId,
               operator: 'claro_txt',
-              source_phone: parts[0],
+              source_phone: phone,
               section: parts[1],
               item_date: (item_date && item_date.length === 10) ? item_date : null,
               item_time: parts[3] || null,
@@ -234,16 +340,36 @@ class InvoiceController {
 
   async index(req, res) {
     try {
-      const { workspaceId, operator, mes, ano, page, limit } = req.query;
+      const { workspaceId, operator, mes, ano, page, limit, raw_invoice_id } = req.query;
       if (!workspaceId) return res.status(400).json({ error: 'Workspace ID é obrigatório' });
 
       const where = { workspace_id: workspaceId };
       if (operator) where.operator = operator;
+      if (raw_invoice_id) where.raw_invoice_id = raw_invoice_id;
 
       if (mes && ano) {
-        const startDate = `${ano}-${mes.padStart(2, '0')}-01`;
-        const endDate = new Date(ano, mes, 0).toISOString().split('T')[0];
-        where.item_date = { [Op.between]: [startDate, endDate] };
+        const workspace = await Workspace.findByPk(workspaceId);
+        const startDay = workspace?.billing_cycle_start_day || 1;
+
+        if (startDay === 1) {
+          const startDate = `${ano}-${mes.padStart(2, '0')}-01`;
+          const endDate = new Date(ano, mes, 0).toISOString().split('T')[0];
+          where.item_date = { [Op.between]: [startDate, endDate] };
+        } else {
+          // Example: mes 11, ano 2025, startDay 21 -> 2025-11-21 to 2025-12-20
+          const startMonth = parseInt(mes, 10);
+          const startYear = parseInt(ano, 10);
+          
+          const startDate = new Date(startYear, startMonth - 1, startDay);
+          const endDate = new Date(startYear, startMonth, startDay - 1);
+          
+          where.item_date = { 
+            [Op.between]: [
+              startDate.toISOString().split('T')[0],
+              endDate.toISOString().split('T')[0]
+            ] 
+          };
+        }
       }
 
       const order = [['item_date', 'DESC'], ['item_time', 'DESC'], ['id', 'ASC']];

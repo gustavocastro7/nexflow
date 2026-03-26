@@ -21,6 +21,11 @@ const Workspace = sequelize.define('Workspace', {
     allowNull: false,
     defaultValue: 'active',
   },
+  billing_cycle_start_day: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 1,
+  },
 }, {
   tableName: 'workspaces',
   schema: 'public',

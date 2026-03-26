@@ -2,6 +2,7 @@ const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 const CostCenter = require('./CostCenter');
 const Workspace = require('./Workspace');
+const Collaborator = require('./Collaborator');
 
 const PhoneLine = sequelize.define('PhoneLine', {
   id: {
@@ -20,6 +21,14 @@ const PhoneLine = sequelize.define('PhoneLine', {
   responsible_id: {
     type: DataTypes.STRING(50),
     allowNull: true,
+  },
+  collaborator_id: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    references: {
+      model: Collaborator,
+      key: 'id'
+    }
   },
   cost_center_id: {
     type: DataTypes.UUID,
@@ -46,6 +55,7 @@ const PhoneLine = sequelize.define('PhoneLine', {
     { fields: ['workspace_id'] },
     { fields: ['cost_center_id'] },
     { fields: ['phone_number'] },
+    { fields: ['collaborator_id'] },
   ]
 });
 
@@ -54,5 +64,8 @@ PhoneLine.belongsTo(CostCenter, { foreignKey: 'cost_center_id', as: 'costCenter'
 
 Workspace.hasMany(PhoneLine, { foreignKey: 'workspace_id', as: 'phoneLines' });
 PhoneLine.belongsTo(Workspace, { foreignKey: 'workspace_id', as: 'workspace' });
+
+Collaborator.hasMany(PhoneLine, { foreignKey: 'collaborator_id', as: 'phoneLines' });
+PhoneLine.belongsTo(Collaborator, { foreignKey: 'collaborator_id', as: 'collaborator' });
 
 module.exports = PhoneLine;

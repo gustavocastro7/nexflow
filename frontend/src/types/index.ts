@@ -17,6 +17,8 @@ export interface Workspace {
   id: string;
   name: string;
   schema_name: string;
+  status?: string;
+  billing_cycle_start_day?: number;
 }
 
 export interface CostCenter {
@@ -55,4 +57,18 @@ export interface Invoice {
   original_user?: string;
   raw_invoice_id?: string;
   metadata?: any;
+}
+
+export interface RawInvoice {
+  id: string;
+  operator: string;
+  content: {
+    raw?: string;
+    header?: {
+      data_vencimento?: string;
+      valor_total?: string;
+      cliente?: string;
+    }
+  };
+  created_at: string;
 }

@@ -80,13 +80,13 @@ const DashboardPage: React.FC = () => {
         <Paper sx={{ p: 8, borderRadius: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
           <BusinessIcon sx={{ fontSize: 64, color: theme.palette.primary.main, opacity: 0.5 }} />
           <Box>
-            <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>No Workspace</Typography>
+            <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>Nenhum Workspace</Typography>
             <Typography variant="body1" color="textSecondary">
-              You need to select a workspace to view data.
+              Você precisa selecionar um workspace para visualizar os dados.
             </Typography>
           </Box>
           <Button variant="contained" component={Link} to={ROUTES.WORKSPACES} size="large">
-            Select Workspace
+            Selecionar Workspace
           </Button>
         </Paper>
       </Container>
@@ -95,20 +95,19 @@ const DashboardPage: React.FC = () => {
 
   const statCards = [
     { 
-      label: 'Cost Centers', 
+      label: 'Centros de Custo', 
       value: stats.costCenters, 
       icon: <AccountBalanceWalletIcon />, 
       color: theme.palette.primary.main 
     },
     { 
-      label: 'Claro Invoices', 
-      value: stats.claroInvoices, 
+      label: 'Total de Faturas', 
+      value: stats.claroInvoices + stats.vivoInvoices, 
       icon: <ReceiptIcon />, 
       color: '#E11D48' 
     },
-    // Vivo Invoices card removed
     { 
-      label: 'Total Spent', 
+      label: 'Total Gasto', 
       value: `R$ ${(stats.totalSpent ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 
       icon: <TrendingUpIcon />, 
       color: '#10B981'
@@ -133,16 +132,21 @@ const DashboardPage: React.FC = () => {
       }}
     >
       <Box sx={{ mb: 4 }}>
+        <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>
+          Dashboard
+        </Typography>
+        <Typography variant="body1" color="text.secondary">
+          Visão geral do seu workspace: {activeWorkspace?.name}
+        </Typography>
       </Box>
 
       <Box 
         sx={{ 
-          flexGrow: 1,
           display: 'grid',
           gridTemplateColumns: {
             xs: '1fr',
             sm: '1fr 1fr',
-            md: 'repeat(4, 1fr)'
+            md: 'repeat(3, 1fr)'
           },
           gridTemplateRows: {
             xs: 'auto',

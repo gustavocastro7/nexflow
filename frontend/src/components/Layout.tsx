@@ -142,6 +142,7 @@ const Layout: React.FC = () => {
     const items = [
       { text: t('sidebar.dashboard'), icon: <DashboardIcon />, path: ROUTES.DASHBOARD },
       { text: t('sidebar.cost_centers'), icon: <AccountTreeIcon />, path: ROUTES.COST_CENTERS },
+      { text: t('sidebar.collaborators'), icon: <PeopleIcon />, path: ROUTES.COLLABORATORS },
       { text: t('sidebar.invoices'), icon: <ReceiptIcon />, path: ROUTES.INVOICES },
       { text: t('sidebar.reports'), icon: <AssessmentIcon />, path: ROUTES.REPORTS },
     ];

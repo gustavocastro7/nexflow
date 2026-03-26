@@ -8,6 +8,11 @@ const apiClient = axios.create({
 });
 
 apiClient.interceptors.request.use((config) => {
+  // Prefix relative URLs with /api if not already present
+  if (config.url && !config.url.startsWith('/api') && !config.url.startsWith('http')) {
+    config.url = `/api${config.url.startsWith('/') ? '' : '/'}${config.url}`;
+  }
+
   const token = sessionStorage.getItem('token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;

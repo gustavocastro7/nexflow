@@ -7,6 +7,8 @@
     "dev": "nodemon server.js",
     "start": "node server.js",
     "db:reset": "node reset_and_seed.js",
+    "backup": "node tools/daily-backup.js",
+    "backfill:matriz": "node backfill_matriz.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

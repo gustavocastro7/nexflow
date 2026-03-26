@@ -4,6 +4,7 @@ const User = require('../models/User');
 const OperationLog = require('../models/OperationLog');
 const sequelize = require('../config/database');
 const AssociationHistory = require('../models/AssociationHistory');
+const CostCenter = require('../models/CostCenter');
 
 class WorkspaceController {
   async index(req, res) {
@@ -32,21 +33,38 @@ class WorkspaceController {
   }
 
   async store(req, res) {
+    const transaction = await sequelize.transaction();
     try {
       if (req.userProfile !== 'jedi') {
         return res.status(403).json({ error: 'Access denied' });
       }
-      const { name, schema_name } = req.body;
+      const { name, schema_name, billing_cycle_start_day } = req.body;
 
       if (!name || !schema_name) {
         return res.status(400).json({ error: 'name and schema_name are required' });
       }
 
-      const workspace = await Workspace.create({ name, schema_name });
-      await sequelize.query(`CREATE SCHEMA IF NOT EXISTS "${schema_name}"`);
+      const workspace = await Workspace.create({ 
+        name, 
+        schema_name, 
+        billing_cycle_start_day: billing_cycle_start_day || 1 
+      }, { transaction });
+      await sequelize.query(`CREATE SCHEMA IF NOT EXISTS "${schema_name}"`, { transaction });
 
+      // Create default "Matriz" cost center
+      await CostCenter.create({
+        name: 'Matriz',
+        code: 'MATRIZ',
+        description: 'Centro de Custo Padrão',
+        workspace_id: workspace.id,
+        phones: []
+      }, { transaction });
+
+      await transaction.commit();
       return res.status(201).json(workspace);
     } catch (error) {
+      await transaction.rollback();
+      console.error('Workspace store error:', error);
       return res.status(500).json({ error: 'Error creating workspace' });
     }
   }
@@ -57,12 +75,12 @@ class WorkspaceController {
         return res.status(403).json({ error: 'Access denied' });
       }
       const { id } = req.params;
-      const { name, status } = req.body;
+      const { name, status, billing_cycle_start_day } = req.body;
       const workspace = await Workspace.findByPk(id);
       if (!workspace) {
         return res.status(404).json({ error: 'Workspace not found' });
       }
-      await workspace.update({ name, status });
+      await workspace.update({ name, status, billing_cycle_start_day });
       return res.json(workspace);
     } catch (error) {
       return res.status(500).json({ error: 'Error updating workspace' });

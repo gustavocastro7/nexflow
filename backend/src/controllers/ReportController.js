@@ -1,6 +1,7 @@
 const Invoice = require('../models/Invoice');
 const CostCenter = require('../models/CostCenter');
 const PhoneLine = require('../models/PhoneLine');
+const Workspace = require('../models/Workspace');
 const sequelize = require('../config/database');
 const { Op, fn, col, literal } = require('sequelize');
 
@@ -56,15 +57,28 @@ class ReportController {
         return res.status(400).json({ error: 'Workspace ID is required' });
       }
 
+      const workspace = await Workspace.findByPk(workspaceId);
+      const startDay = workspace?.billing_cycle_start_day || 1;
+
       const replacements = { workspaceId };
       let whereSql = 'WHERE i.workspace_id = :workspaceId';
 
       if (mes && ano) {
-        const startDate = `${ano}-${mes.padStart(2, '0')}-01`;
-        const endDate = new Date(ano, mes, 0).toISOString().split('T')[0];
-        whereSql += ' AND i.item_date BETWEEN :startDate AND :endDate';
-        replacements.startDate = startDate;
-        replacements.endDate = endDate;
+        if (startDay === 1) {
+          const startDate = `${ano}-${mes.padStart(2, '0')}-01`;
+          const endDate = new Date(ano, mes, 0).toISOString().split('T')[0];
+          whereSql += ' AND i.item_date BETWEEN :startDate AND :endDate';
+          replacements.startDate = startDate;
+          replacements.endDate = endDate;
+        } else {
+          const startMonth = parseInt(mes, 10);
+          const startYear = parseInt(ano, 10);
+          const startDate = new Date(startYear, startMonth - 1, startDay);
+          const endDate = new Date(startYear, startMonth, startDay - 1);
+          whereSql += ' AND i.item_date BETWEEN :startDate AND :endDate';
+          replacements.startDate = startDate.toISOString().split('T')[0];
+          replacements.endDate = endDate.toISOString().split('T')[0];
+        }
       } else if (ano) {
         whereSql += " AND i.item_date BETWEEN :anoStart AND :anoEnd";
         replacements.anoStart = `${ano}-01-01`;
@@ -175,10 +189,12 @@ class ReportController {
           WHERE workspace_id = :workspaceId
         ) AS unique_phones
         LEFT JOIN phone_lines pl ON pl.phone_number = unique_phones.source_phone AND pl.workspace_id = unique_phones.workspace_id
+        LEFT JOIN collaborators coll ON coll.id = pl.collaborator_id
         LEFT JOIN cost_centers cc ON cc.id = pl.cost_center_id
         WHERE 1=1
         ${searchPattern ? `AND (
           unique_phones.source_phone ILIKE :search OR 
+          coll.name ILIKE :search OR
           pl.responsible_name ILIKE :search OR 
           cc.name ILIKE :search OR 
           cc.code ILIKE :search
@@ -189,7 +205,7 @@ class ReportController {
         SELECT 
           unique_phones.source_phone AS "phoneNumber",
           pl.id AS id,
-          COALESCE(pl.responsible_name, (
+          COALESCE(coll.name, pl.responsible_name, (
             SELECT original_user 
             FROM invoices inv 
             WHERE inv.source_phone = unique_phones.source_phone 
@@ -198,7 +214,8 @@ class ReportController {
               AND inv.original_user != ''
             LIMIT 1
           )) AS "responsibleName",
-          pl.responsible_id AS "responsibleId",
+          COALESCE(coll.external_id, pl.responsible_id) AS "responsibleId",
+          coll.id AS "collaboratorId",
           cc.code AS "costCenterCode",
           COALESCE(cc.name, 'Unallocated') AS "costCenterName"
         ${baseSql}
@@ -240,6 +257,11 @@ class ReportController {
       const { workspaceId, search, page = 0 } = req.query;
       if (!workspaceId) return res.status(400).json({ error: 'Workspace ID is required' });
 
+      const workspace = await Workspace.findByPk(workspaceId);
+      const startDay = workspace?.billing_cycle_start_day || 1;
+      const intervalDays = startDay - 1;
+      const dateExpr = intervalDays > 0 ? `(i.item_date - INTERVAL '${intervalDays} days')` : 'i.item_date';
+
       const offset = parseInt(page, 10) * PAGE_SIZE;
       const like = search ? `%${search}%` : null;
 
@@ -249,12 +271,12 @@ class ReportController {
         LEFT JOIN cost_centers cc ON cc.id = pl.cost_center_id
         WHERE i.workspace_id = :workspaceId
           ${like ? "AND (cc.code ILIKE :like OR cc.name ILIKE :like OR pl.responsible_name ILIKE :like OR i.source_phone ILIKE :like)" : ""}
-        GROUP BY cc.id, cc.code, cc.name, TO_CHAR(i.item_date, 'YYYY-MM')
+        GROUP BY cc.id, cc.code, cc.name, TO_CHAR(${dateExpr}, 'YYYY-MM')
       `;
 
       const [rows] = await sequelize.query(`
         SELECT cc.id AS cc_id, cc.code AS cc_code, COALESCE(cc.name, 'Unallocated') AS cc_name,
-               TO_CHAR(i.item_date, 'YYYY-MM') AS reference_month,
+               TO_CHAR(${dateExpr}, 'YYYY-MM') AS reference_month,
                SUM(i.charged_value) AS total
         ${baseSql}
         ORDER BY reference_month DESC, cc_code ASC NULLS LAST
@@ -287,28 +309,34 @@ class ReportController {
       if (!workspaceId) return res.status(400).json({ error: 'Workspace ID is required' });
       if (!referenceMonth) return res.status(400).json({ error: 'Reference month is required' });
 
+      const workspace = await Workspace.findByPk(workspaceId);
+      const startDay = workspace?.billing_cycle_start_day || 1;
+      const intervalDays = startDay - 1;
+      const dateExpr = intervalDays > 0 ? `(i.item_date - INTERVAL '${intervalDays} days')` : 'i.item_date';
+
       const offset = parseInt(page, 10) * PAGE_SIZE;
       const like = search ? `%${search}%` : null;
 
       const whereSql = `
         WHERE i.workspace_id = :workspaceId
-          AND TO_CHAR(i.item_date, 'YYYY-MM') = :referenceMonth
-          ${like ? "AND (cc.code ILIKE :like OR cc.name ILIKE :like OR pl.responsible_name ILIKE :like OR i.source_phone ILIKE :like OR i.original_user ILIKE :like)" : ""}
+          AND TO_CHAR(${dateExpr}, 'YYYY-MM') = :referenceMonth
+          ${like ? "AND (cc.code ILIKE :like OR cc.name ILIKE :like OR coll.name ILIKE :like OR pl.responsible_name ILIKE :like OR i.source_phone ILIKE :like OR i.original_user ILIKE :like)" : ""}
       `;
 
       const fromSql = `
         FROM invoices i
         LEFT JOIN phone_lines pl ON pl.phone_number = i.source_phone AND pl.workspace_id = i.workspace_id
+        LEFT JOIN collaborators coll ON coll.id = pl.collaborator_id
         LEFT JOIN cost_centers cc ON cc.id = pl.cost_center_id
         ${whereSql}
-        GROUP BY i.source_phone, pl.responsible_name, i.original_user, pl.responsible_id, cc.code, cc.name
+        GROUP BY i.source_phone, coll.name, pl.responsible_name, i.original_user, coll.external_id, pl.responsible_id, cc.code, cc.name
       `;
 
       const [rows] = await sequelize.query(`
         SELECT 
           i.source_phone AS phone_number,
-          COALESCE(pl.responsible_name, i.original_user, '') AS responsible_name,
-          pl.responsible_id,
+          COALESCE(coll.name, pl.responsible_name, i.original_user, '') AS responsible_name,
+          COALESCE(coll.external_id, pl.responsible_id) AS responsible_id,
           cc.code AS cc_code, 
           COALESCE(cc.name, 'Unallocated') AS cc_name,
           SUM(i.charged_value) AS total
@@ -349,8 +377,13 @@ class ReportController {
       const { workspaceId } = req.query;
       if (!workspaceId) return res.status(400).json({ error: 'Workspace ID is required' });
 
+      const workspace = await Workspace.findByPk(workspaceId);
+      const startDay = workspace?.billing_cycle_start_day || 1;
+      const intervalDays = startDay - 1;
+      const dateExpr = intervalDays > 0 ? `(item_date - INTERVAL '${intervalDays} days')` : 'item_date';
+
       const [rows] = await sequelize.query(`
-        SELECT DISTINCT TO_CHAR(item_date, 'YYYY-MM') AS month
+        SELECT DISTINCT TO_CHAR(${dateExpr}, 'YYYY-MM') AS month
         FROM invoices
         WHERE workspace_id = :workspaceId AND item_date IS NOT NULL
         ORDER BY month DESC

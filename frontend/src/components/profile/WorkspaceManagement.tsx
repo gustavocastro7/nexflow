@@ -43,6 +43,7 @@ const WorkspaceManagement: React.FC = () => {
   const [name, setName] = useState('');
   const [schema_name, setSchemaName] = useState('');
   const [status, setStatus] = useState('active');
+  const [billingCycleStartDay, setBillingCycleStartDay] = useState(1);
 
   const fetchWorkspaces = useCallback(async () => {
     try {
@@ -64,6 +65,7 @@ const WorkspaceManagement: React.FC = () => {
     setName(ws ? ws.name : '');
     setSchemaName(ws ? ws.schema_name : '');
     setStatus(ws ? ws.status : 'active');
+    setBillingCycleStartDay(ws ? ws.billing_cycle_start_day || 1 : 1);
     setOpen(true);
   };
 
@@ -77,12 +79,14 @@ const WorkspaceManagement: React.FC = () => {
       if (currentWS) {
         await apiClient.put(`/workspaces/${currentWS.id}`, {
           name,
-          status
+          status,
+          billing_cycle_start_day: billingCycleStartDay
         });
       } else {
         await apiClient.post('/workspaces', {
           name,
-          schema_name
+          schema_name,
+          billing_cycle_start_day: billingCycleStartDay
         });
       }
       fetchWorkspaces();
@@ -194,6 +198,15 @@ const WorkspaceManagement: React.FC = () => {
                 <MenuItem value="pending">Pending</MenuItem>
               </TextField>
             )}
+            <TextField
+              label="Billing Cycle Start Day"
+              type="number"
+              fullWidth
+              value={billingCycleStartDay}
+              onChange={(e) => setBillingCycleStartDay(parseInt(e.target.value) || 1)}
+              inputProps={{ min: 1, max: 31 }}
+              helperText="Day of the month the cycle begins (e.g., 21)"
+            />
           </Box>
         </DialogContent>
         <DialogActions sx={{ p: 3 }}>

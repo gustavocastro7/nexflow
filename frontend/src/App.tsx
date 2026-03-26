@@ -7,6 +7,7 @@ import CentroCustoPage from './pages/CentroCustoPage';
 import FaturasPage from './pages/FaturasPage';
 import ProfilePage from './pages/ProfilePage';
 import RelatoriosPage from './pages/RelatoriosPage';
+import CollaboratorsPage from './pages/CollaboratorsPage';
 import UsersPage from './pages/UsersPage';
 import WorkspaceSelectionPage from './pages/WorkspaceSelectionPage';
 import RoleAssignmentPage from './pages/RoleAssignmentPage';
@@ -27,6 +28,7 @@ const App: React.FC = () => {
           <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
             <Route path={ROUTES.DASHBOARD} element={<DashboardPage />} />
             <Route path={ROUTES.COST_CENTERS} element={<CentroCustoPage />} />
+            <Route path={ROUTES.COLLABORATORS} element={<CollaboratorsPage />} />
             <Route path={ROUTES.INVOICES} element={<FaturasPage />} />
             <Route path={ROUTES.REPORTS} element={<RelatoriosPage />} />
             <Route path={ROUTES.PROFILE} element={<ProfilePage />} />

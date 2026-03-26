@@ -171,6 +171,7 @@
  DROP TABLE IF EXISTS cost_centers CASCADE;
  CREATE TABLE cost_centers ( 
  	 id uuid NOT NULL, 
+ 	 code varchar(50) NULL,
  	 "name" varchar(255) NOT NULL, 
  	 description text NULL, 
  	 phones jsonb DEFAULT '[]'::jsonb NULL, 
@@ -258,3 +259,45 @@
  	 CONSTRAINT user_workspaces_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE, 
  	 CONSTRAINT user_workspaces_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE ON UPDATE CASCADE 
  );
+
+ -- public.collaborators definition 
+ 
+ DROP TABLE IF EXISTS collaborators CASCADE;
+ CREATE TABLE collaborators ( 
+ 	 id uuid NOT NULL, 
+ 	 "name" varchar(150) NOT NULL, 
+ 	 external_id varchar(50) NULL, 
+ 	 email varchar(150) NULL, 
+ 	 department varchar(100) NULL, 
+ 	 workspace_id uuid NOT NULL, 
+ 	 created_at timestamptz NOT NULL, 
+ 	 updated_at timestamptz NOT NULL, 
+ 	 CONSTRAINT collaborators_pkey PRIMARY KEY (id), 
+ 	 CONSTRAINT collaborators_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE ON UPDATE CASCADE 
+ );
+ CREATE INDEX IF NOT EXISTS collaborators_workspace_id_idx ON public.collaborators (workspace_id);
+ CREATE INDEX IF NOT EXISTS collaborators_external_id_idx ON public.collaborators (external_id);
+
+ -- public.phone_lines definition 
+ 
+ DROP TABLE IF EXISTS phone_lines CASCADE;
+ CREATE TABLE phone_lines ( 
+ 	 id uuid NOT NULL, 
+ 	 phone_number varchar(25) NOT NULL, 
+ 	 responsible_name varchar(150) NULL, 
+ 	 responsible_id varchar(50) NULL, 
+ 	 collaborator_id uuid NULL,
+ 	 cost_center_id uuid NULL, 
+ 	 workspace_id uuid NOT NULL, 
+ 	 created_at timestamptz NOT NULL, 
+ 	 updated_at timestamptz NOT NULL, 
+ 	 CONSTRAINT phone_lines_pkey PRIMARY KEY (id), 
+ 	 CONSTRAINT phone_lines_collaborator_id_fkey FOREIGN KEY (collaborator_id) REFERENCES collaborators(id) ON DELETE SET NULL ON UPDATE CASCADE,
+ 	 CONSTRAINT phone_lines_cost_center_id_fkey FOREIGN KEY (cost_center_id) REFERENCES cost_centers(id) ON DELETE SET NULL ON UPDATE CASCADE, 
+ 	 CONSTRAINT phone_lines_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE ON UPDATE CASCADE 
+ );
+ CREATE INDEX IF NOT EXISTS phone_lines_workspace_id_idx ON public.phone_lines (workspace_id);
+ CREATE INDEX IF NOT EXISTS phone_lines_cost_center_id_idx ON public.phone_lines (cost_center_id);
+ CREATE INDEX IF NOT EXISTS phone_lines_phone_number_idx ON public.phone_lines (phone_number);
+ CREATE INDEX IF NOT EXISTS phone_lines_collaborator_id_idx ON public.phone_lines (collaborator_id);
+
