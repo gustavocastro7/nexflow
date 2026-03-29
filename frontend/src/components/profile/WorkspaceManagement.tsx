@@ -50,6 +50,7 @@ const WorkspaceManagement: React.FC = () => {
       const response = await apiClient.get<ExtendedWorkspace[]>('/workspaces');
       setWorkspaces(Array.isArray(response.data) ? response.data : []);
     } catch (err: unknown) {
+      console.error(err); // Log the error for debugging
       setError('Error loading workspaces. Check if you have Master Admin permissions.');
     } finally {
       setLoading(false);
@@ -107,6 +108,7 @@ const WorkspaceManagement: React.FC = () => {
         await apiClient.delete(`/workspaces/${id}`);
         fetchWorkspaces();
       } catch (err: unknown) {
+        console.error(err); // Log the error for debugging
         setError('Error deleting workspace');
       }
     }

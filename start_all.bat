@@ -44,8 +44,8 @@ if not exist "frontend\node_modules" (
 :: 3. Start Docker Environment
 echo.
 echo [3/3] Restarting Docker Services (Clean Start)...
-%DC% -f "docker-compose.debug.yml" down
-%DC% -f "docker-compose.debug.yml" up -d --build
+%DC% -f "docker-compose.yml" down
+%DC% -f "docker-compose.yml" up -d --build
 
 if %ERRORLEVEL% NEQ 0 (
   echo [!] Failed to start Docker containers.
@@ -57,12 +57,11 @@ echo.
 echo ==========================================
 echo DOCKER SYSTEMS RUNNING
 echo Backend:  http://localhost:3100
-echo Frontend: http://localhost:8086
-echo pgAdmin:  http://localhost:5050
+echo Frontend: http://localhost:8087
 echo ==========================================
 echo.
 echo Containers are running in detached mode.
-echo Use 'docker compose -f docker-compose.debug.yml logs -f' to follow logs.
+echo Use 'docker compose logs -f' to follow logs.
 echo.
 
 popd

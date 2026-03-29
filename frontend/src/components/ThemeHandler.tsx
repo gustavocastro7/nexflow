@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import { getTheme } from '../theme/theme';
 import { ColorModeContext } from '../context/ColorModeContext';
@@ -11,7 +11,7 @@ interface ThemeHandlerProps {
 
 const ThemeHandler: React.FC<ThemeHandlerProps> = ({ children }) => {
   const location = useLocation();
-  const isPublicRoute = [ROUTES.LOGIN, ROUTES.REGISTER].includes(location.pathname as any);
+  const isPublicRoute = [ROUTES.LOGIN, ROUTES.REGISTER].includes(location.pathname);
 
   const [mode, setMode] = useState<'light' | 'dark'>(() => {
     const saved = localStorage.getItem('themeMode');

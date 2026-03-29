@@ -71,7 +71,7 @@ async function startServer() {
     // Run Mock Seeder
     await MockSeeder.run();
 
-    app.listen(PORT, () => {
+    app.listen(PORT, '0.0.0.0', () => {
       console.log(`Server is running on port ${PORT}`);
       console.log(`Swagger docs available at http://localhost:${PORT}/api-docs`);
     });

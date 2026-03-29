@@ -82,7 +82,7 @@ const Layout: React.FC = () => {
     try {
       const parsedUser = JSON.parse(userStr) as User;
       console.log('  Parsed user:', parsedUser);
-      const parsedWS = wsStr ? JSON.parse(wsStr) as any : null;
+      const parsedWS = wsStr ? JSON.parse(wsStr) as Workspace : null;
       // Migrate old format if necessary
       if (parsedWS && parsedWS.name && !parsedWS.default_workspace_id) {
         parsedWS.default_workspace_id = parsedWS.id;  
@@ -117,7 +117,10 @@ const Layout: React.FC = () => {
   }, [navigate, location.pathname]);
 
   useEffect(() => {
-    checkAuth();
+    const init = async () => {
+      await checkAuth();
+    };
+    init();
   }, [checkAuth]);
 
   const handleWorkspaceChange = (event: SelectChangeEvent) => {

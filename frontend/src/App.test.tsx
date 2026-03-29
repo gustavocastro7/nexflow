@@ -8,7 +8,7 @@ vi.mock('axios');
 
 test('renders login page by default', async () => {
   // Mock api-config response
-  (axios.get as any).mockResolvedValue({ data: { public_url: '' } });
+  (axios.get as jest.Mock).mockResolvedValue({ data: { public_url: '' } });
 
   render(<App />);
   

@@ -69,7 +69,8 @@ const CentroCustoPage: React.FC = () => {
     try {
       const userData = sessionStorage.getItem('user');
       return userData ? JSON.parse(userData) : null;
-    } catch (_e: unknown) {
+    } catch (e: unknown) {
+      console.error(e); // Log the error
       return null;
     }
   };
@@ -78,7 +79,8 @@ const CentroCustoPage: React.FC = () => {
     try {
       const wsData = sessionStorage.getItem('activeWorkspace');
       return wsData ? JSON.parse(wsData) : null;
-    } catch (_e: unknown) {
+    } catch (e: unknown) {
+      console.error(e); // Log the error
       return null;
     }
   };
@@ -374,6 +376,37 @@ const CentroCustoPage: React.FC = () => {
               fullWidth multiline rows={2}
               value={description} onChange={(e) => setDescription(e.target.value)}
             />
+            <Box>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>Linked Phones</Typography>
+              <Stack direction="row" spacing={1} sx={{ mb: 2, flexWrap: 'wrap' }}>
+                {phones.map((tel) => (
+                  <Chip
+                    key={tel}
+                    label={tel}
+                    onDelete={() => removePhone(tel)}
+                    color="primary"
+                    variant="outlined"
+                    size="small"
+                  />
+                ))}
+              </Stack>
+              <TextField
+                label="New Phone Number"
+                fullWidth
+                value={newPhone}
+                onChange={(e) => setNewPhone(e.target.value)}
+                onKeyPress={(e) => { if (e.key === 'Enter') { e.preventDefault(); addPhone(); } }}
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton onClick={addPhone} edge="end">
+                        <AddIcon />
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Box>
           </Box>
         </DialogContent>
         <DialogActions sx={{ p: 4 }}>

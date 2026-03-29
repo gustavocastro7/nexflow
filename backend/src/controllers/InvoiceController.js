@@ -192,7 +192,7 @@ class InvoiceController {
         const line = lines[i].trim();
         if (!line) continue;
 
-        const parts = line.split('\t');
+        const parts = line.split('	');
         if (parts.length >= 7) {
           let item_date = parts[0];
           if (item_date.includes('/')) {
@@ -215,8 +215,8 @@ class InvoiceController {
             destination_phone: parts[3],
             duration: parts[4],
             description: parts[5],
-            charged_value: parseFloat(parts[6].replace(',', '.')),
-            total_value: parseFloat(parts[6].replace(',', '.')),
+            charged_value: parseFloat(parts[6].replace(',', '.')), 
+            total_value: parseFloat(parts[6].replace(',', '.')), 
             raw_invoice_id: raw.id
           });
         }
@@ -371,6 +371,9 @@ class InvoiceController {
           };
         }
       }
+
+      // Log the final 'where' clause for debugging
+      console.log('Invoice Index Query WHERE Clause:', where);
 
       const order = [['item_date', 'DESC'], ['item_time', 'DESC'], ['id', 'ASC']];
 

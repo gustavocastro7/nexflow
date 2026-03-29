@@ -13,14 +13,8 @@ import {
   ListItemButton,
   ListItemText,
   CircularProgress,
-} from '@mui/material';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
-import apiClient from '../api/client';
-import type { Workspace, Invoice, RawInvoice } from '../types';
-import InvoiceList from '../components/invoices/InvoiceList';
-import DeleteIcon from '@mui/icons-material/Delete';
-import {
+  TextField,
+  MenuItem,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -28,6 +22,12 @@ import {
   DialogActions,
   IconButton,
 } from '@mui/material';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
+import DeleteIcon from '@mui/icons-material/Delete';
+import apiClient from '../api/client';
+import type { Workspace, Invoice, RawInvoice } from '../types';
+import InvoiceList from '../components/invoices/InvoiceList';
 
 const PAGE_SIZE = 50;
 
@@ -40,8 +40,11 @@ interface PaginatedInvoices {
 }
 
 const FaturasPage: React.FC = () => {
-  const [loadingItems, setLoadingItems] = useState(false);
-  const [loadingRaws, setLoadingRaws] = useState(false);
+  // Separate loading states to prevent global flickers
+  const [isLoadingRaw, setIsLoadingRaw] = useState(false);
+  const [isLoadingItems, setIsLoadingItems] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [rawInvoices, setRawInvoices] = useState<RawInvoice[]>([]);
   const [selectedRaw, setSelectedRaw] = useState<RawInvoice | null>(null);
@@ -51,34 +54,94 @@ const FaturasPage: React.FC = () => {
   const [success, setSuccess] = useState('');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [rawToDelete, setRawToDelete] = useState<RawInvoice | null>(null);
-  const loadingRef = useRef(false);
 
-  const getActiveWorkspace = (): Workspace | null => {
+  const getActiveWorkspace = useCallback((): Workspace | null => {
     try {
       const wsData = sessionStorage.getItem('activeWorkspace');
       return wsData ? JSON.parse(wsData) : null;
     } catch {
       return null;
     }
-  };
+  }, []);
+
   const activeWorkspace = getActiveWorkspace();
+  const [filterMonth, setFilterMonth] = useState(new Date().getMonth() + 1);
+  const [filterYear, setFilterYear] = useState(new Date().getFullYear());
 
   const fetchRawInvoices = useCallback(async () => {
     if (!activeWorkspace?.id) return;
-    setLoadingRaws(true);
+    setIsLoadingRaw(true);
     try {
       const res = await apiClient.get<RawInvoice[]>(`/invoices/raw?workspaceId=${activeWorkspace.id}`);
-      setRawInvoices(res.data);
-      if (res.data.length > 0 && !selectedRaw) {
-        setSelectedRaw(res.data[0]);
+      const newRawInvoices = res.data;
+      setRawInvoices(newRawInvoices);
+
+      if (newRawInvoices.length > 0) {
+        // Only change selectedRaw if none is selected or the current one is gone
+        if (!selectedRaw || !newRawInvoices.some(r => r.id === selectedRaw.id)) {
+          setSelectedRaw(newRawInvoices[0]);
+        }
+      } else {
+        setSelectedRaw(null);
+        setInvoices([]);
       }
     } catch (err) {
       console.error(err);
       setError('Erro ao carregar lista de faturas importadas');
     } finally {
-      setLoadingRaws(false);
+      setIsLoadingRaw(false);
     }
   }, [activeWorkspace?.id, selectedRaw]);
+
+  const fetchItems = useCallback(async (pageNum: number, append: boolean, rawId?: string, operator?: string, month?: number, year?: number) => {
+    if (!activeWorkspace?.id) return;
+    
+    setIsLoadingItems(true);
+    if (!append) setIsInitialLoad(true);
+
+    try {
+      let url = `/invoices?workspaceId=${activeWorkspace.id}&page=${pageNum}&limit=${PAGE_SIZE}`;
+      if (rawId) url += `&raw_invoice_id=${rawId}`;
+      if (operator) url += `&operator=${operator}`; // Added operator to URL
+      if (month) url += `&mes=${month}`;
+      if (year) url += `&ano=${year}`;
+      
+      const res = await apiClient.get<PaginatedInvoices>(url);
+      const { data, hasMore: more } = res.data;
+      
+      setInvoices(prev => append ? [...prev, ...data] : data);
+      setHasMore(more);
+      setPage(pageNum);
+      setError('');
+    } catch (err) {
+      console.error(err);
+      setError('Erro ao carregar registros da fatura');
+      setHasMore(false);
+    } finally {
+      setIsLoadingItems(false);
+      setIsInitialLoad(false);
+    }
+  }, [activeWorkspace?.id]);
+
+  useEffect(() => {
+    fetchRawInvoices();
+  }, [activeWorkspace?.id]); // Only on workspace change
+
+  // Triggered when selectedRaw or filters change
+  useEffect(() => {
+    if (selectedRaw) {
+      fetchItems(1, false, selectedRaw.id, selectedRaw.operator, filterMonth, filterYear);
+    } else {
+      setInvoices([]);
+      setHasMore(false);
+    }
+  }, [selectedRaw?.id, filterMonth, filterYear, fetchItems]);
+
+  const loadMore = useCallback(() => {
+    if (selectedRaw && hasMore && !isLoadingItems) {
+      fetchItems(page + 1, true, selectedRaw.id, selectedRaw.operator, filterMonth, filterYear);
+    }
+  }, [fetchItems, page, selectedRaw, filterMonth, filterYear, hasMore, isLoadingItems]);
 
   const handleDeleteInvoice = async () => {
     if (!rawToDelete || !activeWorkspace?.id) return;
@@ -98,57 +161,6 @@ const FaturasPage: React.FC = () => {
       setRawToDelete(null);
     }
   };
-
-  const openDeleteDialog = (e: React.MouseEvent, raw: RawInvoice) => {
-    e.stopPropagation();
-    setRawToDelete(raw);
-    setDeleteDialogOpen(true);
-  };
-
-  const fetchItems = useCallback(async (pageNum: number, append: boolean, rawId?: string) => {
-    if (!activeWorkspace?.id || loadingRef.current) return;
-    loadingRef.current = true;
-    setLoadingItems(true);
-    try {
-      let url = `/invoices?workspaceId=${activeWorkspace.id}&page=${pageNum}&limit=${PAGE_SIZE}`;
-      if (rawId) {
-        // We'll need to update the backend to filter by raw_invoice_id if we want strict filtering
-        // For now we assume the index returns all, but let's add the filter param anyway
-        url += `&raw_invoice_id=${rawId}`;
-      }
-      
-      const res = await apiClient.get<PaginatedInvoices>(url);
-      const { data, hasMore: more } = res.data;
-      setInvoices(prev => append ? [...prev, ...data] : data);
-      setHasMore(more);
-      setPage(pageNum);
-    } catch {
-      setError('Erro ao carregar registros da fatura');
-      setHasMore(false);
-    } finally {
-      loadingRef.current = false;
-      setLoadingItems(false);
-    }
-  }, [activeWorkspace?.id]);
-
-  useEffect(() => {
-    fetchRawInvoices();
-  }, [fetchRawInvoices]);
-
-  useEffect(() => {
-    if (selectedRaw) {
-      setInvoices([]);
-      setPage(1);
-      setHasMore(true);
-      fetchItems(1, false, selectedRaw.id);
-    }
-  }, [selectedRaw, fetchItems]);
-
-  const loadMore = useCallback(() => {
-    if (selectedRaw) {
-      fetchItems(page + 1, true, selectedRaw.id);
-    }
-  }, [fetchItems, page, selectedRaw]);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, type: string) => {
     const file = event.target.files?.[0];
@@ -211,7 +223,7 @@ const FaturasPage: React.FC = () => {
             </Box>
             <Divider />
             <Box sx={{ flex: 1, overflowY: 'auto' }}>
-              {loadingRaws ? (
+              {isLoadingRaw && rawInvoices.length === 0 ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress size={24} /></Box>
               ) : (
                 <List disablePadding>
@@ -235,14 +247,18 @@ const FaturasPage: React.FC = () => {
                       <IconButton 
                         size="small" 
                         color="error" 
-                        onClick={(e) => openDeleteDialog(e, raw)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setRawToDelete(raw);
+                          setDeleteDialogOpen(true);
+                        }}
                         sx={{ ml: 1, opacity: 0.7, '&:hover': { opacity: 1 } }}
                       >
                         <DeleteIcon fontSize="small" />
                       </IconButton>
                     </ListItemButton>
                   ))}
-                  {rawInvoices.length === 0 && (
+                  {!isLoadingRaw && rawInvoices.length === 0 && (
                     <Typography variant="body2" sx={{ p: 3, textAlign: 'center', color: 'text.disabled' }}>
                       Nenhuma fatura encontrada.
                     </Typography>
@@ -276,7 +292,7 @@ const FaturasPage: React.FC = () => {
               </Stack>
             ) : (
               <Typography variant="body2" color="text.disabled" sx={{ fontStyle: 'italic' }}>
-                {selectedRaw ? 'Informações de header não disponíveis para esta operadora.' : 'Selecione uma fatura.'}
+                {selectedRaw ? 'Informações de header não disponíveis.' : 'Selecione uma fatura.'}
               </Typography>
             )}
           </Paper>
@@ -284,21 +300,50 @@ const FaturasPage: React.FC = () => {
 
         {/* Lado Direito: Registros da Fatura */}
         <Paper sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRadius: 2 }}>
-          <Box sx={{ p: 2, bgcolor: alpha('#E11D48', 0.05), display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+          <Box sx={{ p: 2, bgcolor: alpha('#E11D48', 0.05), display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700, flexShrink: 0 }}>
               Registros da Fatura
               {selectedRaw && <Typography component="span" variant="body2" sx={{ ml: 1, color: 'text.secondary', fontWeight: 400 }}>
                 ({selectedRaw.operator.toUpperCase()} - {new Date(selectedRaw.created_at).toLocaleDateString()})
               </Typography>}
             </Typography>
+            <Stack direction="row" spacing={1} sx={{ flexShrink: 0 }}>
+              <TextField
+                select
+                size="small"
+                value={filterMonth}
+                onChange={(e) => setFilterMonth(parseInt(e.target.value, 10))}
+                sx={{ width: 140 }}
+              >
+                {Array.from({ length: 12 }, (_, i) => i + 1).map((monthNum) => (
+                  <MenuItem key={monthNum} value={monthNum}>
+                    {new Date(0, monthNum - 1).toLocaleString('pt-BR', { month: 'long' })}
+                  </MenuItem>
+                ))}
+              </TextField>
+              <TextField
+                select
+                size="small"
+                value={filterYear}
+                onChange={(e) => setFilterYear(parseInt(e.target.value, 10))}
+                sx={{ width: 100 }}
+              >
+                {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i).map((yearNum) => (
+                  <MenuItem key={yearNum} value={yearNum}>
+                    {yearNum}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Stack>
           </Box>
           <Divider />
           <Box sx={{ flex: 1, overflow: 'hidden' }}>
             <InvoiceList
               invoices={invoices}
-              loading={loadingItems}
+              loading={isLoadingItems}
               hasMore={hasMore}
               loadMore={loadMore}
+              isInitialLoading={isInitialLoad}
             />
           </Box>
         </Paper>
@@ -312,7 +357,7 @@ const FaturasPage: React.FC = () => {
         <DialogTitle>Remover Fatura</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Tem certeza que deseja remover esta fatura? Todos os {invoices.length} registros associados serão excluídos permanentemente.
+            Tem certeza que deseja remover esta fatura? Todos os registros associados serão excluídos permanentemente.
           </DialogContentText>
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>

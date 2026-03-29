@@ -92,12 +92,12 @@ const RelatoriosPage: React.FC = () => {
   useEffect(() => {
     if (!ws?.id) return;
     apiClient.get<string[]>(`/reports/reference-months?workspaceId=${ws.id}`)
-      .then(r => {
-        setMonths(r.data);
-        if (r.data.length && !refMonth) setRefMonth(r.data[0]);
+      .then(res => {
+        setMonths(res.data);
+        if (res.data.length && !refMonth) setRefMonth(res.data[0]);
       })
       .catch(() => {});
-  }, [ws?.id]);
+  }, [ws?.id, refMonth]);
 
   const fetchPage = useCallback(async (pageNum: number, reset: boolean) => {
     if (!ws?.id) return;
@@ -121,8 +121,8 @@ const RelatoriosPage: React.FC = () => {
       setHasMore(data.hasMore);
       setPage(pageNum);
       if (data.grandTotal !== undefined) setGrandTotal(data.grandTotal);
-    } catch (e) {
-      console.error('Report fetch error', e);
+    } catch (err) {
+      console.error('Report fetch error', err);
       setError('Error loading report data.');
     } finally {
       setLoading(false);
@@ -137,13 +137,13 @@ const RelatoriosPage: React.FC = () => {
     fetchPage(0, true);
   }, [fetchPage]);
 
-  useEffect(() => { refresh(); }, [tab, refMonth]);
+  useEffect(() => { refresh(); }, [tab, refMonth, refresh]);
 
   // Debounced search
   useEffect(() => {
-    const t = setTimeout(refresh, 400);
-    return () => clearTimeout(t);
-  }, [search]);
+    const timer = setTimeout(refresh, 400);
+    return () => clearTimeout(timer);
+  }, [search, refresh]);
 
   const loadMore = () => {
     if (!loading && hasMore) fetchPage(page + 1, false);
@@ -151,22 +151,22 @@ const RelatoriosPage: React.FC = () => {
 
   const exportCSV = () => {
     let headers: string[];
-    let mapper: (r: any) => (string | number)[];
+    let mapper: (item: any) => (string | number)[];
 
     if (tab === 0) {
       headers = ['CC Code', 'CC Name', 'Phone', 'Responsible', 'ID'];
-      mapper = (r: PhoneLineRow) => [r.costCenterCode, r.costCenterName, r.phoneNumber, r.responsibleName, r.responsibleId];
+      mapper = (row: PhoneLineRow) => [row.costCenterCode, row.costCenterName, row.phoneNumber, row.responsibleName, row.responsibleId];
     } else if (tab === 1) {
       headers = ['CC Code', 'CC Name', 'Reference Month', 'Total (R$)'];
-      mapper = (r: ConsumptionCCRow) => [r.costCenterCode, r.costCenterName, r.referenceMonth, r.total];
+      mapper = (row: ConsumptionCCRow) => [row.costCenterCode, row.costCenterName, row.referenceMonth, row.total];
     } else {
       headers = ['Responsible', 'ID', 'Phone', 'CC Code', 'CC Name', 'Total (R$)'];
-      mapper = (r: ConsumptionRespRow) => [r.responsibleName, r.responsibleId, r.phoneNumber, r.costCenterCode, r.costCenterName, r.total];
+      mapper = (row: ConsumptionRespRow) => [row.responsibleName, row.responsibleId, row.phoneNumber, row.costCenterCode, row.costCenterName, row.total];
     }
 
     const lines = [
       headers.join(';'),
-      ...rows.map(r => mapper(r).map(v => typeof v === 'number' ? v.toFixed(2).replace('.', ',') : `"${v}"`).join(';')),
+      ...rows.map(row => mapper(row).map(val => typeof val === 'number' ? val.toFixed(2).replace('.', ',') : `"${val}"`).join(';')),
     ];
     if (tab === 2) lines.push(`"TOTAL";;;;;"${grandTotal.toFixed(2).replace('.', ',')}"`);
 

@@ -2,13 +2,13 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box, Typography, Paper, Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, IconButton, Button, Dialog, DialogTitle,
-  DialogContent, DialogActions, TextField, Stack, Alert, CircularProgress
+  DialogContent, DialogActions, TextField, Stack, Alert, Skeleton,
+  alpha, useTheme
 } from '@mui/material';
 import {
   Add as AddIcon,
   Edit as EditIcon,
-  Delete as DeleteIcon,
-  People as PeopleIcon
+  Delete as DeleteIcon
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import apiClient from '../api/client';
@@ -25,8 +25,10 @@ interface Collaborator {
 
 const CollaboratorsPage: React.FC = () => {
   const { t } = useTranslation();
+  const theme = useTheme();
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [activeWorkspace, setActiveWorkspace] = useState<Workspace | null>(null);
@@ -50,9 +52,10 @@ const CollaboratorsPage: React.FC = () => {
     }
   }, []);
 
-  const fetchCollaborators = useCallback(async () => {
+  const fetchCollaborators = useCallback(async (isSilent = false) => {
     if (!activeWorkspace?.id) return;
-    setLoading(true);
+    if (!isSilent) setLoading(true);
+    
     try {
       const response = await apiClient.get<Collaborator[]>(`/collaborators?workspaceId=${activeWorkspace.id}`);
       setCollaborators(Array.isArray(response.data) ? response.data : []);
@@ -62,6 +65,7 @@ const CollaboratorsPage: React.FC = () => {
       setError('Erro ao carregar colaboradores');
     } finally {
       setLoading(false);
+      setIsInitialLoad(false);
     }
   }, [activeWorkspace?.id]);
 
@@ -98,7 +102,7 @@ const CollaboratorsPage: React.FC = () => {
       } else {
         await apiClient.post('/collaborators', { ...formData, workspace_id: activeWorkspace.id });
       }
-      fetchCollaborators();
+      fetchCollaborators(true); // Silent refresh
       handleClose();
     } catch (err) {
       console.error('Error saving collaborator:', err);
@@ -110,7 +114,7 @@ const CollaboratorsPage: React.FC = () => {
     if (window.confirm('Tem certeza que deseja excluir este colaborador?')) {
       try {
         await apiClient.delete(`/collaborators/${id}`);
-        fetchCollaborators();
+        fetchCollaborators(true); // Silent refresh
       } catch (err) {
         console.error('Error deleting collaborator:', err);
         setError('Erro ao excluir colaborador');
@@ -119,14 +123,15 @@ const CollaboratorsPage: React.FC = () => {
   };
 
   return (
-    <Box>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" mb={4}>
+    <Box sx={{ p: 1 }}>
+      <Stack direction="row" justifyContent="space-between" alignItems="flex-end" mb={4}>
         <Box>
-          <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>
+          <Typography variant="h4" sx={{ fontWeight: 800, mb: 0.5 }}>
             {t('sidebar.collaborators')}
           </Typography>
           <Typography variant="body1" color="text.secondary">
             Gerencie os colaboradores do seu workspace.
+            {loading && !isInitialLoad && <Typography component="span" variant="caption" color="primary" sx={{ ml: 2, fontWeight: 700 }}>Atualizando...</Typography>}
           </Typography>
         </Box>
         <Button
@@ -139,46 +144,52 @@ const CollaboratorsPage: React.FC = () => {
         </Button>
       </Stack>
 
-      {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
+      {error && <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>{error}</Alert>}
 
-      <TableContainer component={Paper} sx={{ borderRadius: 2, boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
+      <TableContainer component={Paper} sx={{ borderRadius: 2, boxShadow: '0 4px 20px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
         <Table>
-          <TableHead sx={{ bgcolor: 'action.hover' }}>
+          <TableHead sx={{ bgcolor: alpha(theme.palette.primary.main, 0.05) }}>
             <TableRow>
               <TableCell sx={{ fontWeight: 700 }}>Nome</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>ID Externo (Matrícula)</TableCell>
+              <TableCell sx={{ fontWeight: 700 }}>Matrícula</TableCell>
               <TableCell sx={{ fontWeight: 700 }}>E-mail</TableCell>
               <TableCell sx={{ fontWeight: 700 }}>Departamento</TableCell>
               <TableCell align="right" sx={{ fontWeight: 700 }}>Ações</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {loading ? (
-              <TableRow>
-                <TableCell colSpan={5} align="center" sx={{ py: 3 }}>
-                  <CircularProgress size={24} />
-                </TableCell>
-              </TableRow>
+            {isInitialLoad ? (
+              [...Array(5)].map((_, i) => (
+                <TableRow key={i}>
+                  <TableCell><Skeleton variant="text" width="80%" /></TableCell>
+                  <TableCell><Skeleton variant="text" width="60%" /></TableCell>
+                  <TableCell><Skeleton variant="text" width="90%" /></TableCell>
+                  <TableCell><Skeleton variant="text" width="70%" /></TableCell>
+                  <TableCell align="right"><Skeleton variant="circular" width={32} height={32} sx={{ display: 'inline-block' }} /></TableCell>
+                </TableRow>
+              ))
             ) : collaborators.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} align="center" sx={{ py: 3 }}>
+                <TableCell colSpan={5} align="center" sx={{ py: 6, color: 'text.secondary' }}>
                   Nenhum colaborador encontrado.
                 </TableCell>
               </TableRow>
             ) : (
               collaborators.map((c) => (
-                <TableRow key={c.id} hover>
+                <TableRow key={c.id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
                   <TableCell sx={{ fontWeight: 600 }}>{c.name}</TableCell>
                   <TableCell>{c.external_id || '-'}</TableCell>
                   <TableCell>{c.email || '-'}</TableCell>
                   <TableCell>{c.department || '-'}</TableCell>
                   <TableCell align="right">
-                    <IconButton size="small" onClick={() => handleOpen(c)} color="primary">
-                      <EditIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton size="small" onClick={() => handleDelete(c.id)} color="error">
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
+                    <Stack direction="row" spacing={0.5} justifyContent="flex-end">
+                      <IconButton size="small" onClick={() => handleOpen(c)} color="primary" sx={{ bgcolor: alpha(theme.palette.primary.main, 0.05) }}>
+                        <EditIcon fontSize="small" />
+                      </IconButton>
+                      <IconButton size="small" onClick={() => handleDelete(c.id)} color="error" sx={{ bgcolor: alpha(theme.palette.error.main, 0.05) }}>
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </Stack>
                   </TableCell>
                 </TableRow>
               ))
@@ -199,9 +210,10 @@ const CollaboratorsPage: React.FC = () => {
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               required
+              autoFocus
             />
             <TextField
-              label="ID Externo (Ex: Matrícula)"
+              label="Matrícula / ID Externo"
               fullWidth
               value={formData.external_id}
               onChange={(e) => setFormData({ ...formData, external_id: e.target.value })}
@@ -223,7 +235,7 @@ const CollaboratorsPage: React.FC = () => {
         </DialogContent>
         <DialogActions sx={{ p: 2.5 }}>
           <Button onClick={handleClose} color="inherit">Cancelar</Button>
-          <Button onClick={handleSubmit} variant="contained" disabled={!formData.name}>
+          <Button onClick={handleSubmit} variant="contained" disabled={!formData.name} sx={{ px: 4 }}>
             Salvar
           </Button>
         </DialogActions>

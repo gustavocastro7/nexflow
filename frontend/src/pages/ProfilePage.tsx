@@ -39,6 +39,7 @@ import LightModeIcon from '@mui/icons-material/LightMode';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ColorModeContext } from '../context/ColorModeContext';
@@ -482,8 +483,5 @@ const ProfilePage: React.FC = () => {
     </Container>
   );
 };
-
-// Import needed icons that were missing in the component before
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
 export default ProfilePage;

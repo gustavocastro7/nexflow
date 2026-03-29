@@ -2,6 +2,8 @@ const Invoice = require('../models/Invoice');
 const CostCenter = require('../models/CostCenter');
 const PhoneLine = require('../models/PhoneLine');
 const Workspace = require('../models/Workspace');
+const UserWorkspace = require('../models/UserWorkspace');
+const Collaborator = require('../models/Collaborator');
 const sequelize = require('../config/database');
 const { Op, fn, col, literal } = require('sequelize');
 
@@ -29,19 +31,50 @@ class ReportController {
         return res.status(400).json({ error: 'Workspace ID is required' });
       }
 
-      const [costCentersCount, claroCount, vivoCount, claroTxtCount, totalSpent] = await Promise.all([
+      const [
+        costCentersCount, 
+        claroCount, 
+        vivoCount, 
+        claroTxtCount, 
+        totalSpent,
+        usersCount,
+        collaboratorsCount
+      ] = await Promise.all([
         CostCenter.count({ where: { workspace_id: workspaceId } }),
         Invoice.count({ where: { workspace_id: workspaceId, operator: 'claro' } }),
         Invoice.count({ where: { workspace_id: workspaceId, operator: 'vivo' } }),
         Invoice.count({ where: { workspace_id: workspaceId, operator: 'claro_txt' } }),
-        Invoice.sum('charged_value', { where: { workspace_id: workspaceId } })
+        Invoice.sum('charged_value', { where: { workspace_id: workspaceId } }),
+        UserWorkspace.count({ where: { workspace_id: workspaceId } }),
+        Collaborator.count({ where: { workspace_id: workspaceId } })
       ]);
+
+      // Count unique phone numbers and those without cost center
+      const [[{ phone_lines_count, phone_lines_without_cc }]] = await sequelize.query(`
+        SELECT 
+          COUNT(*)::int AS phone_lines_count,
+          COUNT(*) FILTER (WHERE pl.cost_center_id IS NULL)::int AS phone_lines_without_cc
+        FROM (
+          SELECT DISTINCT source_phone, workspace_id 
+          FROM invoices 
+          WHERE workspace_id = :workspaceId AND source_phone IS NOT NULL AND source_phone != ''
+          UNION
+          SELECT DISTINCT phone_number as source_phone, workspace_id 
+          FROM phone_lines 
+          WHERE workspace_id = :workspaceId
+        ) AS unique_phones
+        LEFT JOIN phone_lines pl ON pl.phone_number = unique_phones.source_phone AND pl.workspace_id = unique_phones.workspace_id
+      `, { replacements: { workspaceId } });
 
       return res.json({
         costCenters: costCentersCount,
-        claroInvoices: claroCount + claroTxtCount,
-        vivoInvoices: vivoCount,
-        totalSpent: parseFloat(totalSpent) || 0
+        claroInvoices: (claroCount || 0) + (claroTxtCount || 0),
+        vivoInvoices: vivoCount || 0,
+        totalSpent: parseFloat(totalSpent) || 0,
+        users: usersCount || 0,
+        collaborators: collaboratorsCount || 0,
+        phoneLines: phone_lines_count || 0,
+        phoneLinesWithoutCC: phone_lines_without_cc || 0
       });
     } catch (error) {
       console.error('Dashboard Stats Error:', error);

@@ -30,7 +30,8 @@ import {
   Select,
   FormControl,
   InputLabel,
-  Snackbar
+  Snackbar,
+  Skeleton
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -43,7 +44,8 @@ import type { Workspace, User } from '../types';
 const UsersPage: React.FC = () => {
   const theme = useTheme();
   const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [open, setOpen] = useState(false);
@@ -78,8 +80,9 @@ const UsersPage: React.FC = () => {
 
   const isAdmin = loggedUser?.profile === 'admin' || loggedUser?.profile === 'jedi';
 
-  const fetchUsers = useCallback(async () => {
+  const fetchUsers = useCallback(async (isSilent = false) => {
     if (!activeWorkspace?.id) return;
+    if (!isSilent) setLoading(true); 
     try {
       const response = await apiClient.get<User[]>(`/users?workspaceId=${activeWorkspace.id}&includeInactive=${showInactive}`);
       setUsers(Array.isArray(response.data) ? response.data : []);
@@ -89,6 +92,7 @@ const UsersPage: React.FC = () => {
       setUsers([]);
     } finally {
       setLoading(false);
+      setIsInitialLoad(false);
     }
   }, [activeWorkspace?.id, showInactive]);
 
@@ -134,7 +138,7 @@ const UsersPage: React.FC = () => {
         });
         setSuccess('User created and associated with workspace');
       }
-      fetchUsers();
+      fetchUsers(true); // Silent refresh
       handleClose();
     } catch (err: any) {
       const msg = err.response?.data?.error || 'Error saving user';
@@ -149,7 +153,7 @@ const UsersPage: React.FC = () => {
       try {
         await apiClient.delete(`/users/${id}`);
         setSuccess('User deactivated successfully');
-        fetchUsers();
+        fetchUsers(true); // Silent refresh
       } catch (err: any) {
         const msg = err.response?.data?.error || 'Error deactivating user';
         setError(msg);
@@ -165,7 +169,7 @@ const UsersPage: React.FC = () => {
         active: !user.active
       });
       setSuccess(user.active ? 'User deactivated' : 'User activated');
-      fetchUsers();
+      fetchUsers(true); // Silent refresh
     } catch (err: any) {
       const msg = err.response?.data?.error || 'Error changing user status';
       setError(msg);
@@ -173,12 +177,13 @@ const UsersPage: React.FC = () => {
   };
 
   return (
-    <Container maxWidth={false}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, flexWrap: 'wrap', gap: 2 }}>
+    <Container maxWidth={false} sx={{ py: 2 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', mb: 4, flexWrap: 'wrap', gap: 2 }}>
         <Box>
           <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>Users</Typography>
           <Typography variant="body1" color="textSecondary">
             Manage users in the workspace and their permissions.
+            {loading && !isInitialLoad && <Typography component="span" variant="caption" color="primary" sx={{ ml: 2, fontWeight: 700 }}>Atualizando...</Typography>}
           </Typography>
         </Box>
         <Stack direction="row" spacing={2} alignItems="center">
@@ -204,100 +209,106 @@ const UsersPage: React.FC = () => {
         </Stack>
       </Box>
 
-      {error && <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>{error}</Alert>}
+      {error && <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }} onClose={() => setError('')}>{error}</Alert>}
 
-      {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}><CircularProgress /></Box>
-      ) : (
-        <TableContainer component={Paper} sx={{ overflow: 'hidden' }}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Name</TableCell>
-                <TableCell>Email</TableCell>
-                <TableCell>Profile</TableCell>
-                <TableCell>Status</TableCell>
-                {isAdmin && <TableCell align="right">Actions</TableCell>}
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {users.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={isAdmin ? 5 : 4} align="center" sx={{ py: 8 }}>
-                    <Typography variant="body1" color="textSecondary">No users found.</Typography>
-                  </TableCell>
+      <TableContainer component={Paper} sx={{ overflow: 'hidden', borderRadius: 2, boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
+        <Table>
+          <TableHead sx={{ bgcolor: alpha(theme.palette.primary.main, 0.05) }}>
+            <TableRow>
+              <TableCell sx={{ fontWeight: 700 }}>Name</TableCell>
+              <TableCell sx={{ fontWeight: 700 }}>Email</TableCell>
+              <TableCell sx={{ fontWeight: 700 }}>Profile</TableCell>
+              <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
+              {isAdmin && <TableCell align="right" sx={{ fontWeight: 700 }}>Actions</TableCell>}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {isInitialLoad ? (
+              [...Array(5)].map((_, i) => (
+                <TableRow key={i}>
+                  <TableCell><Skeleton variant="text" width="80%" /></TableCell>
+                  <TableCell><Skeleton variant="text" width="90%" /></TableCell>
+                  <TableCell><Skeleton variant="text" width="60%" /></TableCell>
+                  <TableCell><Skeleton variant="text" width="70%" /></TableCell>
+                  {isAdmin && <TableCell align="right"><Skeleton variant="circular" width={32} height={32} sx={{ display: 'inline-block' }} /></TableCell>}
                 </TableRow>
-              ) : (
-                users.map((user) => (
-                  <TableRow key={user.id} hover sx={{ opacity: user.active === false ? 0.6 : 1 }}>
-                    <TableCell sx={{ fontWeight: 700 }}>{user.name}</TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>
-                      <Chip 
-                        label={user.profile === 'jedi' ? 'Jedi' : (user.profile === 'admin' ? 'Admin' : 'User')} 
-                        size="small" 
-                        color={user.profile === 'jedi' ? 'secondary' : (user.profile === 'admin' ? 'primary' : 'default')}
-                        variant="outlined"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              ))
+            ) : users.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={isAdmin ? 5 : 4} align="center" sx={{ py: 8, color: 'text.secondary' }}>
+                  <Typography variant="body1">No users found.</Typography>
+                </TableCell>
+              </TableRow>
+            ) : (
+              users.map((user) => (
+                <TableRow key={user.id} hover sx={{ opacity: user.active === false ? 0.6 : 1, '&:last-child td, &:last-child th': { border: 0 } }}>
+                  <TableCell sx={{ fontWeight: 700 }}>{user.name}</TableCell>
+                  <TableCell>{user.email}</TableCell>
+                  <TableCell>
+                    <Chip 
+                      label={user.profile === 'jedi' ? 'Jedi' : (user.profile === 'admin' ? 'Admin' : 'User')} 
+                      size="small" 
+                      color={user.profile === 'jedi' ? 'secondary' : (user.profile === 'admin' ? 'primary' : 'default')}
+                      variant="outlined"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      {user.active !== false ? (
+                        <>
+                          <CheckCircleIcon color="success" fontSize="small" />
+                          <Typography variant="body2" color="success.main">Active</Typography>
+                        </>
+                      ) : (
+                        <>
+                          <CancelIcon color="error" fontSize="small" />
+                          <Typography variant="body2" color="error.main">Inactive</Typography>
+                        </>
+                      )}
+                    </Box>
+                  </TableCell>
+                  {isAdmin && (
+                    <TableCell align="right">
+                      <Stack direction="row" spacing={1} justifyContent="flex-end">
+                        <Tooltip title="Edit">
+                          <IconButton 
+                            onClick={() => handleOpen(user)} 
+                            size="small" 
+                            sx={{ bgcolor: alpha(theme.palette.primary.main, 0.1), color: theme.palette.primary.main }}
+                          >
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
                         {user.active !== false ? (
-                          <>
-                            <CheckCircleIcon color="success" fontSize="small" />
-                            <Typography variant="body2" color="success.main">Active</Typography>
-                          </>
-                        ) : (
-                          <>
-                            <CancelIcon color="error" fontSize="small" />
-                            <Typography variant="body2" color="error.main">Inactive</Typography>
-                          </>
-                        )}
-                      </Box>
-                    </TableCell>
-                    {isAdmin && (
-                      <TableCell align="right">
-                        <Stack direction="row" spacing={1} justifyContent="flex-end">
-                          <Tooltip title="Edit">
+                          <Tooltip title="Disable">
                             <IconButton 
-                              onClick={() => handleOpen(user)} 
+                              onClick={() => handleDeactivate(user.id)} 
                               size="small" 
-                              sx={{ bgcolor: alpha(theme.palette.primary.main, 0.1), color: theme.palette.primary.main }}
+                              sx={{ bgcolor: alpha(theme.palette.error.main, 0.1), color: theme.palette.error.main }}
                             >
-                              <EditIcon fontSize="small" />
+                              <DeleteIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
-                          {user.active !== false ? (
-                            <Tooltip title="Disable">
-                              <IconButton 
-                                onClick={() => handleDeactivate(user.id)} 
-                                size="small" 
-                                sx={{ bgcolor: alpha(theme.palette.error.main, 0.1), color: theme.palette.error.main }}
-                              >
-                                <DeleteIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                          ) : (
-                            <Tooltip title="Enable">
-                              <IconButton 
-                                onClick={() => handleToggleActive(user)} 
-                                size="small" 
-                                sx={{ bgcolor: alpha(theme.palette.success.main, 0.1), color: theme.palette.success.main }}
-                              >
-                                <CheckCircleIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                          )}
-                        </Stack>
-                      </TableCell>
-                    )}
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      )}
+                        ) : (
+                          <Tooltip title="Enable">
+                            <IconButton 
+                              onClick={() => handleToggleActive(user)} 
+                              size="small" 
+                              sx={{ bgcolor: alpha(theme.palette.success.main, 0.1), color: theme.palette.success.main }}
+                            >
+                              <CheckCircleIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </Stack>
+                    </TableCell>
+                  )}
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
 
       <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 4 } }}>
         <DialogTitle sx={{ fontWeight: 800, pt: 3 }}>

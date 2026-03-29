@@ -12,7 +12,6 @@ export interface User {
     last_login?: string;
   };
 }
-
 export interface Workspace {
   id: string;
   name: string;
