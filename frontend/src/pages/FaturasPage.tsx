@@ -28,6 +28,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import apiClient from '../api/client';
 import type { Workspace, Invoice, RawInvoice } from '../types';
 import InvoiceList from '../components/invoices/InvoiceList';
+import { useNotification } from '../context/NotificationContext';
 
 const PAGE_SIZE = 50;
 
@@ -40,6 +41,7 @@ interface PaginatedInvoices {
 }
 
 const FaturasPage: React.FC = () => {
+  const { showError, showSuccess } = useNotification();
   // Separate loading states to prevent global flickers
   const [isLoadingRaw, setIsLoadingRaw] = useState(false);
   const [isLoadingItems, setIsLoadingItems] = useState(false);
@@ -50,8 +52,6 @@ const FaturasPage: React.FC = () => {
   const [selectedRaw, setSelectedRaw] = useState<RawInvoice | null>(null);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [rawToDelete, setRawToDelete] = useState<RawInvoice | null>(null);
 
@@ -65,19 +65,22 @@ const FaturasPage: React.FC = () => {
   }, []);
 
   const activeWorkspace = getActiveWorkspace();
-  const [filterMonth, setFilterMonth] = useState(new Date().getMonth() + 1);
-  const [filterYear, setFilterYear] = useState(new Date().getFullYear());
+  const [filterMonth, setFilterMonth] = useState<number>(0);
+  const [filterYear, setFilterYear] = useState<number>(0);
 
   const fetchRawInvoices = useCallback(async () => {
     if (!activeWorkspace?.id) return;
     setIsLoadingRaw(true);
     try {
-      const res = await apiClient.get<RawInvoice[]>(`/invoices/raw?workspaceId=${activeWorkspace.id}`);
+      let url = `/invoices/raw?workspaceId=${activeWorkspace.id}`;
+      if (filterMonth > 0) url += `&mes=${filterMonth}`;
+      if (filterYear > 0) url += `&ano=${filterYear}`;
+      
+      const res = await apiClient.get<RawInvoice[]>(url);
       const newRawInvoices = res.data;
       setRawInvoices(newRawInvoices);
 
       if (newRawInvoices.length > 0) {
-        // Only change selectedRaw if none is selected or the current one is gone
         if (!selectedRaw || !newRawInvoices.some(r => r.id === selectedRaw.id)) {
           setSelectedRaw(newRawInvoices[0]);
         }
@@ -87,13 +90,13 @@ const FaturasPage: React.FC = () => {
       }
     } catch (err) {
       console.error(err);
-      setError('Erro ao carregar lista de faturas importadas');
+      showError('Erro ao carregar lista de faturas importadas');
     } finally {
       setIsLoadingRaw(false);
     }
-  }, [activeWorkspace?.id, selectedRaw]);
+  }, [activeWorkspace?.id, filterMonth, filterYear, selectedRaw?.id, showError]);
 
-  const fetchItems = useCallback(async (pageNum: number, append: boolean, rawId?: string, operator?: string, month?: number, year?: number) => {
+  const fetchItems = useCallback(async (pageNum: number, append: boolean, rawId?: string, operator?: string) => {
     if (!activeWorkspace?.id) return;
     
     setIsLoadingItems(true);
@@ -102,9 +105,7 @@ const FaturasPage: React.FC = () => {
     try {
       let url = `/invoices?workspaceId=${activeWorkspace.id}&page=${pageNum}&limit=${PAGE_SIZE}`;
       if (rawId) url += `&raw_invoice_id=${rawId}`;
-      if (operator) url += `&operator=${operator}`; // Added operator to URL
-      if (month) url += `&mes=${month}`;
-      if (year) url += `&ano=${year}`;
+      if (operator) url += `&operator=${operator}`;
       
       const res = await apiClient.get<PaginatedInvoices>(url);
       const { data, hasMore: more } = res.data;
@@ -112,50 +113,49 @@ const FaturasPage: React.FC = () => {
       setInvoices(prev => append ? [...prev, ...data] : data);
       setHasMore(more);
       setPage(pageNum);
-      setError('');
     } catch (err) {
       console.error(err);
-      setError('Erro ao carregar registros da fatura');
+      showError('Erro ao carregar registros da fatura');
       setHasMore(false);
     } finally {
       setIsLoadingItems(false);
       setIsInitialLoad(false);
     }
-  }, [activeWorkspace?.id]);
+  }, [activeWorkspace?.id, showError]);
 
   useEffect(() => {
     fetchRawInvoices();
-  }, [activeWorkspace?.id]); // Only on workspace change
+  }, [activeWorkspace?.id, filterMonth, filterYear]); // Reload list when workspace OR filters change
 
-  // Triggered when selectedRaw or filters change
+  // Triggered when selectedRaw changes
   useEffect(() => {
     if (selectedRaw) {
-      fetchItems(1, false, selectedRaw.id, selectedRaw.operator, filterMonth, filterYear);
+      fetchItems(1, false, selectedRaw.id, selectedRaw.operator);
     } else {
       setInvoices([]);
       setHasMore(false);
     }
-  }, [selectedRaw?.id, filterMonth, filterYear, fetchItems]);
+  }, [selectedRaw?.id, fetchItems]);
 
   const loadMore = useCallback(() => {
     if (selectedRaw && hasMore && !isLoadingItems) {
-      fetchItems(page + 1, true, selectedRaw.id, selectedRaw.operator, filterMonth, filterYear);
+      fetchItems(page + 1, true, selectedRaw.id, selectedRaw.operator);
     }
-  }, [fetchItems, page, selectedRaw, filterMonth, filterYear, hasMore, isLoadingItems]);
+  }, [fetchItems, page, selectedRaw, hasMore, isLoadingItems]);
 
   const handleDeleteInvoice = async () => {
     if (!rawToDelete || !activeWorkspace?.id) return;
 
     try {
       await apiClient.delete(`/invoices/${rawToDelete.id}?workspaceId=${activeWorkspace.id}`);
-      setSuccess('Fatura removida com sucesso!');
+      showSuccess('Fatura removida com sucesso!');
       if (selectedRaw?.id === rawToDelete.id) {
         setSelectedRaw(null);
         setInvoices([]);
       }
       fetchRawInvoices();
     } catch (err) {
-      setError('Erro ao remover fatura');
+      showError('Erro ao remover fatura');
     } finally {
       setDeleteDialogOpen(false);
       setRawToDelete(null);
@@ -170,15 +170,14 @@ const FaturasPage: React.FC = () => {
     reader.onload = async (e) => {
       const content = e.target?.result as string;
       try {
-        setError('');
         await apiClient.post(`/invoices/${type}/import`, {
           content,
           workspaceId: activeWorkspace.id,
         });
-        setSuccess(`Fatura ${type.toUpperCase()} importada com sucesso!`);
+        showSuccess(`Fatura ${type.toUpperCase()} importada com sucesso!`);
         fetchRawInvoices();
       } catch (err: any) {
-        setError(err.response?.data?.error || 'Erro ao importar arquivo.');
+        showError(err.response?.data?.error || 'Erro ao importar arquivo.');
       }
     };
     reader.readAsText(file);
@@ -208,18 +207,48 @@ const FaturasPage: React.FC = () => {
         </Stack>
       </Box>
 
-      {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
-      {success && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccess('')}>{success}</Alert>}
-
       <Box sx={{ display: 'flex', gap: 3, flex: 1, minHeight: 0 }}>
         {/* Lado Esquerdo: Lista de Faturas e Header */}
         <Box sx={{ width: '350px', display: 'flex', flexDirection: 'column', gap: 2 }}>
           <Paper sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRadius: 2 }}>
             <Box sx={{ p: 2, bgcolor: alpha('#E11D48', 0.05) }}>
-              <Typography variant="subtitle1" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
                 <ReceiptLongIcon fontSize="small" color="primary" />
                 Faturas Importadas
               </Typography>
+              
+              <Stack direction="row" spacing={1}>
+                <TextField
+                  select
+                  fullWidth
+                  size="small"
+                  value={filterMonth}
+                  onChange={(e) => setFilterMonth(parseInt(e.target.value, 10))}
+                  sx={{ bgcolor: 'background.paper' }}
+                >
+                  <MenuItem value={0}>Mês (Todos)</MenuItem>
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map((monthNum) => (
+                    <MenuItem key={monthNum} value={monthNum}>
+                      {new Date(0, monthNum - 1).toLocaleString('pt-BR', { month: 'short' })}
+                    </MenuItem>
+                  ))}
+                </TextField>
+                <TextField
+                  select
+                  fullWidth
+                  size="small"
+                  value={filterYear}
+                  onChange={(e) => setFilterYear(parseInt(e.target.value, 10))}
+                  sx={{ bgcolor: 'background.paper' }}
+                >
+                  <MenuItem value={0}>Ano</MenuItem>
+                  {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i).map((yearNum) => (
+                    <MenuItem key={yearNum} value={yearNum}>
+                      {yearNum}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Stack>
             </Box>
             <Divider />
             <Box sx={{ flex: 1, overflowY: 'auto' }}>
@@ -260,7 +289,7 @@ const FaturasPage: React.FC = () => {
                   ))}
                   {!isLoadingRaw && rawInvoices.length === 0 && (
                     <Typography variant="body2" sx={{ p: 3, textAlign: 'center', color: 'text.disabled' }}>
-                      Nenhuma fatura encontrada.
+                      Nenhuma fatura encontrada no período.
                     </Typography>
                   )}
                 </List>
@@ -300,41 +329,13 @@ const FaturasPage: React.FC = () => {
 
         {/* Lado Direito: Registros da Fatura */}
         <Paper sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRadius: 2 }}>
-          <Box sx={{ p: 2, bgcolor: alpha('#E11D48', 0.05), display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}>
+          <Box sx={{ p: 2, bgcolor: alpha('#E11D48', 0.05), display: 'flex', justifyContent: 'space-between', alignItems: 'center', minHeight: 64 }}>
             <Typography variant="subtitle1" sx={{ fontWeight: 700, flexShrink: 0 }}>
               Registros da Fatura
               {selectedRaw && <Typography component="span" variant="body2" sx={{ ml: 1, color: 'text.secondary', fontWeight: 400 }}>
                 ({selectedRaw.operator.toUpperCase()} - {new Date(selectedRaw.created_at).toLocaleDateString()})
               </Typography>}
             </Typography>
-            <Stack direction="row" spacing={1} sx={{ flexShrink: 0 }}>
-              <TextField
-                select
-                size="small"
-                value={filterMonth}
-                onChange={(e) => setFilterMonth(parseInt(e.target.value, 10))}
-                sx={{ width: 140 }}
-              >
-                {Array.from({ length: 12 }, (_, i) => i + 1).map((monthNum) => (
-                  <MenuItem key={monthNum} value={monthNum}>
-                    {new Date(0, monthNum - 1).toLocaleString('pt-BR', { month: 'long' })}
-                  </MenuItem>
-                ))}
-              </TextField>
-              <TextField
-                select
-                size="small"
-                value={filterYear}
-                onChange={(e) => setFilterYear(parseInt(e.target.value, 10))}
-                sx={{ width: 100 }}
-              >
-                {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i).map((yearNum) => (
-                  <MenuItem key={yearNum} value={yearNum}>
-                    {yearNum}
-                  </MenuItem>
-                ))}
-              </TextField>
-            </Stack>
           </Box>
           <Divider />
           <Box sx={{ flex: 1, overflow: 'hidden' }}>

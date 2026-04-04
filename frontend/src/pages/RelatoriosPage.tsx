@@ -52,9 +52,9 @@ const REPORT_ENDPOINTS: Record<ReportType, string> = {
 };
 
 const REPORT_LABELS: Record<ReportType, string> = {
-  0: 'Phone Lines',
-  1: 'Consumption by Cost Center',
-  2: 'Consumption by Responsible',
+  0: 'Linhas Telefônicas',
+  1: 'Consumo por Centro de Custo',
+  2: 'Consumo por Responsável',
 };
 
 const fmtMoney = (v: number) =>
@@ -154,13 +154,13 @@ const RelatoriosPage: React.FC = () => {
     let mapper: (item: any) => (string | number)[];
 
     if (tab === 0) {
-      headers = ['CC Code', 'CC Name', 'Phone', 'Responsible', 'ID'];
+      headers = ['Cod CC', 'Nome CC', 'Telefone', 'Responsável', 'ID'];
       mapper = (row: PhoneLineRow) => [row.costCenterCode, row.costCenterName, row.phoneNumber, row.responsibleName, row.responsibleId];
     } else if (tab === 1) {
-      headers = ['CC Code', 'CC Name', 'Reference Month', 'Total (R$)'];
+      headers = ['Cod CC', 'Nome CC', 'Mês Referência', 'Total (R$)'];
       mapper = (row: ConsumptionCCRow) => [row.costCenterCode, row.costCenterName, row.referenceMonth, row.total];
     } else {
-      headers = ['Responsible', 'ID', 'Phone', 'CC Code', 'CC Name', 'Total (R$)'];
+      headers = ['Responsável', 'ID', 'Telefone', 'Cod CC', 'Nome CC', 'Total (R$)'];
       mapper = (row: ConsumptionRespRow) => [row.responsibleName, row.responsibleId, row.phoneNumber, row.costCenterCode, row.costCenterName, row.total];
     }
 
@@ -178,26 +178,26 @@ const RelatoriosPage: React.FC = () => {
   };
 
   if (!ws) {
-    return <Box sx={{ p: 4 }}><Alert severity="warning">Select a workspace to view reports.</Alert></Box>;
+    return <Box sx={{ p: 4 }}><Alert severity="warning">Selecione um workspace para visualizar os relatórios.</Alert></Box>;
   }
 
   const renderHead = () => {
     if (tab === 0) return (
       <TableRow>
-        <TableCell>CC Code</TableCell><TableCell>CC Name</TableCell>
-        <TableCell>Phone</TableCell><TableCell>Responsible</TableCell><TableCell>ID</TableCell>
+        <TableCell>Cód. CC</TableCell><TableCell>Nome CC</TableCell>
+        <TableCell>Telefone</TableCell><TableCell>Responsável</TableCell><TableCell>ID</TableCell>
       </TableRow>
     );
     if (tab === 1) return (
       <TableRow>
-        <TableCell>CC Code</TableCell><TableCell>CC Name</TableCell>
-        <TableCell>Reference Month</TableCell><TableCell align="right">Total</TableCell>
+        <TableCell>Cód. CC</TableCell><TableCell>Nome CC</TableCell>
+        <TableCell>Mês de Referência</TableCell><TableCell align="right">Total</TableCell>
       </TableRow>
     );
     return (
       <TableRow>
-        <TableCell>Responsible</TableCell><TableCell>ID</TableCell><TableCell>Phone</TableCell>
-        <TableCell>CC Code</TableCell><TableCell>CC Name</TableCell><TableCell align="right">Total</TableCell>
+        <TableCell>Responsável</TableCell><TableCell>ID</TableCell><TableCell>Telefone</TableCell>
+        <TableCell>Cód. CC</TableCell><TableCell>Nome CC</TableCell><TableCell align="right">Total</TableCell>
       </TableRow>
     );
   };
@@ -243,16 +243,16 @@ const RelatoriosPage: React.FC = () => {
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', p: 2, gap: 1.5 }}>
       {/* Compact header */}
       <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
-        <Typography variant="h6" sx={{ fontWeight: 800, mr: 1 }}>Reports</Typography>
+        <Typography variant="h6" sx={{ fontWeight: 800, mr: 1 }}>Relatórios</Typography>
 
         <Tabs
           value={tab}
           onChange={(_, v) => setTab(v)}
           sx={{ minHeight: 36, '& .MuiTab-root': { minHeight: 36, py: 0.5, fontSize: '0.8rem', fontWeight: 700 } }}
         >
-          <Tab label="Phone Lines" />
-          <Tab label="By Cost Center" />
-          <Tab label="By Responsible" />
+          <Tab label="Linhas Telefônicas" />
+          <Tab label="Por Centro de Custo" />
+          <Tab label="Por Responsável" />
         </Tabs>
 
         <Box sx={{ flex: 1 }} />
@@ -264,7 +264,7 @@ const RelatoriosPage: React.FC = () => {
               onChange={e => setRefMonth(e.target.value)}
               displayEmpty
             >
-              <MenuItem value="" disabled>Ref. Month</MenuItem>
+              <MenuItem value="" disabled>Mês de Ref.</MenuItem>
               {months.map(m => <MenuItem key={m} value={m}>{m}</MenuItem>)}
             </Select>
           </FormControl>
@@ -272,7 +272,7 @@ const RelatoriosPage: React.FC = () => {
 
         <TextField
           size="small"
-          placeholder="Search CC code, name, responsible or phone…"
+          placeholder="Buscar por Cód. CC, nome, responsável ou telefone…"
           value={search}
           onChange={e => setSearch(e.target.value)}
           sx={{ width: 320 }}
@@ -281,7 +281,7 @@ const RelatoriosPage: React.FC = () => {
           }}
         />
 
-        <Tooltip title="Refresh">
+        <Tooltip title="Atualizar">
           <IconButton onClick={refresh} size="small" color="primary"><RefreshIcon /></IconButton>
         </Tooltip>
 
@@ -301,29 +301,38 @@ const RelatoriosPage: React.FC = () => {
       {/* Large viewing area */}
       <Paper sx={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         <TableContainer ref={containerRef} sx={{ flex: 1, overflow: 'auto' }}>
-          <InfiniteScroll loadMore={loadMore} hasMore={hasMore} loading={loading} root={rootEl}>
-            <Table stickyHeader size="small">
-              <TableHead>{renderHead()}</TableHead>
-              <TableBody>
-                {rows.length === 0 && !loading ? (
-                  <TableRow>
-                    <TableCell colSpan={6} align="center" sx={{ py: 8, color: 'text.disabled' }}>
-                      No data found.
-                    </TableCell>
-                  </TableRow>
-                ) : rows.map(renderRow)}
+          <Table stickyHeader size="small">
+            <TableHead>{renderHead()}</TableHead>
+            <TableBody>
+              {rows.length === 0 && !loading ? (
+                <TableRow>
+                  <TableCell colSpan={6} align="center" sx={{ py: 8, color: 'text.disabled' }}>
+                    Nenhum dado encontrado.
+                  </TableCell>
+                </TableRow>
+              ) : rows.map(renderRow)}
 
-                {tab === 2 && rows.length > 0 && !hasMore && (
-                  <TableRow sx={{ bgcolor: alpha(theme.palette.primary.main, 0.08) }}>
-                    <TableCell colSpan={5} sx={{ fontWeight: 900 }}>TOTAL EXPENSES</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 900, color: theme.palette.primary.main, fontSize: '1rem' }}>
-                      {fmtMoney(grandTotal)}
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </InfiniteScroll>
+              <TableRow>
+                <TableCell colSpan={6} sx={{ p: 0, border: 0 }}>
+                  <InfiniteScroll
+                    loadMore={loadMore}
+                    hasMore={hasMore}
+                    loading={loading}
+                    root={rootEl}
+                  />
+                </TableCell>
+              </TableRow>
+
+              {tab === 2 && rows.length > 0 && !hasMore && (
+                <TableRow sx={{ bgcolor: alpha(theme.palette.primary.main, 0.08) }}>
+                  <TableCell colSpan={5} sx={{ fontWeight: 900 }}>TOTAL DE GASTOS</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 900, color: theme.palette.primary.main, fontSize: '1rem' }}>
+                    {fmtMoney(grandTotal)}
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
         </TableContainer>
       </Paper>
     </Box>

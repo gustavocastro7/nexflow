@@ -24,7 +24,11 @@ import {
   alpha,
   useTheme,
   Tooltip,
-  Stack
+  Stack,
+  Divider,
+  List,
+  ListItemButton,
+  ListItemText
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -33,6 +37,7 @@ import PhoneIcon from '@mui/icons-material/Phone';
 import SettingsPhoneIcon from '@mui/icons-material/SettingsPhone';
 import apiClient from '../api/client';
 import type { Workspace, User, CostCenter } from '../types';
+import { useNotification } from '../context/NotificationContext';
 
 interface Collaborator {
   id: string;
@@ -49,16 +54,17 @@ interface PhoneLine {
 }
 
 const CentroCustoPage: React.FC = () => {
+  const { showError, showSuccess } = useNotification();
   const theme = useTheme();
   const [costCenters, setCostCenters] = useState<CostCenter[]>([]);
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   const [phoneLines, setPhoneLines] = useState<PhoneLine[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [open, setOpen] = useState(false);
   const [openLines, setOpenLines] = useState(false);
   const [currentCostCenter, setCurrentCostCenter] = useState<CostCenter | null>(null);
   const [editingLine, setEditingLine] = useState<PhoneLine | null>(null);
+  const [selectedCostCenterId, setSelectedCostCenterId] = useState<string | null>(null);
   
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -102,19 +108,27 @@ const CentroCustoPage: React.FC = () => {
         apiClient.get<Collaborator[]>(`/collaborators?workspaceId=${activeWorkspace.id}`),
         apiClient.get<PhoneLine[]>(`/phone-lines?workspaceId=${activeWorkspace.id}`)
       ]);
-      setCostCenters(Array.isArray(ccRes.data) ? ccRes.data : []);
+      const fetchedCC = Array.isArray(ccRes.data) ? ccRes.data : [];
+      setCostCenters(fetchedCC);
       setCollaborators(Array.isArray(collRes.data) ? collRes.data : []);
       setPhoneLines(Array.isArray(linesRes.data) ? linesRes.data : []);
+
+      if (fetchedCC.length > 0 && !selectedCostCenterId) {
+        setSelectedCostCenterId(fetchedCC[0].id);
+      }
     } catch (_err: unknown) {
-      setError('Error loading data');
+      showError('Erro ao carregar dados dos centros de custo');
     } finally {
       setLoading(false);
     }
-  }, [activeWorkspace?.id]);
+  }, [activeWorkspace?.id, selectedCostCenterId, showError]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  const filteredLines = phoneLines.filter(l => l.cost_center_id === selectedCostCenterId);
+  const selectedCC = costCenters.find(cc => cc.id === selectedCostCenterId);
 
   const handleOpen = (costCenter: CostCenter | null = null) => {
     if (!isAdmin) return;
@@ -151,6 +165,7 @@ const CentroCustoPage: React.FC = () => {
           description,
           phones
         });
+        showSuccess('Centro de custo atualizado com sucesso');
       } else {
         await apiClient.post('/cost-centers', {
           name,
@@ -158,22 +173,26 @@ const CentroCustoPage: React.FC = () => {
           phones,
           workspaceId: activeWorkspace.id
         });
+        showSuccess('Centro de custo criado com sucesso');
       }
       fetchData();
       handleClose();
     } catch (_err: unknown) {
-      setError('Error saving cost center');
+      showError('Erro ao salvar centro de custo');
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
     if (!isAdmin) return;
-    if (window.confirm('Are you sure you want to delete this cost center?')) {
+    if (window.confirm('Tem certeza que deseja excluir este centro de custo?')) {
       try {
         await apiClient.delete(`/cost-centers/${id}`);
+        if (selectedCostCenterId === id) setSelectedCostCenterId(null);
+        showSuccess('Centro de custo excluído com sucesso');
         fetchData();
       } catch (_err: unknown) {
-        setError('Error deleting cost center');
+        showError('Erro ao excluir centro de custo');
       }
     }
   };
@@ -192,20 +211,21 @@ const CentroCustoPage: React.FC = () => {
         responsible_name: editingLine.responsible_name,
         responsible_id: editingLine.responsible_id
       });
+      showSuccess('Vínculo da linha atualizado com sucesso');
       fetchData();
       setOpenLines(false);
     } catch (err) {
-      setError('Error saving line association');
+      showError('Erro ao salvar vínculo da linha');
     }
   };
 
   return (
-    <Container maxWidth={false}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, flexWrap: 'wrap', gap: 2 }}>
+    <Container maxWidth={false} sx={{ height: 'calc(100vh - 140px)', display: 'flex', flexDirection: 'column' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexShrink: 0 }}>
         <Box>
-          <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>Cost Centers</Typography>
+          <Typography variant="h4" sx={{ fontWeight: 800 }}>Centros de Custo</Typography>
           <Typography variant="body1" color="textSecondary">
-            Manage departments and link phone numbers for cost allocation.
+            Gerencie departamentos e aloque linhas telefônicas.
           </Typography>
         </Box>
         <Stack direction="row" spacing={2}>
@@ -213,100 +233,124 @@ const CentroCustoPage: React.FC = () => {
             variant="outlined" 
             startIcon={<SettingsPhoneIcon />} 
             onClick={() => setOpenAllLines(true)}
-            size="large"
           >
-            Manage Lines
+            Gerenciar Todas as Linhas
           </Button>
           {isAdmin && (
             <Button 
               variant="contained" 
               startIcon={<AddIcon />} 
               onClick={() => handleOpen()}
-              size="large"
+              sx={{ bgcolor: theme.palette.primary.main }}
             >
-              New Cost Center
+              Novo Centro de Custo
             </Button>
           )}
         </Stack>
       </Box>
 
-      {error && <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>{error}</Alert>}
-
-      {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}><CircularProgress /></Box>
-      ) : (
-        <TableContainer component={Paper} sx={{ overflow: 'hidden' }}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Department Name</TableCell>
-                <TableCell>Description</TableCell>
-                <TableCell>Linked Phones</TableCell>
-                {isAdmin && <TableCell align="right">Actions</TableCell>}
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {costCenters.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={isAdmin ? 4 : 3} align="center" sx={{ py: 8 }}>
-                    <Typography variant="body1" color="textSecondary">No cost centers found yet.</Typography>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                costCenters.map((costCenter) => (
-                  <TableRow key={costCenter.id} hover>
-                    <TableCell sx={{ fontWeight: 700 }}>{costCenter.name}</TableCell>
-                    <TableCell sx={{ color: 'text.secondary', maxWidth: 300 }}>{costCenter.description}</TableCell>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                        {phoneLines.filter(l => l.cost_center_id === costCenter.id).map((line) => (
-                          <Tooltip key={line.id} title={`Resp: ${line.responsible_name || 'N/A'}`}>
-                            <Chip 
-                              label={line.phone_number} 
-                              size="small" 
-                              onClick={() => handleEditLine(line)}
-                              icon={<PhoneIcon sx={{ fontSize: '0.9rem' }} />} 
-                              variant="outlined"
-                              sx={{ borderRadius: 1.5, fontWeight: 600, cursor: 'pointer' }}
-                            />
-                          </Tooltip>
-                        ))}
-                        {phoneLines.filter(l => l.cost_center_id === costCenter.id).length === 0 && (
-                          <Typography variant="caption" color="text.disabled">No lines</Typography>
-                        )}
-                      </Box>
-                    </TableCell>
+      <Box sx={{ display: 'flex', gap: 3, flex: 1, minHeight: 0 }}>
+        {/* Lado Esquerdo: Centros de Custo (30%) */}
+        <Paper sx={{ width: '30%', display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRadius: 2 }}>
+          <Box sx={{ p: 2, bgcolor: alpha(theme.palette.primary.main, 0.05), borderBottom: `1px solid ${theme.palette.divider}` }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Lista de Centros de Custo</Typography>
+          </Box>
+          <Box sx={{ flex: 1, overflowY: 'auto' }}>
+            {loading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress size={24} /></Box>
+            ) : (
+              <List disablePadding>
+                {costCenters.map((cc) => (
+                  <ListItemButton 
+                    key={cc.id} 
+                    selected={selectedCostCenterId === cc.id}
+                    onClick={() => setSelectedCostCenterId(cc.id)}
+                    sx={{ 
+                      borderLeft: selectedCostCenterId === cc.id ? `4px solid ${theme.palette.primary.main}` : '4px solid transparent',
+                      py: 1.5
+                    }}
+                  >
+                    <ListItemText 
+                      primary={cc.name} 
+                      secondary={cc.code || cc.description} 
+                      primaryTypographyProps={{ fontWeight: selectedCostCenterId === cc.id ? 700 : 500 }}
+                    />
                     {isAdmin && (
-                      <TableCell align="right">
-                        <Stack direction="row" spacing={1} justifyContent="flex-end">
-                          <Tooltip title="Edit">
-                            <IconButton 
-                              onClick={() => handleOpen(costCenter)} 
-                              size="small" 
-                              sx={{ bgcolor: alpha(theme.palette.primary.main, 0.1), color: theme.palette.primary.main }}
-                            >
-                              <EditIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Delete">
-                            <IconButton 
-                              onClick={() => handleDelete(costCenter.id)} 
-                              size="small" 
-                              sx={{ bgcolor: alpha(theme.palette.error.main, 0.1), color: theme.palette.error.main }}
-                            >
-                              <DeleteIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        </Stack>
-                      </TableCell>
+                      <Stack direction="row" spacing={0.5}>
+                        <IconButton size="small" onClick={(e) => { e.stopPropagation(); handleOpen(cc); }}>
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                        <IconButton size="small" color="error" onClick={(e) => handleDelete(cc.id, e)}>
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </Stack>
                     )}
+                  </ListItemButton>
+                ))}
+                {costCenters.length === 0 && (
+                  <Typography variant="body2" sx={{ p: 3, textAlign: 'center', color: 'text.disabled' }}>
+                    Nenhum centro de custo encontrado.
+                  </Typography>
+                )}
+              </List>
+            )}
+          </Box>
+        </Paper>
+
+        {/* Lado Direito: Linhas Telefônicas (70%) */}
+        <Paper sx={{ width: '70%', display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRadius: 2 }}>
+          <Box sx={{ p: 2, bgcolor: alpha(theme.palette.primary.main, 0.05), display: 'flex', justifyContent: 'space-between', alignItems: 'center', minHeight: 64 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+              Linhas Vinculadas: {selectedCC?.name || 'Selecione um Centro de Custo'}
+            </Typography>
+          </Box>
+          <Divider />
+          <Box sx={{ flex: 1, overflow: 'auto' }}>
+            <Table stickyHeader size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 700 }}>Número do Telefone</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>Colaborador / Responsável</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 700 }}>Ações</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {filteredLines.map((line) => {
+                  const coll = collaborators.find(c => c.id === line.collaborator_id);
+                  return (
+                    <TableRow key={line.id} hover>
+                      <TableCell sx={{ fontWeight: 600 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <PhoneIcon fontSize="small" color="disabled" />
+                          {line.phone_number}
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" sx={{ fontWeight: coll ? 700 : 400 }}>
+                          {coll ? coll.name : (line.responsible_name || '-')}
+                        </Typography>
+                        {coll && <Typography variant="caption" color="text.secondary">ID: {coll.id.substring(0, 8)}</Typography>}
+                      </TableCell>
+                      <TableCell align="right">
+                        <Button size="small" onClick={() => handleEditLine(line)}>Editar Vínculo</Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+                {filteredLines.length === 0 && !loading && (
+                  <TableRow>
+                    <TableCell colSpan={3} align="center" sx={{ py: 10 }}>
+                      <Typography variant="body1" color="text.disabled">
+                        Nenhuma linha telefônica vinculada a este centro de custo.
+                      </Typography>
+                    </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      )}
+                )}
+              </TableBody>
+            </Table>
+          </Box>
+        </Paper>
+      </Box>
 
       {/* Line Assignment Dialog */}
       <Dialog open={openLines} onClose={() => setOpenLines(false)} maxWidth="xs" fullWidth>

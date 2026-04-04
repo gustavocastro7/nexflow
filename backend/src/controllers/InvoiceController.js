@@ -51,11 +51,36 @@ class InvoiceController {
 
   async listRawInvoices(req, res) {
     try {
-      const { workspaceId } = req.query;
+      const { workspaceId, mes, ano } = req.query;
       if (!workspaceId) return res.status(400).json({ error: 'Workspace ID é obrigatório' });
 
+      const where = { workspace_id: workspaceId };
+      
+      // If filtering by period, we look for raw invoices that have items in that period
+      if (mes && ano && parseInt(mes) > 0 && parseInt(ano) > 0) {
+        const startDate = `${ano}-${mes.padStart(2, '0')}-01`;
+        const endDate = new Date(ano, mes, 0).toISOString().split('T')[0];
+
+        const raws = await RawInvoice.findAll({
+          where,
+          include: [{
+            model: Invoice,
+            as: 'items',
+            attributes: [],
+            where: {
+              item_date: { [Op.between]: [startDate, endDate] }
+            },
+            required: true // INNER JOIN to filter raws
+          }],
+          attributes: ['id', 'operator', 'content', 'created_at'],
+          group: ['RawInvoice.id'],
+          order: [['created_at', 'DESC']]
+        });
+        return res.json(raws);
+      }
+
       const raws = await RawInvoice.findAll({
-        where: { workspace_id: workspaceId },
+        where,
         attributes: ['id', 'operator', 'content', 'created_at'],
         order: [['created_at', 'DESC']]
       });

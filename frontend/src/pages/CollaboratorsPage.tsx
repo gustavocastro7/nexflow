@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box, Typography, Paper, Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, IconButton, Button, Dialog, DialogTitle,
-  DialogContent, DialogActions, TextField, Stack, Alert, Skeleton,
+  DialogContent, DialogActions, TextField, Stack, Skeleton,
   alpha, useTheme
 } from '@mui/material';
 import {
@@ -13,6 +13,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import apiClient from '../api/client';
 import type { Workspace } from '../types';
+import { useNotification } from '../context/NotificationContext';
 
 interface Collaborator {
   id: string;
@@ -24,12 +25,12 @@ interface Collaborator {
 }
 
 const CollaboratorsPage: React.FC = () => {
+  const { showSuccess, showError } = useNotification();
   const { t } = useTranslation();
   const theme = useTheme();
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   const [loading, setLoading] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [activeWorkspace, setActiveWorkspace] = useState<Workspace | null>(null);
   const [editingCollaborator, setEditingCollaborator] = useState<Collaborator | null>(null);
@@ -59,15 +60,14 @@ const CollaboratorsPage: React.FC = () => {
     try {
       const response = await apiClient.get<Collaborator[]>(`/collaborators?workspaceId=${activeWorkspace.id}`);
       setCollaborators(Array.isArray(response.data) ? response.data : []);
-      setError(null);
     } catch (err) {
       console.error('Error fetching collaborators:', err);
-      setError('Erro ao carregar colaboradores');
+      showError('Erro ao carregar colaboradores');
     } finally {
       setLoading(false);
       setIsInitialLoad(false);
     }
-  }, [activeWorkspace?.id]);
+  }, [activeWorkspace?.id, showError]);
 
   useEffect(() => {
     fetchCollaborators();
@@ -93,20 +93,22 @@ const CollaboratorsPage: React.FC = () => {
 
   const handleSubmit = async () => {
     if (!activeWorkspace?.id) {
-      setError('Workspace não selecionado');
+      showError('Workspace não selecionado');
       return;
     }
     try {
       if (editingCollaborator) {
         await apiClient.put(`/collaborators/${editingCollaborator.id}`, formData);
+        showSuccess('Colaborador atualizado com sucesso');
       } else {
         await apiClient.post('/collaborators', { ...formData, workspace_id: activeWorkspace.id });
+        showSuccess('Colaborador criado com sucesso');
       }
       fetchCollaborators(true); // Silent refresh
       handleClose();
     } catch (err) {
       console.error('Error saving collaborator:', err);
-      setError('Erro ao salvar colaborador');
+      showError('Erro ao salvar colaborador');
     }
   };
 
@@ -114,10 +116,11 @@ const CollaboratorsPage: React.FC = () => {
     if (window.confirm('Tem certeza que deseja excluir este colaborador?')) {
       try {
         await apiClient.delete(`/collaborators/${id}`);
+        showSuccess('Colaborador removido com sucesso');
         fetchCollaborators(true); // Silent refresh
       } catch (err) {
         console.error('Error deleting collaborator:', err);
-        setError('Erro ao excluir colaborador');
+        showError('Erro ao excluir colaborador');
       }
     }
   };
@@ -143,8 +146,6 @@ const CollaboratorsPage: React.FC = () => {
           Novo Colaborador
         </Button>
       </Stack>
-
-      {error && <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>{error}</Alert>}
 
       <TableContainer component={Paper} sx={{ borderRadius: 2, boxShadow: '0 4px 20px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
         <Table>

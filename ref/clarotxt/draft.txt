@@ -10,3 +10,49 @@
 
 3494.10
 5379.90
+
+
+
+Tel;
+Se��o;
+Data;
+Hora;
+Origem(UF)-Destino;
+N�mero;
+Dura��o/Quantidade;
+Tarifa;
+Valor;
+Valor Cobrado;
+Nome;
+CC;
+Matr�cula;
+Sub-Se��o;
+Tipo Imposto;
+Descri��o;
+Cargo;
+Nome Local Origem;
+Nome Local Destino;
+C�digo Local Origem;
+C�digo Local Destino
+
+51 99582-0984;
+Desconto Claro Passaporte Mundo 10GB : 21/11/2025 a 20/12/2025;
+21/11/2025;
+;
+;
+;
+;
+0,00;
+-49,99;
+-49,99;
+;
+;
+;
+Ajustes e Descontos;
+;
+;
+;
+;
+;
+;
+

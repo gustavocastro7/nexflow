@@ -147,6 +147,12 @@ const DashboardPage: React.FC = () => {
       color: '#8B5CF6' 
     },
     { 
+      label: 'Operadoras', 
+      value: (stats.claroInvoices > 0 ? 1 : 0) + (stats.vivoInvoices > 0 ? 1 : 0) || 1, 
+      icon: <BusinessIcon />, 
+      color: '#EC4899' 
+    },
+    { 
       label: 'Usuários', 
       value: stats.users, 
       icon: <PeopleIcon />, 
@@ -180,7 +186,7 @@ const DashboardPage: React.FC = () => {
 
       <Grid container spacing={2}>
         {statCards.map((card, idx) => (
-          <Grid item xs={12} sm={6} md={4} lg={3} key={idx}>
+          <Grid key={idx} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
             <Card sx={{ 
               display: 'flex',
               flexDirection: 'column',

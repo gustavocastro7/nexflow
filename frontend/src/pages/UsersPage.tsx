@@ -6,7 +6,6 @@ import {
   Paper, 
   Container, 
   Alert,
-  CircularProgress,
   Table,
   TableBody,
   TableCell,
@@ -30,7 +29,6 @@ import {
   Select,
   FormControl,
   InputLabel,
-  Snackbar,
   Skeleton
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
@@ -39,18 +37,19 @@ import AddIcon from '@mui/icons-material/Add';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import apiClient from '../api/client';
+import { useNotification } from '../context/NotificationContext';
 import type { Workspace, User } from '../types';
 
 const UsersPage: React.FC = () => {
+  const { showError, showSuccess } = useNotification();
   const theme = useTheme();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [open, setOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [showInactive, setShowInactive] = useState(false);
+  const [error, setError] = useState('');
   
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -83,18 +82,20 @@ const UsersPage: React.FC = () => {
   const fetchUsers = useCallback(async (isSilent = false) => {
     if (!activeWorkspace?.id) return;
     if (!isSilent) setLoading(true); 
+    setError('');
     try {
       const response = await apiClient.get<User[]>(`/users?workspaceId=${activeWorkspace.id}&includeInactive=${showInactive}`);
       setUsers(Array.isArray(response.data) ? response.data : []);
     } catch (err: any) {
       const msg = err.response?.data?.error || 'Erro ao carregar usuários';
+      showError(msg);
       setError(msg);
       setUsers([]);
     } finally {
       setLoading(false);
       setIsInitialLoad(false);
     }
-  }, [activeWorkspace?.id, showInactive]);
+  }, [activeWorkspace?.id, showInactive, showError]);
 
   useEffect(() => {
     fetchUsers();
@@ -127,7 +128,7 @@ const UsersPage: React.FC = () => {
           email,
           profile: profile,
         });
-        setSuccess('User updated successfully');
+        showSuccess('Usuário atualizado com sucesso');
       } else {
         await apiClient.post('/users', {
           name,
@@ -136,12 +137,13 @@ const UsersPage: React.FC = () => {
           profile: profile,
           workspaceId: activeWorkspace.id
         });
-        setSuccess('User created and associated with workspace');
+        showSuccess('Usuário criado e associado ao workspace');
       }
       fetchUsers(true); // Silent refresh
       handleClose();
     } catch (err: any) {
-      const msg = err.response?.data?.error || 'Error saving user';
+      const msg = err.response?.data?.error || 'Erro ao salvar usuário';
+      showError(msg);
       setError(msg);
     }
   };
@@ -149,13 +151,14 @@ const UsersPage: React.FC = () => {
   const handleDeactivate = async (id: string) => {
     if (!isAdmin) return;
     setError('');
-    if (window.confirm('Are you sure you want to deactivate this user?')) {
+    if (window.confirm('Tem certeza que deseja desativar este usuário?')) {
       try {
         await apiClient.delete(`/users/${id}`);
-        setSuccess('User deactivated successfully');
+        showSuccess('Usuário desativado com sucesso');
         fetchUsers(true); // Silent refresh
       } catch (err: any) {
-        const msg = err.response?.data?.error || 'Error deactivating user';
+        const msg = err.response?.data?.error || 'Erro ao desativar usuário';
+        showError(msg);
         setError(msg);
       }
     }
@@ -168,10 +171,11 @@ const UsersPage: React.FC = () => {
       await apiClient.put(`/users/${user.id}`, {
         active: !user.active
       });
-      setSuccess(user.active ? 'User deactivated' : 'User activated');
+      showSuccess(user.active ? 'Usuário desativado' : 'Usuário ativado');
       fetchUsers(true); // Silent refresh
     } catch (err: any) {
-      const msg = err.response?.data?.error || 'Error changing user status';
+      const msg = err.response?.data?.error || 'Erro ao alterar status do usuário';
+      showError(msg);
       setError(msg);
     }
   };
@@ -180,9 +184,9 @@ const UsersPage: React.FC = () => {
     <Container maxWidth={false} sx={{ py: 2 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', mb: 4, flexWrap: 'wrap', gap: 2 }}>
         <Box>
-          <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>Users</Typography>
+          <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>Usuários</Typography>
           <Typography variant="body1" color="textSecondary">
-            Manage users in the workspace and their permissions.
+            Gerencie os usuários do workspace e suas permissões.
             {loading && !isInitialLoad && <Typography component="span" variant="caption" color="primary" sx={{ ml: 2, fontWeight: 700 }}>Atualizando...</Typography>}
           </Typography>
         </Box>
@@ -194,7 +198,7 @@ const UsersPage: React.FC = () => {
                 onChange={(e) => setShowInactive(e.target.checked)} 
               />
             }
-            label="Show Inactive"
+            label="Mostrar Inativos"
           />
           {isAdmin && (
             <Button 
@@ -203,7 +207,7 @@ const UsersPage: React.FC = () => {
               onClick={() => handleOpen()}
               size="large"
             >
-              New User
+              Novo Usuário
             </Button>
           )}
         </Stack>
@@ -215,11 +219,11 @@ const UsersPage: React.FC = () => {
         <Table>
           <TableHead sx={{ bgcolor: alpha(theme.palette.primary.main, 0.05) }}>
             <TableRow>
-              <TableCell sx={{ fontWeight: 700 }}>Name</TableCell>
+              <TableCell sx={{ fontWeight: 700 }}>Nome</TableCell>
               <TableCell sx={{ fontWeight: 700 }}>Email</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>Profile</TableCell>
+              <TableCell sx={{ fontWeight: 700 }}>Perfil</TableCell>
               <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
-              {isAdmin && <TableCell align="right" sx={{ fontWeight: 700 }}>Actions</TableCell>}
+              {isAdmin && <TableCell align="right" sx={{ fontWeight: 700 }}>Ações</TableCell>}
             </TableRow>
           </TableHead>
           <TableBody>
@@ -236,7 +240,7 @@ const UsersPage: React.FC = () => {
             ) : users.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={isAdmin ? 5 : 4} align="center" sx={{ py: 8, color: 'text.secondary' }}>
-                  <Typography variant="body1">No users found.</Typography>
+                  <Typography variant="body1">Nenhum usuário encontrado.</Typography>
                 </TableCell>
               </TableRow>
             ) : (
@@ -246,7 +250,7 @@ const UsersPage: React.FC = () => {
                   <TableCell>{user.email}</TableCell>
                   <TableCell>
                     <Chip 
-                      label={user.profile === 'jedi' ? 'Jedi' : (user.profile === 'admin' ? 'Admin' : 'User')} 
+                      label={user.profile === 'jedi' ? 'Jedi' : (user.profile === 'admin' ? 'Admin' : 'Usuário')} 
                       size="small" 
                       color={user.profile === 'jedi' ? 'secondary' : (user.profile === 'admin' ? 'primary' : 'default')}
                       variant="outlined"
@@ -257,12 +261,12 @@ const UsersPage: React.FC = () => {
                       {user.active !== false ? (
                         <>
                           <CheckCircleIcon color="success" fontSize="small" />
-                          <Typography variant="body2" color="success.main">Active</Typography>
+                          <Typography variant="body2" color="success.main">Ativo</Typography>
                         </>
                       ) : (
                         <>
                           <CancelIcon color="error" fontSize="small" />
-                          <Typography variant="body2" color="error.main">Inactive</Typography>
+                          <Typography variant="body2" color="error.main">Inativo</Typography>
                         </>
                       )}
                     </Box>
@@ -270,7 +274,7 @@ const UsersPage: React.FC = () => {
                   {isAdmin && (
                     <TableCell align="right">
                       <Stack direction="row" spacing={1} justifyContent="flex-end">
-                        <Tooltip title="Edit">
+                        <Tooltip title="Editar">
                           <IconButton 
                             onClick={() => handleOpen(user)} 
                             size="small" 
@@ -280,7 +284,7 @@ const UsersPage: React.FC = () => {
                           </IconButton>
                         </Tooltip>
                         {user.active !== false ? (
-                          <Tooltip title="Disable">
+                          <Tooltip title="Desativar">
                             <IconButton 
                               onClick={() => handleDeactivate(user.id)} 
                               size="small" 
@@ -290,7 +294,7 @@ const UsersPage: React.FC = () => {
                             </IconButton>
                           </Tooltip>
                         ) : (
-                          <Tooltip title="Enable">
+                          <Tooltip title="Ativar">
                             <IconButton 
                               onClick={() => handleToggleActive(user)} 
                               size="small" 
@@ -312,12 +316,12 @@ const UsersPage: React.FC = () => {
 
       <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 4 } }}>
         <DialogTitle sx={{ fontWeight: 800, pt: 3 }}>
-          {currentUser ? 'Edit User' : 'New User'}
+          {currentUser ? 'Editar Usuário' : 'Novo Usuário'}
         </DialogTitle>
         <DialogContent sx={{ pb: 0 }}>
           <Box sx={{ py: 2, display: 'flex', flexDirection: 'column', gap: 3 }}>
             <TextField
-              autoFocus label="Full Name"
+              autoFocus label="Nome Completo"
               fullWidth value={name}
               onChange={(e) => setName(e.target.value)}
             />
@@ -328,44 +332,33 @@ const UsersPage: React.FC = () => {
             />
             {!currentUser && (
               <TextField
-                label="Password"
+                label="Senha"
                 fullWidth type="password"
                 value={password} onChange={(e) => setPassword(e.target.value)}
               />
             )}
             <FormControl fullWidth>
-              <InputLabel id="profile-label">Profile</InputLabel>
+              <InputLabel id="profile-label">Perfil</InputLabel>
               <Select
                 labelId="profile-label"
                 value={profile}
-                label="Profile"
+                label="Perfil"
                 onChange={(e) => setProfile(e.target.value as any)}
               >
-                <MenuItem value="user">User</MenuItem>
-                <MenuItem value="admin">Administrator</MenuItem>
+                <MenuItem value="user">Usuário</MenuItem>
+                <MenuItem value="admin">Administrador</MenuItem>
                 <MenuItem value="jedi">Jedi</MenuItem>
               </Select>
             </FormControl>
           </Box>
         </DialogContent>
         <DialogActions sx={{ p: 4 }}>
-          <Button onClick={handleClose} color="inherit" sx={{ fontWeight: 700 }}>Cancel</Button>
+          <Button onClick={handleClose} color="inherit" sx={{ fontWeight: 700 }}>Cancelar</Button>
           <Button onClick={handleSave} variant="contained" size="large" sx={{ px: 4 }}>
-            Save
+            Salvar
           </Button>
         </DialogActions>
       </Dialog>
-
-      <Snackbar 
-        open={!!success} 
-        autoHideDuration={6000} 
-        onClose={() => setSuccess('')}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-      >
-        <Alert onClose={() => setSuccess('')} severity="success" sx={{ width: '100%' }}>
-          {success}
-        </Alert>
-      </Snackbar>
     </Container>
   );
 };

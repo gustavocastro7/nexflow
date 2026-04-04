@@ -46,6 +46,7 @@ const InvoiceListSkeleton: React.FC = () => (
         <TableCell><Skeleton variant="text" width={100} /></TableCell>
         <TableCell><Skeleton variant="text" width={80} /></TableCell>
         <TableCell><Skeleton variant="text" width={150} /></TableCell>
+        <TableCell><Skeleton variant="text" width={120} /></TableCell>
         <TableCell align="right"><Skeleton variant="text" width={60} /></TableCell>
       </TableRow>
     ))}
@@ -123,6 +124,7 @@ const InvoiceList: React.FC<InvoiceListProps> = ({
               <TableCell sx={{ width: '140px' }}>Origem</TableCell>
               <TableCell sx={{ width: '120px' }}>Data</TableCell>
               <TableCell>Descrição</TableCell>
+              <TableCell sx={{ width: '150px' }}>Sub-Seção</TableCell>
               <TableCell align="right" sx={{ width: '120px' }}>Valor</TableCell>
             </TableRow>
           </TableHead>
@@ -131,7 +133,7 @@ const InvoiceList: React.FC<InvoiceListProps> = ({
               <InvoiceListSkeleton />
             ) : invoices.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} align="center" sx={{ py: 10 }}>
+                <TableCell colSpan={6} align="center" sx={{ py: 10 }}>
                   <Stack alignItems="center" spacing={2} sx={{ opacity: 0.5 }}>
                     <ReceiptLongIcon sx={{ fontSize: 48 }} />
                     <Typography variant="body1">Nenhum registro encontrado.</Typography>
@@ -192,6 +194,11 @@ const InvoiceList: React.FC<InvoiceListProps> = ({
                           {inv.description || inv.section || '-'}
                         </Typography>
                       </TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>
+                        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                          {inv.sub_section || '-'}
+                        </Typography>
+                      </TableCell>
                       <TableCell align="right" sx={{ fontWeight: 800, color: theme.palette.primary.main }}>
                         R$ {(Number(inv.charged_value || 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                       </TableCell>
@@ -201,7 +208,7 @@ const InvoiceList: React.FC<InvoiceListProps> = ({
                 
                 {/* Sentinel for Infinite Scroll */}
                 <TableRow>
-                  <TableCell colSpan={5} sx={{ p: 0, border: 0 }}>
+                  <TableCell colSpan={6} sx={{ p: 0, border: 0 }}>
                     <InfiniteScroll
                       loadMore={loadMore}
                       hasMore={hasMore}

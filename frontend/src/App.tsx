@@ -15,30 +15,33 @@ import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 import ThemeHandler from './components/ThemeHandler';
 import { ROUTES } from './routes/routes';
+import { NotificationProvider } from './context/NotificationContext';
 
 const App: React.FC = () => {
   return (
     <Router>
-      <ThemeHandler>
-        <Routes>
-          <Route path={ROUTES.LOGIN} element={<LoginPage />} />
-          <Route path={ROUTES.REGISTER} element={<RegisterPage />} />
-          <Route path={ROUTES.WORKSPACES} element={<ProtectedRoute><WorkspaceSelectionPage /></ProtectedRoute>} />
-          
-          <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-            <Route path={ROUTES.DASHBOARD} element={<DashboardPage />} />
-            <Route path={ROUTES.COST_CENTERS} element={<CentroCustoPage />} />
-            <Route path={ROUTES.COLLABORATORS} element={<CollaboratorsPage />} />
-            <Route path={ROUTES.INVOICES} element={<FaturasPage />} />
-            <Route path={ROUTES.REPORTS} element={<RelatoriosPage />} />
-            <Route path={ROUTES.PROFILE} element={<ProfilePage />} />
-            <Route path={ROUTES.ADMIN_ROLES} element={<RoleAssignmentPage />} />
-            <Route path={ROUTES.USERS} element={<UsersPage />} />
-          </Route>
+      <NotificationProvider>
+        <ThemeHandler>
+          <Routes>
+            <Route path={ROUTES.LOGIN} element={<LoginPage />} />
+            <Route path={ROUTES.REGISTER} element={<RegisterPage />} />
+            <Route path={ROUTES.WORKSPACES} element={<ProtectedRoute><WorkspaceSelectionPage /></ProtectedRoute>} />
 
-          <Route path={ROUTES.ROOT} element={<Navigate to={ROUTES.LOGIN} replace />} />
-        </Routes>
-      </ThemeHandler>
+            <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+              <Route path={ROUTES.DASHBOARD} element={<DashboardPage />} />
+              <Route path={ROUTES.COST_CENTERS} element={<CentroCustoPage />} />
+              <Route path={ROUTES.COLLABORATORS} element={<CollaboratorsPage />} />
+              <Route path={ROUTES.INVOICES} element={<FaturasPage />} />
+              <Route path={ROUTES.REPORTS} element={<RelatoriosPage />} />
+              <Route path={ROUTES.PROFILE} element={<ProfilePage />} />
+              <Route path={ROUTES.ADMIN_ROLES} element={<RoleAssignmentPage />} />
+              <Route path={ROUTES.USERS} element={<UsersPage />} />
+            </Route>
+
+            <Route path={ROUTES.ROOT} element={<Navigate to={ROUTES.LOGIN} replace />} />
+          </Routes>
+        </ThemeHandler>
+      </NotificationProvider>
     </Router>
   );
 };
