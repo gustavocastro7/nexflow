@@ -48,6 +48,30 @@ routes.get('/consumption-by-responsible', ReportController.getConsumptionByRespo
 
 /**
  * @swagger
+ * /reports/consumption-by-subsection:
+ *   get:
+ *     summary: Consumption by phone number and sub-section for a reference month (paginated)
+ */
+routes.get('/consumption-by-subsection', ReportController.getConsumptionBySubSection);
+
+/**
+ * @swagger
+ * /reports/line-detail:
+ *   get:
+ *     summary: Get detailed items for a specific line and reference month (paginated)
+ */
+routes.get('/line-detail', ReportController.getLineDetail);
+
+/**
+ * @swagger
+ * /reports/due-dates:
+ *   get:
+ *     summary: List available due dates from raw invoices
+ */
+routes.get('/due-dates', ReportController.getDueDates);
+
+/**
+ * @swagger
  * /reports/reference-months:
  *   get:
  *     summary: List available reference months

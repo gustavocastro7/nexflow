@@ -284,47 +284,48 @@ class ReportController {
     }
   }
 
-  // Report 2: Consumption by cost center (grouped by reference month)
+  // Report 2: Consumption by cost center (grouped by due date)
   async getConsumptionByCostCenter(req, res) {
     try {
-      const { workspaceId, search, page = 0 } = req.query;
+      const { workspaceId, dueDate, search, page = 0 } = req.query;
       if (!workspaceId) return res.status(400).json({ error: 'Workspace ID is required' });
-
-      const workspace = await Workspace.findByPk(workspaceId);
-      const startDay = workspace?.billing_cycle_start_day || 1;
-      const intervalDays = startDay - 1;
-      const dateExpr = intervalDays > 0 ? `(i.item_date - INTERVAL '${intervalDays} days')` : 'i.item_date';
 
       const offset = parseInt(page, 10) * PAGE_SIZE;
       const like = search ? `%${search}%` : null;
 
+      const whereSql = `
+        WHERE i.workspace_id = :workspaceId
+          ${dueDate ? "AND ri.due_date = :dueDate" : ""}
+          ${like ? "AND (cc.code ILIKE :like OR cc.name ILIKE :like OR pl.responsible_name ILIKE :like OR i.source_phone ILIKE :like)" : ""}
+      `;
+
       const baseSql = `
         FROM invoices i
+        JOIN raw_invoices ri ON ri.id = i.raw_invoice_id
         LEFT JOIN phone_lines pl ON pl.phone_number = i.source_phone AND pl.workspace_id = i.workspace_id
         LEFT JOIN cost_centers cc ON cc.id = pl.cost_center_id
-        WHERE i.workspace_id = :workspaceId
-          ${like ? "AND (cc.code ILIKE :like OR cc.name ILIKE :like OR pl.responsible_name ILIKE :like OR i.source_phone ILIKE :like)" : ""}
-        GROUP BY cc.id, cc.code, cc.name, TO_CHAR(${dateExpr}, 'YYYY-MM')
+        ${whereSql}
+        GROUP BY cc.id, cc.code, cc.name, ri.due_date
       `;
 
       const [rows] = await sequelize.query(`
         SELECT cc.id AS cc_id, cc.code AS cc_code, COALESCE(cc.name, 'Unallocated') AS cc_name,
-               TO_CHAR(${dateExpr}, 'YYYY-MM') AS reference_month,
+               ri.due_date AS due_date,
                SUM(i.charged_value) AS total
         ${baseSql}
-        ORDER BY reference_month DESC, cc_code ASC NULLS LAST
+        ORDER BY due_date DESC, cc_code ASC NULLS LAST
         LIMIT :limit OFFSET :offset
-      `, { replacements: { workspaceId, like, limit: PAGE_SIZE, offset } });
+      `, { replacements: { workspaceId, dueDate, like, limit: PAGE_SIZE, offset } });
 
       const [[{ count }]] = await sequelize.query(
         `SELECT COUNT(*)::int AS count FROM (SELECT 1 ${baseSql}) t`,
-        { replacements: { workspaceId, like } }
+        { replacements: { workspaceId, dueDate, like } }
       );
 
       const items = rows.map(r => ({
         costCenterCode: r.cc_code || '',
         costCenterName: r.cc_name,
-        referenceMonth: r.reference_month,
+        dueDate: r.due_date,
         total: parseFloat(r.total || 0),
       }));
 
@@ -335,29 +336,25 @@ class ReportController {
     }
   }
 
-  // Report 3: Consumption by responsible person (requires reference month)
+  // Report 3: Consumption by responsible person (requires due date)
   async getConsumptionByResponsible(req, res) {
     try {
-      const { workspaceId, referenceMonth, search, page = 0 } = req.query;
+      const { workspaceId, dueDate, search, page = 0 } = req.query;
       if (!workspaceId) return res.status(400).json({ error: 'Workspace ID is required' });
-      if (!referenceMonth) return res.status(400).json({ error: 'Reference month is required' });
-
-      const workspace = await Workspace.findByPk(workspaceId);
-      const startDay = workspace?.billing_cycle_start_day || 1;
-      const intervalDays = startDay - 1;
-      const dateExpr = intervalDays > 0 ? `(i.item_date - INTERVAL '${intervalDays} days')` : 'i.item_date';
+      if (!dueDate) return res.status(400).json({ error: 'Due date is required' });
 
       const offset = parseInt(page, 10) * PAGE_SIZE;
       const like = search ? `%${search}%` : null;
 
       const whereSql = `
         WHERE i.workspace_id = :workspaceId
-          AND TO_CHAR(${dateExpr}, 'YYYY-MM') = :referenceMonth
+          AND ri.due_date = :dueDate
           ${like ? "AND (cc.code ILIKE :like OR cc.name ILIKE :like OR coll.name ILIKE :like OR pl.responsible_name ILIKE :like OR i.source_phone ILIKE :like OR i.original_user ILIKE :like)" : ""}
       `;
 
       const fromSql = `
         FROM invoices i
+        JOIN raw_invoices ri ON ri.id = i.raw_invoice_id
         LEFT JOIN phone_lines pl ON pl.phone_number = i.source_phone AND pl.workspace_id = i.workspace_id
         LEFT JOIN collaborators coll ON coll.id = pl.collaborator_id
         LEFT JOIN cost_centers cc ON cc.id = pl.cost_center_id
@@ -376,12 +373,12 @@ class ReportController {
         ${fromSql}
         ORDER BY responsible_name ASC, i.source_phone ASC
         LIMIT :limit OFFSET :offset
-      `, { replacements: { workspaceId, referenceMonth, like, limit: PAGE_SIZE, offset } });
+      `, { replacements: { workspaceId, dueDate, like, limit: PAGE_SIZE, offset } });
 
       const [[{ count, grand_total }]] = await sequelize.query(`
         SELECT COUNT(*)::int AS count, COALESCE(SUM(t.total), 0) AS grand_total
         FROM (SELECT SUM(i.charged_value) AS total ${fromSql}) t
-      `, { replacements: { workspaceId, referenceMonth, like } });
+      `, { replacements: { workspaceId, dueDate, like } });
 
       const items = rows.map(r => ({
         responsibleName: r.responsible_name || '',
@@ -404,7 +401,136 @@ class ReportController {
     }
   }
 
-  // List of available reference months (for the selector)
+  // Report 4: Consumption by sub-section (grouped by phone and sub-section)
+  async getConsumptionBySubSection(req, res) {
+    try {
+      const { workspaceId, dueDate, search, page = 0 } = req.query;
+      if (!workspaceId) return res.status(400).json({ error: 'Workspace ID is required' });
+      if (!dueDate) return res.status(400).json({ error: 'Due date is required' });
+
+      const offset = parseInt(page, 10) * PAGE_SIZE;
+      const like = search ? `%${search}%` : null;
+
+      const whereSql = `
+        WHERE i.workspace_id = :workspaceId
+          AND ri.due_date = :dueDate
+          ${like ? "AND (i.source_phone ILIKE :like OR coll.name ILIKE :like OR pl.responsible_name ILIKE :like OR i.sub_section ILIKE :like OR i.section ILIKE :like)" : ""}
+      `;
+
+      const fromSql = `
+        FROM invoices i
+        JOIN raw_invoices ri ON ri.id = i.raw_invoice_id
+        LEFT JOIN phone_lines pl ON pl.phone_number = i.source_phone AND pl.workspace_id = i.workspace_id
+        LEFT JOIN collaborators coll ON coll.id = pl.collaborator_id
+        ${whereSql}
+        GROUP BY i.source_phone, coll.name, pl.responsible_name, i.section, i.sub_section
+      `;
+
+      const [rows] = await sequelize.query(`
+        SELECT 
+          i.source_phone AS phone_number,
+          COALESCE(coll.name, pl.responsible_name, '') AS responsible_name,
+          COALESCE(i.section, '') AS section,
+          COALESCE(i.sub_section, '') AS sub_section,
+          SUM(i.charged_value) AS total
+        ${fromSql}
+        ORDER BY i.source_phone ASC, sub_section ASC
+        LIMIT :limit OFFSET :offset
+      `, { replacements: { workspaceId, dueDate, like, limit: PAGE_SIZE, offset } });
+
+      const [[{ count, grand_total }]] = await sequelize.query(`
+        SELECT COUNT(*)::int AS count, COALESCE(SUM(t.total), 0) AS grand_total
+        FROM (SELECT SUM(i.charged_value) AS total ${fromSql}) t
+      `, { replacements: { workspaceId, dueDate, like } });
+
+      return res.json({
+        items: rows.map(r => ({
+          phoneNumber: r.phone_number,
+          responsibleName: r.responsible_name,
+          section: r.section,
+          subSection: r.sub_section,
+          total: parseFloat(r.total || 0),
+        })),
+        total: count,
+        grandTotal: parseFloat(grand_total || 0),
+        hasMore: offset + rows.length < count,
+      });
+    } catch (error) {
+      console.error('ConsumptionBySubSection Error:', error);
+      return res.status(500).json({ error: 'Error generating consumption by sub-section report' });
+    }
+  }
+
+  // Report 5: Detail of a specific line in a reference month
+  async getLineDetail(req, res) {
+    try {
+      const { workspaceId, dueDate, phoneNumber, search, page = 0 } = req.query;
+      if (!workspaceId || !dueDate || !phoneNumber) {
+        return res.status(400).json({ error: 'Missing required parameters' });
+      }
+
+      const offset = parseInt(page, 10) * PAGE_SIZE;
+      const like = search ? `%${search}%` : null;
+
+      const whereSql = `
+        WHERE i.workspace_id = :workspaceId
+          AND ri.due_date = :dueDate
+          AND i.source_phone = :phoneNumber
+          ${like ? "AND (i.description ILIKE :like OR i.destination_phone ILIKE :like OR i.section ILIKE :like OR i.sub_section ILIKE :like)" : ""}
+      `;
+
+      const [rows] = await sequelize.query(`
+        SELECT 
+          i.id, i.item_date, i.item_time, i.description, i.destination_phone, 
+          i.duration, i.quantity, i.total_value, i.charged_value,
+          i.section, i.sub_section
+        FROM invoices i
+        JOIN raw_invoices ri ON ri.id = i.raw_invoice_id
+        ${whereSql}
+        ORDER BY i.item_date DESC, i.item_time DESC
+        LIMIT :limit OFFSET :offset
+      `, { replacements: { workspaceId, dueDate, phoneNumber, like, limit: PAGE_SIZE, offset } });
+
+      const [[{ count, total_charged }]] = await sequelize.query(`
+        SELECT COUNT(*)::int AS count, SUM(i.charged_value) as total_charged
+        FROM invoices i
+        JOIN raw_invoices ri ON ri.id = i.raw_invoice_id
+        ${whereSql}
+      `, { replacements: { workspaceId, dueDate, phoneNumber, like } });
+
+      return res.json({
+        items: rows,
+        total: count,
+        grandTotal: parseFloat(total_charged || 0),
+        hasMore: offset + rows.length < count
+      });
+    } catch (error) {
+      console.error('LineDetail Report Error:', error);
+      return res.status(500).json({ error: 'Error generating line detail report' });
+    }
+  }
+
+  // List of available due dates (for the selector)
+  async getDueDates(req, res) {
+    try {
+      const { workspaceId } = req.query;
+      if (!workspaceId) return res.status(400).json({ error: 'Workspace ID is required' });
+
+      const [rows] = await sequelize.query(`
+        SELECT DISTINCT due_date
+        FROM raw_invoices
+        WHERE workspace_id = :workspaceId AND due_date IS NOT NULL
+        ORDER BY due_date DESC
+      `, { replacements: { workspaceId } });
+
+      return res.json(rows.map(r => r.due_date));
+    } catch (error) {
+      console.error('DueDates Error:', error);
+      return res.status(500).json({ error: 'Error fetching due dates' });
+    }
+  }
+
+  // List of available reference months
   async getReferenceMonths(req, res) {
     try {
       const { workspaceId } = req.query;

@@ -19,6 +19,10 @@ const RawInvoice = sequelize.define('RawInvoice', {
     type: DataTypes.JSONB,
     allowNull: false,
   },
+  due_date: {
+    type: DataTypes.DATEONLY,
+    allowNull: true,
+  },
   hash: {
     type: DataTypes.STRING,
     allowNull: false,

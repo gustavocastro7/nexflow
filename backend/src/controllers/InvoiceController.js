@@ -141,7 +141,8 @@ class InvoiceController {
         operator: 'claro',
         content: { raw: content },
         hash,
-        processing_status: 'processado'
+        processing_status: 'processado',
+        due_date: null // Claro record format doesn't seem to have a clear single due date line like TXT
       });
 
       const lines = content.split('\n');
@@ -204,7 +205,8 @@ class InvoiceController {
         operator: 'vivo',
         content: { raw: content },
         hash,
-        processing_status: 'processado'
+        processing_status: 'processado',
+        due_date: null // Vivo tab usually doesn't have it in the rows
       });
 
       const lines = content.split('\n');
@@ -280,10 +282,17 @@ class InvoiceController {
         }
       });
 
+      let due_date = null;
+      if (headerInfo.data_vencimento) {
+        const [d, m, y] = headerInfo.data_vencimento.split('/');
+        due_date = `${y}-${m}-${d}`;
+      }
+
       const raw = await RawInvoice.create({
         workspace_id: workspaceId,
         operator: 'claro_txt',
         content: { raw: content, header: headerInfo },
+        due_date,
         hash,
         processing_status: 'processado'
       });
