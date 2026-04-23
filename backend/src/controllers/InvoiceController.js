@@ -51,38 +51,16 @@ class InvoiceController {
 
   async listRawInvoices(req, res) {
     try {
-      const { workspaceId, mes, ano } = req.query;
+      const { workspaceId, dueDate } = req.query;
       if (!workspaceId) return res.status(400).json({ error: 'Workspace ID é obrigatório' });
 
       const where = { workspace_id: workspaceId };
-      
-      // If filtering by period, we look for raw invoices that have items in that period
-      if (mes && ano && parseInt(mes) > 0 && parseInt(ano) > 0) {
-        const startDate = `${ano}-${mes.padStart(2, '0')}-01`;
-        const endDate = new Date(ano, mes, 0).toISOString().split('T')[0];
-
-        const raws = await RawInvoice.findAll({
-          where,
-          include: [{
-            model: Invoice,
-            as: 'items',
-            attributes: [],
-            where: {
-              item_date: { [Op.between]: [startDate, endDate] }
-            },
-            required: true // INNER JOIN to filter raws
-          }],
-          attributes: ['id', 'operator', 'content', 'created_at'],
-          group: ['RawInvoice.id'],
-          order: [['created_at', 'DESC']]
-        });
-        return res.json(raws);
-      }
+      if (dueDate) where.due_date = dueDate;
 
       const raws = await RawInvoice.findAll({
         where,
-        attributes: ['id', 'operator', 'content', 'created_at'],
-        order: [['created_at', 'DESC']]
+        attributes: ['id', 'operator', 'content', 'created_at', 'due_date'],
+        order: [['due_date', 'DESC'], ['created_at', 'DESC']]
       });
 
       return res.json(raws);
@@ -374,40 +352,23 @@ class InvoiceController {
 
   async index(req, res) {
     try {
-      const { workspaceId, operator, mes, ano, page, limit, raw_invoice_id } = req.query;
+      const { workspaceId, operator, dueDate, page, limit, raw_invoice_id } = req.query;
       if (!workspaceId) return res.status(400).json({ error: 'Workspace ID é obrigatório' });
 
       const where = { workspace_id: workspaceId };
       if (operator) where.operator = operator;
       if (raw_invoice_id) where.raw_invoice_id = raw_invoice_id;
 
-      if (mes && ano) {
-        const workspace = await Workspace.findByPk(workspaceId);
-        const startDay = workspace?.billing_cycle_start_day || 1;
-
-        if (startDay === 1) {
-          const startDate = `${ano}-${mes.padStart(2, '0')}-01`;
-          const endDate = new Date(ano, mes, 0).toISOString().split('T')[0];
-          where.item_date = { [Op.between]: [startDate, endDate] };
-        } else {
-          // Example: mes 11, ano 2025, startDay 21 -> 2025-11-21 to 2025-12-20
-          const startMonth = parseInt(mes, 10);
-          const startYear = parseInt(ano, 10);
-          
-          const startDate = new Date(startYear, startMonth - 1, startDay);
-          const endDate = new Date(startYear, startMonth, startDay - 1);
-          
-          where.item_date = { 
-            [Op.between]: [
-              startDate.toISOString().split('T')[0],
-              endDate.toISOString().split('T')[0]
-            ] 
-          };
-        }
+      const include = [];
+      if (dueDate) {
+        include.push({
+          model: RawInvoice,
+          as: 'header',
+          attributes: [],
+          where: { due_date: dueDate },
+          required: true
+        });
       }
-
-      // Log the final 'where' clause for debugging
-      console.log('Invoice Index Query WHERE Clause:', where);
 
       const order = [['item_date', 'DESC'], ['item_time', 'DESC'], ['id', 'ASC']];
 
@@ -419,6 +380,7 @@ class InvoiceController {
 
         const { rows, count } = await Invoice.findAndCountAll({
           where,
+          include,
           order,
           limit: pageSize,
           offset,
@@ -433,8 +395,7 @@ class InvoiceController {
         });
       }
 
-      // Legacy: full list
-      const faturas = await Invoice.findAll({ where, order });
+      const faturas = await Invoice.findAll({ where, include, order });
       return res.json(faturas);
     } catch (error) {
       console.error(error);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   Box, Typography, Paper, Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, IconButton, Alert, Stack, FormControl, Select,
@@ -105,6 +105,7 @@ const RelatoriosPage: React.FC = () => {
   const [hasMoreDetails, setHasMoreDetails] = useState(false);
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [detailsTotal, setDetailsTotal] = useState(0);
+  const [innerTab, setInnerTab] = useState(0);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const detailContainerRef = useRef<HTMLDivElement>(null);
@@ -237,6 +238,31 @@ const RelatoriosPage: React.FC = () => {
   const loadMoreDetails = () => {
     if (!loadingDetails && hasMoreDetails) fetchDetails(detailsPage + 1, false);
   };
+
+  // Group details by sub-section for dynamic tabs
+  const subSectionData = useMemo(() => {
+    if (tab !== 3 || !details.length) return { list: [], groups: {}, summary: [] };
+    
+    const groups: Record<string, LineDetailRow[]> = {};
+    const summaryMap: Record<string, number> = {};
+    
+    details.forEach(d => {
+      let ss = d.sub_section || 'Outros';
+      // Fix common encoding issues from raw data
+      ss = ss.replace(/Servios/g, 'Serviços').replace(/Informaes/g, 'Informações');
+      
+      if (!groups[ss]) groups[ss] = [];
+      groups[ss].push(d);
+      
+      const val = typeof d.charged_value === 'string' ? parseFloat(d.charged_value) : (d.charged_value || 0);
+      summaryMap[ss] = (summaryMap[ss] || 0) + val;
+    });
+    
+    const list = Object.keys(groups).sort();
+    const summary = list.map(ss => ({ name: ss, total: summaryMap[ss] }));
+    
+    return { list, groups, summary };
+  }, [tab, details]);
 
   const exportCSV = () => {
     let headers: string[];
@@ -422,7 +448,7 @@ const RelatoriosPage: React.FC = () => {
                   <ListItemButton 
                     key={row.phoneNumber}
                     selected={selectedLine?.phoneNumber === row.phoneNumber}
-                    onClick={() => setSelectedLine(row)}
+                    onClick={() => { setSelectedLine(row); setInnerTab(0); }}
                     sx={{ 
                       py: 1, px: 2, 
                       borderLeft: selectedLine?.phoneNumber === row.phoneNumber ? `4px solid ${theme.palette.primary.main}` : '4px solid transparent',
@@ -460,34 +486,77 @@ const RelatoriosPage: React.FC = () => {
                     <Typography variant="h6" sx={{ color: theme.palette.primary.main, fontWeight: 900 }}>{fmtMoney(detailsTotal)}</Typography>
                   </Box>
                 </Box>
+
+                {/* Internal Tabs for Sub-sections */}
+                <Box sx={{ px: 1, borderBottom: `1px solid ${alpha(theme.palette.divider, 0.05)}`, bgcolor: alpha(theme.palette.background.paper, 0.5) }}>
+                  <Tabs 
+                    value={innerTab} 
+                    onChange={(_, v) => setInnerTab(v)}
+                    variant="scrollable"
+                    scrollButtons="auto"
+                    sx={{ minHeight: 40, '& .MuiTab-root': { minHeight: 40, py: 0, fontSize: '0.75rem', fontWeight: 700 } }}
+                  >
+                    <Tab label="Todos os Dados" />
+                    <Tab label="Resumo" />
+                    {subSectionData.list.map((ss, idx) => (
+                      <Tab key={ss} label={ss} />
+                    ))}
+                  </Tabs>
+                </Box>
+
                 <TableContainer ref={detailContainerRef} sx={{ flex: 1, overflow: 'auto' }}>
-                  <Table stickyHeader size="small">
-                    <TableHead>{renderHead()}</TableHead>
-                    <TableBody>
-                      {details.map((d) => (
-                        <TableRow key={d.id} hover>
-                          <TableCell sx={{ fontSize: '0.75rem' }}>{d.item_date}</TableCell>
-                          <TableCell sx={{ fontSize: '0.75rem' }}>{d.item_time}</TableCell>
-                          <TableCell sx={{ fontSize: '0.75rem', maxWidth: 200, noWrap: true, overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.description}</TableCell>
-                          <TableCell sx={{ fontSize: '0.75rem' }}>{d.destination_phone}</TableCell>
-                          <TableCell sx={{ fontSize: '0.75rem' }}>{d.duration || d.quantity}</TableCell>
-                          <TableCell sx={{ fontSize: '0.75rem' }}>{d.section}</TableCell>
-                          <TableCell sx={{ fontSize: '0.75rem', fontWeight: 600 }}>{d.sub_section}</TableCell>
-                          <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.75rem' }}>{fmtMoney(d.charged_value)}</TableCell>
+                  {innerTab === 1 ? (
+                    <Table stickyHeader size="small">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Subsessão</TableCell>
+                          <TableCell align="right">Total</TableCell>
                         </TableRow>
-                      ))}
-                      <TableRow>
-                        <TableCell colSpan={8} sx={{ p: 0, border: 0 }}>
-                          <InfiniteScroll
-                            loadMore={loadMoreDetails}
-                            hasMore={hasMoreDetails}
-                            loading={loadingDetails}
-                            root={detailRootEl}
-                          />
-                        </TableCell>
-                      </TableRow>
-                    </TableBody>
-                  </Table>
+                      </TableHead>
+                      <TableBody>
+                        {subSectionData.summary.map((s) => (
+                          <TableRow key={s.name} hover>
+                            <TableCell sx={{ fontWeight: 700 }}>{s.name}</TableCell>
+                            <TableCell align="right" sx={{ fontWeight: 800, color: theme.palette.primary.main }}>{fmtMoney(s.total)}</TableCell>
+                          </TableRow>
+                        ))}
+                        <TableRow sx={{ bgcolor: alpha(theme.palette.primary.main, 0.05) }}>
+                          <TableCell sx={{ fontWeight: 900 }}>TOTAL GERAL</TableCell>
+                          <TableCell align="right" sx={{ fontWeight: 900 }}>{fmtMoney(detailsTotal)}</TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <Table stickyHeader size="small">
+                      <TableHead>{renderHead()}</TableHead>
+                      <TableBody>
+                        {(innerTab === 0 ? details : subSectionData.groups[subSectionData.list[innerTab - 2]] || []).map((d) => (
+                          <TableRow key={d.id} hover>
+                            <TableCell sx={{ fontSize: '0.75rem' }}>{d.item_date}</TableCell>
+                            <TableCell sx={{ fontSize: '0.75rem' }}>{d.item_time}</TableCell>
+                            <TableCell sx={{ fontSize: '0.75rem', maxWidth: 200, noWrap: true, overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.description}</TableCell>
+                            <TableCell sx={{ fontSize: '0.75rem' }}>{d.destination_phone}</TableCell>
+                            <TableCell sx={{ fontSize: '0.75rem' }}>{d.duration || d.quantity}</TableCell>
+                            <TableCell sx={{ fontSize: '0.75rem' }}>{d.section}</TableCell>
+                            <TableCell sx={{ fontSize: '0.75rem', fontWeight: 600 }}>{d.sub_section}</TableCell>
+                            <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.75rem' }}>{fmtMoney(d.charged_value)}</TableCell>
+                          </TableRow>
+                        ))}
+                        {innerTab === 0 && (
+                          <TableRow>
+                            <TableCell colSpan={8} sx={{ p: 0, border: 0 }}>
+                              <InfiniteScroll
+                                loadMore={loadMoreDetails}
+                                hasMore={hasMoreDetails}
+                                loading={loadingDetails}
+                                root={detailRootEl}
+                              />
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  )}
                 </TableContainer>
               </>
             ) : (

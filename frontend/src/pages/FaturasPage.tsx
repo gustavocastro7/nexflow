@@ -65,16 +65,31 @@ const FaturasPage: React.FC = () => {
   }, []);
 
   const activeWorkspace = getActiveWorkspace();
-  const [filterMonth, setFilterMonth] = useState<number>(0);
-  const [filterYear, setFilterYear] = useState<number>(0);
+  const [dueDate, setDueDate] = useState<string>('');
+  const [dueDates, setDueDates] = useState<string[]>([]);
+
+  // Load available due dates
+  useEffect(() => {
+    if (!activeWorkspace?.id) return;
+    apiClient.get<string[]>(`/reports/due-dates?workspaceId=${activeWorkspace.id}`)
+      .then(res => {
+        setDueDates(res.data);
+        if (res.data.length && !dueDate) {
+          // If we had a filter before, try to keep it, else pick the latest
+          setDueDate(res.data[0]);
+        }
+      })
+      .catch((err) => {
+        console.error('Error loading due dates', err);
+      });
+  }, [activeWorkspace?.id]);
 
   const fetchRawInvoices = useCallback(async () => {
     if (!activeWorkspace?.id) return;
     setIsLoadingRaw(true);
     try {
       let url = `/invoices/raw?workspaceId=${activeWorkspace.id}`;
-      if (filterMonth > 0) url += `&mes=${filterMonth}`;
-      if (filterYear > 0) url += `&ano=${filterYear}`;
+      if (dueDate) url += `&dueDate=${dueDate}`;
       
       const res = await apiClient.get<RawInvoice[]>(url);
       const newRawInvoices = res.data;
@@ -94,7 +109,7 @@ const FaturasPage: React.FC = () => {
     } finally {
       setIsLoadingRaw(false);
     }
-  }, [activeWorkspace?.id, filterMonth, filterYear, selectedRaw?.id, showError]);
+  }, [activeWorkspace?.id, dueDate, selectedRaw?.id, showError]);
 
   const fetchItems = useCallback(async (pageNum: number, append: boolean, rawId?: string, operator?: string) => {
     if (!activeWorkspace?.id) return;
@@ -105,6 +120,8 @@ const FaturasPage: React.FC = () => {
     try {
       let url = `/invoices?workspaceId=${activeWorkspace.id}&page=${pageNum}&limit=${PAGE_SIZE}`;
       if (rawId) url += `&raw_invoice_id=${rawId}`;
+      else if (dueDate) url += `&dueDate=${dueDate}`;
+      
       if (operator) url += `&operator=${operator}`;
       
       const res = await apiClient.get<PaginatedInvoices>(url);
@@ -121,11 +138,11 @@ const FaturasPage: React.FC = () => {
       setIsLoadingItems(false);
       setIsInitialLoad(false);
     }
-  }, [activeWorkspace?.id, showError]);
+  }, [activeWorkspace?.id, dueDate, showError]);
 
   useEffect(() => {
     fetchRawInvoices();
-  }, [activeWorkspace?.id, filterMonth, filterYear]); // Reload list when workspace OR filters change
+  }, [activeWorkspace?.id, dueDate]); // Reload list when workspace OR filters change
 
   // Triggered when selectedRaw changes
   useEffect(() => {
@@ -217,38 +234,21 @@ const FaturasPage: React.FC = () => {
                 Faturas Importadas
               </Typography>
               
-              <Stack direction="row" spacing={1}>
-                <TextField
-                  select
-                  fullWidth
-                  size="small"
-                  value={filterMonth}
-                  onChange={(e) => setFilterMonth(parseInt(e.target.value, 10))}
-                  sx={{ bgcolor: 'background.paper' }}
-                >
-                  <MenuItem value={0}>Mês (Todos)</MenuItem>
-                  {Array.from({ length: 12 }, (_, i) => i + 1).map((monthNum) => (
-                    <MenuItem key={monthNum} value={monthNum}>
-                      {new Date(0, monthNum - 1).toLocaleString('pt-BR', { month: 'short' })}
-                    </MenuItem>
-                  ))}
-                </TextField>
-                <TextField
-                  select
-                  fullWidth
-                  size="small"
-                  value={filterYear}
-                  onChange={(e) => setFilterYear(parseInt(e.target.value, 10))}
-                  sx={{ bgcolor: 'background.paper' }}
-                >
-                  <MenuItem value={0}>Ano</MenuItem>
-                  {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i).map((yearNum) => (
-                    <MenuItem key={yearNum} value={yearNum}>
-                      {yearNum}
-                    </MenuItem>
-                  ))}
-                </TextField>
-              </Stack>
+              <TextField
+                select
+                fullWidth
+                size="small"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                sx={{ bgcolor: 'background.paper' }}
+              >
+                <MenuItem value="">Todos os Vencimentos</MenuItem>
+                {dueDates.map(d => (
+                  <MenuItem key={d} value={d}>
+                    {new Date(d + 'T12:00:00Z').toLocaleDateString('pt-BR')}
+                  </MenuItem>
+                ))}
+              </TextField>
             </Box>
             <Divider />
             <Box sx={{ flex: 1, overflowY: 'auto' }}>

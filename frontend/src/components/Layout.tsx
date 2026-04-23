@@ -357,12 +357,12 @@ const Layout: React.FC = () => {
           }),
         }}
       >
-        <Toolbar sx={{ justifyContent: 'space-between', px: { xs: 2, sm: 4 }, minHeight: 64 }}>
-          <IconButton color="inherit" edge="start" onClick={handleDrawerToggle} sx={{ mr: 2, display: { sm: 'none' } }}><MenuIcon /></IconButton>
+        <Toolbar sx={{ justifyContent: 'space-between', px: { xs: 2, sm: 4 }, minHeight: '40px !important', height: 40 }}>
+          <IconButton color="inherit" edge="start" onClick={handleDrawerToggle} sx={{ mr: 2, display: { sm: 'none' } }} size="small"><MenuIcon fontSize="small" /></IconButton>
           
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Typography variant="subtitle2" sx={{ color: theme.palette.text.secondary, display: { xs: 'none', md: 'block' }, fontSize: '0.8rem' }}>Dashboard /</Typography>
-            <Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: '0.8rem' }}>
+            <Typography variant="subtitle2" sx={{ color: theme.palette.text.secondary, display: { xs: 'none', md: 'block' }, fontSize: '0.75rem' }}>Dashboard /</Typography>
+            <Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: '0.75rem' }}>
               {menuItems.find(item => item.path === location.pathname)?.text || 'Página'}
             </Typography>
           </Box>
@@ -371,9 +371,9 @@ const Layout: React.FC = () => {
             <IconButton 
               onClick={(e) => setLangAnchorEl(e.currentTarget)} 
               size="small" 
-              sx={{ bgcolor: alpha(theme.palette.text.primary, 0.05) }}
+              sx={{ bgcolor: alpha(theme.palette.text.primary, 0.05), p: 0.5 }}
             >
-              <LanguageIcon fontSize="small" />
+              <LanguageIcon sx={{ fontSize: '1rem' }} />
             </IconButton>
             <Menu
               anchorEl={langAnchorEl}
@@ -382,17 +382,17 @@ const Layout: React.FC = () => {
               transformOrigin={{ horizontal: 'right', vertical: 'top' }}
               anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
             >
-              <MenuItem onClick={() => { i18n.changeLanguage('pt-BR'); setLangAnchorEl(null); }} sx={{ fontSize: '0.875rem' }}>🇧🇷 Português</MenuItem>
-              <MenuItem onClick={() => { i18n.changeLanguage('en'); setLangAnchorEl(null); }} sx={{ fontSize: '0.875rem' }}>🇺🇸 English</MenuItem>
-              <MenuItem onClick={() => { i18n.changeLanguage('es'); setLangAnchorEl(null); }} sx={{ fontSize: '0.875rem' }}>🇪🇸 Español</MenuItem>
+              <MenuItem onClick={() => { i18n.changeLanguage('pt-BR'); setLangAnchorEl(null); }} sx={{ fontSize: '0.8rem' }}>🇧🇷 Português</MenuItem>
+              <MenuItem onClick={() => { i18n.changeLanguage('en'); setLangAnchorEl(null); }} sx={{ fontSize: '0.8rem' }}>🇺🇸 English</MenuItem>
+              <MenuItem onClick={() => { i18n.changeLanguage('es'); setLangAnchorEl(null); }} sx={{ fontSize: '0.8rem' }}>🇪🇸 Español</MenuItem>
             </Menu>
 
-            <IconButton onClick={colorMode.toggleColorMode} size="small" sx={{ bgcolor: alpha(theme.palette.text.primary, 0.05) }}>
-              {theme.palette.mode === 'dark' ? <Brightness7Icon fontSize="small" /> : <Brightness4Icon fontSize="small" />}
+            <IconButton onClick={colorMode.toggleColorMode} size="small" sx={{ bgcolor: alpha(theme.palette.text.primary, 0.05), p: 0.5 }}>
+              {theme.palette.mode === 'dark' ? <Brightness7Icon sx={{ fontSize: '1rem' }} /> : <Brightness4Icon sx={{ fontSize: '1rem' }} />}
             </IconButton>
 
-            <IconButton onClick={handleProfileMenuOpen} sx={{ p: 0.5, ml: 1 }}>
-              <Avatar sx={{ width: 32, height: 32, bgcolor: theme.palette.primary.main, border: `2px solid ${theme.palette.background.paper}` }}>
+            <IconButton onClick={handleProfileMenuOpen} sx={{ p: 0.25, ml: 0.5 }}>
+              <Avatar sx={{ width: 28, height: 28, bgcolor: theme.palette.primary.main, border: `2px solid ${theme.palette.background.paper}`, fontSize: '0.75rem' }}>
                 {user?.name?.charAt(0)}
               </Avatar>
             </IconButton>
@@ -402,18 +402,18 @@ const Layout: React.FC = () => {
               onClose={handleProfileMenuClose}
               transformOrigin={{ horizontal: 'right', vertical: 'top' }}
               anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-              PaperProps={{ sx: { minWidth: 200, mt: 1.5, borderRadius: 1, boxShadow: '0 10px 25px rgba(0,0,0,0.1)' } }}
+              PaperProps={{ sx: { minWidth: 180, mt: 1, borderRadius: 1, boxShadow: '0 10px 25px rgba(0,0,0,0.1)' } }}
             >
-              <MenuItem onClick={() => { handleProfileMenuClose(); navigate(ROUTES.PROFILE); }} sx={{ fontSize: '0.875rem' }}>
+              <MenuItem onClick={() => { handleProfileMenuClose(); navigate(ROUTES.PROFILE); }} sx={{ fontSize: '0.8rem' }}>
                 <ListItemIcon><PersonIcon fontSize="small" /></ListItemIcon>
                 {t('common.profile')}
               </MenuItem>
-              <MenuItem onClick={() => { handleProfileMenuClose(); navigate(`${ROUTES.PROFILE}?tab=workspaces`); }} sx={{ fontSize: '0.875rem' }}>
+              <MenuItem onClick={() => { handleProfileMenuClose(); navigate(`${ROUTES.PROFILE}?tab=workspaces`); }} sx={{ fontSize: '0.8rem' }}>
                 <ListItemIcon><BusinessIcon fontSize="small" /></ListItemIcon>
                 {t('common.workspaces')}
               </MenuItem>
               <Divider />
-              <MenuItem onClick={handleLogout} sx={{ color: theme.palette.error.main, fontSize: '0.875rem' }}>
+              <MenuItem onClick={handleLogout} sx={{ color: theme.palette.error.main, fontSize: '0.8rem' }}>
                 <ListItemIcon><LogoutIcon fontSize="small" sx={{ color: theme.palette.error.main }} /></ListItemIcon>
                 {t('common.logout')}
               </MenuItem>
@@ -453,16 +453,16 @@ const Layout: React.FC = () => {
       
       <Box component="main" sx={{ 
         flexGrow: 1, 
-        p: { xs: 2, sm: 3 }, 
+        p: { xs: 1, sm: 2 }, 
         width: { sm: `calc(100% - ${currentDrawerWidth}px)` }, 
-        mt: '64px', 
+        mt: '40px', 
         transition: theme.transitions.create(['width', 'margin'], {
           easing: theme.transitions.easing.sharp,
           duration: theme.transitions.duration.enteringScreen,
         }),
         display: 'flex',
         flexDirection: 'column',
-        height: 'calc(100vh - 64px)',
+        height: 'calc(100vh - 40px)',
         overflowY: 'auto !important',
         overflowX: 'hidden !important',
         bgcolor: theme.palette.mode === 'dark' ? alpha(theme.palette.background.default, 0.5) : alpha(theme.palette.primary.main, 0.01)
