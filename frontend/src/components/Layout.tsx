@@ -34,6 +34,7 @@ import {
   People as PeopleIcon,
   Logout as LogoutIcon,
   Assessment as AssessmentIcon,
+  History as HistoryIcon,
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon
 } from '@mui/icons-material';
@@ -61,14 +62,24 @@ const Layout: React.FC = () => {
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(true);
+  const [isHovered, setIsHovered] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [langAnchorEl, setLangAnchorEl] = useState<null | HTMLElement>(null);
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const [activeWorkspace, setActiveWorkspace] = useState<Workspace | null>(null);
+  const [menuBehavior, setMenuBehavior] = useState<'always_open' | 'hover' | 'collapsible'>('collapsible');
 
-  const currentDrawerWidth = isMobile ? DRAWER_WIDTH : (isCollapsed ? COLLAPSED_DRAWER_WIDTH : DRAWER_WIDTH);
+  // Determine if the drawer should be expanded
+  const isDrawerExpanded = useMemo(() => {
+    if (isMobile) return true; // Mobile always expanded when open
+    if (menuBehavior === 'always_open') return true;
+    if (menuBehavior === 'hover') return isHovered;
+    return !isCollapsed; // collapsible behavior
+  }, [isMobile, menuBehavior, isHovered, isCollapsed]);
+
+  const currentDrawerWidth = isMobile ? DRAWER_WIDTH : (isDrawerExpanded ? DRAWER_WIDTH : COLLAPSED_DRAWER_WIDTH);
 
   const checkAuth = useCallback(async () => {
     const token = sessionStorage.getItem('token');
@@ -83,10 +94,6 @@ const Layout: React.FC = () => {
     try {
       const parsedUser = JSON.parse(userStr) as User;
       const parsedWS = wsStr ? JSON.parse(wsStr) as Workspace : null;
-      // Migrate old format if necessary
-      if (parsedWS && parsedWS.name && !parsedWS.default_workspace_id) {
-        parsedWS.default_workspace_id = parsedWS.id;  
-      }
       
       setUser(parsedUser);
       setActiveWorkspace(parsedWS as Workspace);
@@ -94,6 +101,16 @@ const Layout: React.FC = () => {
       if (!parsedWS && location.pathname !== ROUTES.WORKSPACES) {
         navigate(ROUTES.WORKSPACES);
         return;
+      }
+
+      // Fetch user config including menu_behavior
+      try {
+        const configRes = await apiClient.get('/user/config');
+        if (configRes.data.menu_behavior) {
+          setMenuBehavior(configRes.data.menu_behavior);
+        }
+      } catch (err) {
+        console.error('Error fetching user config', err);
       }
 
       // Fetch workspaces for the menu
@@ -148,6 +165,10 @@ const Layout: React.FC = () => {
       items.push({ text: t('sidebar.users'), icon: <PeopleIcon />, path: ROUTES.USERS });
     }
 
+    if (user?.profile === 'jedi') {
+      items.push({ text: t('sidebar.audit') || 'Auditoria', icon: <HistoryIcon />, path: ROUTES.AUDIT });
+    }
+
     return items;
   }, [user?.profile, t]);
 
@@ -160,24 +181,28 @@ const Layout: React.FC = () => {
   }
 
   const drawer = (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden !important' }}>
+    <Box 
+      sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden !important' }}
+      onMouseEnter={() => menuBehavior === 'hover' && setIsHovered(true)}
+      onMouseLeave={() => menuBehavior === 'hover' && setIsHovered(false)}
+    >
       <Toolbar sx={{ 
-        px: isCollapsed ? 2 : 3, 
+        px: !isDrawerExpanded ? 2 : 3, 
         py: 1, 
         display: 'flex', 
         alignItems: 'center', 
-        justifyContent: isCollapsed ? 'center' : 'flex-start',
+        justifyContent: !isDrawerExpanded ? 'center' : 'flex-start',
         gap: 2,
         transition: 'all 0.3s',
-        minHeight: { xs: 64, sm: isCollapsed ? 70 : 80 }
+        minHeight: { xs: 64, sm: !isDrawerExpanded ? 70 : 80 }
       }}>
         <Box 
           component="img"
           src="/logo.jpg"
           alt="Teleen Logo"
           sx={{ 
-            width: isCollapsed ? 36 : 44, 
-            height: isCollapsed ? 36 : 44, 
+            width: !isDrawerExpanded ? 36 : 44, 
+            height: !isDrawerExpanded ? 36 : 44, 
             borderRadius: 1.5, 
             objectFit: 'contain',
             bgcolor: 'white',
@@ -186,7 +211,7 @@ const Layout: React.FC = () => {
             transition: 'all 0.3s'
           }}
         />
-        {!isCollapsed && (
+        {isDrawerExpanded && (
           <Typography variant="h5" sx={{ fontWeight: 800, letterSpacing: -0.5, whiteSpace: 'nowrap' }}>
             teleen
           </Typography>
@@ -194,13 +219,8 @@ const Layout: React.FC = () => {
       </Toolbar>
       
       <Box sx={{ px: 2, mb: 1 }}>
-        {!isCollapsed && (
-          <Typography variant="caption" sx={{ color: theme.palette.text.secondary, fontWeight: 700, px: 2, textTransform: 'uppercase', letterSpacing: 1, whiteSpace: 'nowrap', fontSize: '0.65rem' }}>
-            Active Workspace
-          </Typography>
-        )}
         <Box sx={{ mt: 0.5, display: 'flex', justifyContent: 'center' }}>
-          {isCollapsed ? (
+          {!isDrawerExpanded && (
             <Tooltip title={activeWorkspace?.name || 'Workspace'} placement="right">
               <Box sx={{ 
                 p: 1, 
@@ -213,45 +233,6 @@ const Layout: React.FC = () => {
                 <BusinessIcon sx={{ color: theme.palette.primary.main, fontSize: '1.2rem' }} />
               </Box>
             </Tooltip>
-          ) : (
-            user?.profile === 'jedi' ? (
-              <FormControl fullWidth size="small">
-                <Select
-                  value={activeWorkspace?.id || ''}
-                  onChange={handleWorkspaceChange}
-                  displayEmpty
-                  variant="outlined"
-                  sx={{ 
-                    fontSize: '0.8rem', fontWeight: 600,
-                    bgcolor: theme.palette.mode === 'dark' ? alpha('#FFFFFF', 0.05) : alpha('#000000', 0.02),
-                    '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
-                    height: 36
-                  }}
-                >
-                  {!activeWorkspace && (
-                    <MenuItem value="" disabled>Select a Workspace</MenuItem>
-                  )}
-                  {workspaces.map((ws) => (
-                    <MenuItem key={ws.id} value={ws.id}>{ws.name}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            ) : (
-              <Box sx={{ 
-                px: 1.5, py: 0.8,
-                borderRadius: 1,
-                bgcolor: theme.palette.mode === 'dark' ? alpha('#FFFFFF', 0.05) : alpha('#000000', 0.02),
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1,
-                width: '100%'
-              }}>
-                <BusinessIcon sx={{ color: theme.palette.primary.main, fontSize: '1.1rem' }} />
-                <Typography variant="body2" sx={{ fontWeight: 700, fontSize: '0.8rem', noWrap: true }}>
-                  {activeWorkspace?.name || 'None Selected'}
-                </Typography>
-              </Box>
-            )
           )}
         </Box>
       </Box>
@@ -268,25 +249,25 @@ const Layout: React.FC = () => {
       }}>
         {menuItems.map((item) => (
           <ListItem key={item.text} disablePadding sx={{ mb: 0.25 }}>
-            <Tooltip title={isCollapsed ? item.text : ''} placement="right">
+            <Tooltip title={!isDrawerExpanded ? item.text : ''} placement="right">
               <ListItemButton 
                 onClick={() => { navigate(item.path); if(isMobile) setMobileOpen(false); }}
                 selected={location.pathname === item.path}
                 sx={{ 
                   py: 0.75,
-                  justifyContent: isCollapsed ? 'center' : 'flex-start',
-                  px: isCollapsed ? 1 : 1.5,
+                  justifyContent: !isDrawerExpanded ? 'center' : 'flex-start',
+                  px: !isDrawerExpanded ? 1 : 1.5,
                   borderRadius: 1,
                 }}
               >
                 <ListItemIcon sx={{ 
-                  minWidth: isCollapsed ? 0 : 35, 
+                  minWidth: !isDrawerExpanded ? 0 : 35, 
                   color: location.pathname === item.path ? theme.palette.primary.main : theme.palette.text.secondary,
                   justifyContent: 'center'
                 }}>
                   {React.cloneElement(item.icon as React.ReactElement, { sx: { fontSize: '1.2rem' } })}
                 </ListItemIcon>
-                {!isCollapsed && (
+                {isDrawerExpanded && (
                   <ListItemText 
                     primary={item.text} 
                     primaryTypographyProps={{ fontSize: '0.85rem', fontWeight: location.pathname === item.path ? 700 : 500, noWrap: true }} 
@@ -298,8 +279,19 @@ const Layout: React.FC = () => {
         ))}
       </List>
 
-      <Box sx={{ p: 1.5, mt: 'auto', borderTop: `1px solid ${alpha(theme.palette.divider, 0.05)}`, overflow: 'hidden !important' }}>
-        {isCollapsed ? (
+      <Box 
+        onClick={handleProfileMenuOpen}
+        sx={{ 
+          p: 1.5, 
+          mt: 'auto', 
+          borderTop: `1px solid ${alpha(theme.palette.divider, 0.05)}`, 
+          overflow: 'hidden !important',
+          cursor: 'pointer',
+          '&:hover': { bgcolor: alpha(theme.palette.text.primary, 0.02) },
+          transition: 'background-color 0.2s'
+        }}
+      >
+        {!isDrawerExpanded ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', mb: 0.5 }}>
             <Tooltip title={user?.name || 'User'} placement="right">
               <Avatar sx={{ width: 32, height: 32, bgcolor: theme.palette.primary.main, fontSize: '0.8rem' }}>
@@ -322,8 +314,29 @@ const Layout: React.FC = () => {
             </Paper>
           ) : null
         )}
-        
-        {!isMobile && (
+      </Box>
+
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleProfileMenuClose}
+        transformOrigin={{ horizontal: !isDrawerExpanded ? 'left' : 'center', vertical: 'bottom' }}
+        anchorOrigin={{ horizontal: !isDrawerExpanded ? 'right' : 'center', vertical: 'top' }}
+        PaperProps={{ sx: { minWidth: 180, mb: 1, borderRadius: 1, boxShadow: '0 10px 25px rgba(0,0,0,0.1)' } }}
+      >
+        <MenuItem onClick={() => { handleProfileMenuClose(); navigate(ROUTES.PROFILE); }} sx={{ fontSize: '0.8rem' }}>
+          <ListItemIcon><PersonIcon fontSize="small" /></ListItemIcon>
+          {t('common.profile')}
+        </MenuItem>
+        <Divider />
+        <MenuItem onClick={() => { handleProfileMenuClose(); handleLogout(); }} sx={{ color: theme.palette.error.main, fontSize: '0.8rem' }}>
+          <ListItemIcon><LogoutIcon fontSize="small" sx={{ color: theme.palette.error.main }} /></ListItemIcon>
+          {t('common.logout')}
+        </MenuItem>
+      </Menu>
+
+      <Box sx={{ p: 1.5, pt: 0 }}>
+        {!isMobile && menuBehavior === 'collapsible' && (
           <IconButton 
             onClick={handleCollapseToggle}
             size="small"
@@ -335,7 +348,7 @@ const Layout: React.FC = () => {
               '&:hover': { bgcolor: alpha(theme.palette.text.primary, 0.05) }
             }}
           >
-            {isCollapsed ? <ChevronRightIcon fontSize="small" /> : <ChevronLeftIcon fontSize="small" />}
+            {!isDrawerExpanded ? <ChevronRightIcon fontSize="small" /> : <ChevronLeftIcon fontSize="small" />}
           </IconButton>
         )}
       </Box>
@@ -344,84 +357,6 @@ const Layout: React.FC = () => {
 
   return (
     <Box sx={{ display: 'flex', height: '100vh', width: '100vw', bgcolor: theme.palette.background.default, overflow: 'hidden' }}>
-      <AppBar
-        position="fixed"
-        sx={{
-          width: { sm: `calc(100% - ${currentDrawerWidth}px)` },
-          ml: { sm: `${currentDrawerWidth}px` },
-          boxShadow: 'none',
-          border: 'none',
-          transition: theme.transitions.create(['width', 'margin'], {
-            easing: theme.transitions.easing.sharp,
-            duration: theme.transitions.duration.leavingScreen,
-          }),
-        }}
-      >
-        <Toolbar sx={{ justifyContent: 'space-between', px: { xs: 2, sm: 4 }, minHeight: '40px !important', height: 40 }}>
-          <IconButton color="inherit" edge="start" onClick={handleDrawerToggle} sx={{ mr: 2, display: { sm: 'none' } }} size="small"><MenuIcon fontSize="small" /></IconButton>
-          
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Typography variant="subtitle2" sx={{ color: theme.palette.text.secondary, display: { xs: 'none', md: 'block' }, fontSize: '0.75rem' }}>Dashboard /</Typography>
-            <Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: '0.75rem' }}>
-              {menuItems.find(item => item.path === location.pathname)?.text || 'Página'}
-            </Typography>
-          </Box>
-
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <IconButton 
-              onClick={(e) => setLangAnchorEl(e.currentTarget)} 
-              size="small" 
-              sx={{ bgcolor: alpha(theme.palette.text.primary, 0.05), p: 0.5 }}
-            >
-              <LanguageIcon sx={{ fontSize: '1rem' }} />
-            </IconButton>
-            <Menu
-              anchorEl={langAnchorEl}
-              open={Boolean(langAnchorEl)}
-              onClose={() => setLangAnchorEl(null)}
-              transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-              anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-            >
-              <MenuItem onClick={() => { i18n.changeLanguage('pt-BR'); setLangAnchorEl(null); }} sx={{ fontSize: '0.8rem' }}>🇧🇷 Português</MenuItem>
-              <MenuItem onClick={() => { i18n.changeLanguage('en'); setLangAnchorEl(null); }} sx={{ fontSize: '0.8rem' }}>🇺🇸 English</MenuItem>
-              <MenuItem onClick={() => { i18n.changeLanguage('es'); setLangAnchorEl(null); }} sx={{ fontSize: '0.8rem' }}>🇪🇸 Español</MenuItem>
-            </Menu>
-
-            <IconButton onClick={colorMode.toggleColorMode} size="small" sx={{ bgcolor: alpha(theme.palette.text.primary, 0.05), p: 0.5 }}>
-              {theme.palette.mode === 'dark' ? <Brightness7Icon sx={{ fontSize: '1rem' }} /> : <Brightness4Icon sx={{ fontSize: '1rem' }} />}
-            </IconButton>
-
-            <IconButton onClick={handleProfileMenuOpen} sx={{ p: 0.25, ml: 0.5 }}>
-              <Avatar sx={{ width: 28, height: 28, bgcolor: theme.palette.primary.main, border: `2px solid ${theme.palette.background.paper}`, fontSize: '0.75rem' }}>
-                {user?.name?.charAt(0)}
-              </Avatar>
-            </IconButton>
-            <Menu
-              anchorEl={anchorEl}
-              open={Boolean(anchorEl)}
-              onClose={handleProfileMenuClose}
-              transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-              anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-              PaperProps={{ sx: { minWidth: 180, mt: 1, borderRadius: 1, boxShadow: '0 10px 25px rgba(0,0,0,0.1)' } }}
-            >
-              <MenuItem onClick={() => { handleProfileMenuClose(); navigate(ROUTES.PROFILE); }} sx={{ fontSize: '0.8rem' }}>
-                <ListItemIcon><PersonIcon fontSize="small" /></ListItemIcon>
-                {t('common.profile')}
-              </MenuItem>
-              <MenuItem onClick={() => { handleProfileMenuClose(); navigate(`${ROUTES.PROFILE}?tab=workspaces`); }} sx={{ fontSize: '0.8rem' }}>
-                <ListItemIcon><BusinessIcon fontSize="small" /></ListItemIcon>
-                {t('common.workspaces')}
-              </MenuItem>
-              <Divider />
-              <MenuItem onClick={handleLogout} sx={{ color: theme.palette.error.main, fontSize: '0.8rem' }}>
-                <ListItemIcon><LogoutIcon fontSize="small" sx={{ color: theme.palette.error.main }} /></ListItemIcon>
-                {t('common.logout')}
-              </MenuItem>
-            </Menu>
-          </Box>
-        </Toolbar>
-      </AppBar>
-      
       <Box component="nav" sx={{ width: { sm: currentDrawerWidth }, flexShrink: { sm: 0 }, transition: 'width 0.3s' }}>
         <Drawer
           variant="temporary" open={mobileOpen} onClose={handleDrawerToggle}
@@ -455,14 +390,14 @@ const Layout: React.FC = () => {
         flexGrow: 1, 
         p: { xs: 1, sm: 2 }, 
         width: { sm: `calc(100% - ${currentDrawerWidth}px)` }, 
-        mt: '40px', 
+        mt: 0, 
         transition: theme.transitions.create(['width', 'margin'], {
           easing: theme.transitions.easing.sharp,
           duration: theme.transitions.duration.enteringScreen,
         }),
         display: 'flex',
         flexDirection: 'column',
-        height: 'calc(100vh - 40px)',
+        height: '100vh',
         overflowY: 'auto !important',
         overflowX: 'hidden !important',
         bgcolor: theme.palette.mode === 'dark' ? alpha(theme.palette.background.default, 0.5) : alpha(theme.palette.primary.main, 0.01)

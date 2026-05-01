@@ -5,6 +5,7 @@ const CostCenter = require('../models/CostCenter');
 const PhoneLine = require('../models/PhoneLine');
 const Workspace = require('../models/Workspace');
 const { Op } = require('sequelize');
+const { logOperation } = require('../utils/auditLogger');
 
 class InvoiceController {
   constructor() {
@@ -35,12 +36,26 @@ class InvoiceController {
         return res.status(404).json({ error: 'Fatura não encontrada' });
       }
 
+      const operator = rawInvoice.operator;
+      const dueDate = rawInvoice.due_date;
+
       // Delete associated items first (or rely on CASCADE if set, but manual is safer here)
       await Invoice.destroy({
         where: { raw_invoice_id: id, workspace_id: workspaceId }
       });
 
       await rawInvoice.destroy();
+
+      // Log deletion
+      await logOperation({
+        user_id: req.userId,
+        workspace_id: workspaceId,
+        action: 'DELETE',
+        entity: 'RawInvoice',
+        entity_id: id,
+        ip_address: req.ip,
+        payload: { operator, due_date: dueDate }
+      });
 
       return res.json({ message: 'Fatura e itens removidos com sucesso' });
     } catch (error) {
@@ -100,9 +115,50 @@ class InvoiceController {
     }
   }
 
+  _cleanContent(content) {
+    if (!content) return content;
+    
+    let cleaned = content;
+
+    const mapping = [
+      { pattern: /Per\uFFFDo/g, replacement: 'Periodo' },
+      { pattern: /Refer\uFFFDncia/g, replacement: 'Referencia' },
+      { pattern: /N\uFFFD Cliente/g, replacement: 'No. Cliente' },
+      { pattern: /N\uFFFD/g, replacement: 'No.' },
+      { pattern: /Identifica\uFFFD\uFFFDo/g, replacement: 'Identificacao' },
+      { pattern: /d\uFFFDbito/g, replacement: 'debito' },
+      { pattern: /autom\uFFFDtico/g, replacement: 'automatico' },
+      { pattern: /Se\uFFFD\uFFFDo/g, replacement: 'Secao' },
+      { pattern: /Dura\uFFFD\uFFFDo/g, replacement: 'Duracao' },
+      { pattern: /Matr\uFFFDcula/g, replacement: 'Matricula' },
+      { pattern: /Descri\uFFFD\uFFFDo/g, replacement: 'Descricao' },
+      { pattern: /C\uFFFDdigo/g, replacement: 'Codigo' },
+      { pattern: /B\uFFFDnus/g, replacement: 'Bonus' },
+      { pattern: /Sinaliza\uFFFD\uFFFDo/g, replacement: 'Sinalizacao' },
+      { pattern: /N\uFFFDmero/g, replacement: 'Numero' },
+      { pattern: /Sub-Se\uFFFD\uFFFDo/g, replacement: 'Sub-Secao' },
+      { pattern: /Navega\uFFFD\uFFFDo/g, replacement: 'Navegacao' },
+      { pattern: /Padr\uFFFDo/g, replacement: 'Padrao' },
+      { pattern: /P\uFFFDs/g, replacement: 'Pos' },
+      { pattern: /Servi\uFFFDos/g, replacement: 'Servicos' },
+      { pattern: /Opera\uFFFD\uFFFDo/g, replacement: 'Operacao' },
+      { pattern: /Promo\uFFFD\uFFFDo/g, replacement: 'Promocao' }
+    ];
+
+    mapping.forEach(item => {
+      cleaned = cleaned.replace(item.pattern, item.replacement);
+    });
+
+    // Final pass for any stray replacement characters that might have different patterns
+    cleaned = cleaned.replace(/\uFFFD/g, '');
+
+    return cleaned;
+  }
+
   async importClaro(req, res) {
     try {
-      const { content, workspaceId } = req.body;
+      let { content, workspaceId } = req.body;
+      content = this._cleanContent(content);
 
       if (!workspaceId) {
         return res.status(400).json({ error: 'Workspace ID is required for import' });
@@ -157,6 +213,18 @@ class InvoiceController {
       }
 
       await Invoice.bulkCreate(items);
+
+      // Log import
+      await logOperation({
+        user_id: req.userId,
+        workspace_id: workspaceId,
+        action: 'IMPORT',
+        entity: 'RawInvoice',
+        entity_id: raw.id,
+        ip_address: req.ip,
+        payload: { operator: 'claro', itemCount: items.length }
+      });
+
       return res.status(201).json({ message: `${items.length} Claro items imported successfully` });
     } catch (error) {
       console.error('Claro Import Error:', error);
@@ -228,6 +296,18 @@ class InvoiceController {
       }
 
       await Invoice.bulkCreate(items);
+
+      // Log import
+      await logOperation({
+        user_id: req.userId,
+        workspace_id: workspaceId,
+        action: 'IMPORT',
+        entity: 'RawInvoice',
+        entity_id: raw.id,
+        ip_address: req.ip,
+        payload: { operator: 'vivo', itemCount: items.length }
+      });
+
       return res.status(201).json({ message: `${items.length} Vivo items imported successfully` });
     } catch (error) {
       console.error('Vivo Import Error:', error);
@@ -237,7 +317,9 @@ class InvoiceController {
 
   async importClaroTXT(req, res) {
     try {
-      const { content, workspaceId } = req.body;
+      let { content, workspaceId } = req.body;
+      content = this._cleanContent(content);
+      
       if (!workspaceId) return res.status(400).json({ error: 'Workspace ID is required' });
 
       const hash = crypto.createHash('md5').update(content).digest('hex');
@@ -342,6 +424,17 @@ class InvoiceController {
         const chunk = items.slice(i, i + chunkSize);
         await Invoice.bulkCreate(chunk);
       }
+
+      // Log import
+      await logOperation({
+        user_id: req.userId,
+        workspace_id: workspaceId,
+        action: 'IMPORT',
+        entity: 'RawInvoice',
+        entity_id: raw.id,
+        ip_address: req.ip,
+        payload: { operator: 'claro_txt', itemCount: items.length, due_date }
+      });
 
       return res.status(201).json({ message: `${items.length} Claro TXT items imported successfully` });
     } catch (error) {

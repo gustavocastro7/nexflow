@@ -24,7 +24,8 @@
     "login": "Entrar",
     "register": "Registrar",
     "welcome": "Bem-vindo",
-    "settings": "Configurações"
+    "settings": "Configurações",
+    "audit": "Auditoria de Sistema"
   },
   "login": {
     "title": "Acesse sua conta",
@@ -49,7 +50,8 @@
     "invoices": "Faturas",
     "reports": "Relatórios",
     "collaborators": "Colaboradores",
-    "users": "Usuários"
+    "users": "Usuários",
+    "audit": "Auditoria"
   },
   "profile": {
     "title": "Configurações de Conta",
@@ -65,6 +67,57 @@
     "confirm_password": "Confirmar Nova Senha",
     "save_profile": "Salvar Perfil",
     "change_password": "Alterar Senha",
-    "error_loading": "Erro ao carregar dados do perfil"
+    "error_loading": "Erro ao carregar dados do perfil",
+    "preferences": "Preferências",
+    "language": "Idioma / Language",
+    "language_description": "Selecione o idioma da interface do sistema",
+    "theme": "Tema Visual / Theme Mode",
+    "theme_light_desc": "Usando modo claro clássico",
+    "theme_dark_desc": "Usando modo escuro para reduzir cansaço visual",
+    "light": "Claro",
+    "dark": "Escuro",
+    "menu_behavior": "Comportamento do Menu",
+    "menu_behavior_description": "Defina como a barra lateral deve se comportar ao navegar",
+    "menu_always_open": "Sempre Aberto",
+    "menu_hover": "Abrir ao Passar o Mouse",
+    "menu_collapsible": "Botão para Abrir/Fechar",
+    "manage_workspaces": "Gerenciar Ambientes",
+    "manage_workspaces_desc": "Selecione o ambiente ativo ou gerencie os workspaces disponíveis.",
+    "active_col": "Ativo",
+    "workspace_name_col": "Nome do Workspace",
+    "schema_col": "Schema",
+    "actions_col": "Ações",
+    "new_workspace": "Novo Workspace",
+    "edit_workspace": "Editar Workspace",
+    "delete_workspace_confirm": "Tem certeza que deseja excluir este workspace? Esta ação é irreversível.",
+    "workspace_saved": "Workspace salvo com sucesso!",
+    "workspace_deleted": "Workspace excluído com sucesso!",
+    "profile_updated": "Perfil atualizado com sucesso!",
+    "password_changed": "Senha alterada com sucesso!",
+    "passwords_dont_match": "As senhas não coincidem"
+  },
+  "audit": {
+    "subtitle": "Rastreamento de todas as operações realizadas no sistema.",
+    "action": "Ação",
+    "entity": "Entidade",
+    "all_actions": "Todas as Ações",
+    "all_entities": "Todas as Entidades",
+    "clear_filters": "Limpar Filtros",
+    "date_time": "Data/Hora",
+    "user": "Usuário",
+    "ip": "IP",
+    "details": "Detalhes",
+    "no_logs": "Nenhum log encontrado.",
+    "rows_per_page": "Linhas por página",
+    "op_details": "Detalhes da Operação",
+    "log_id": "ID do Log",
+    "date_and_time": "Data e Hora",
+    "user_id": "Usuário (ID)",
+    "affected_entity": "Entidade Afetada",
+    "ip_address": "Endereço IP",
+    "not_registered": "Não registrado",
+    "payload_data": "Dados Complementares (Payload)",
+    "close": "Fechar",
+    "view_details": "Ver Detalhes"
   }
 }

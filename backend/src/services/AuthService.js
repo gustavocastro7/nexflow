@@ -51,7 +51,8 @@ class AuthService {
 
     // Return as plain objects to avoid Sequelize instance issues
     const userJson = user.toJSON();
-    userJson.config = config.toJSON();
+    // Ensure config and its properties are included
+    userJson.config = config.toJSON(); 
 
     return { user: userJson, token };
   }

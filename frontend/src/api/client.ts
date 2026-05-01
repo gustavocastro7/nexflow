@@ -17,8 +17,16 @@ apiClient.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+
+  console.log('Outgoing Request:', {
+    method: config.method,
+    url: config.url,
+    headers: config.headers,
+    data: config.data,
+  });
   return config;
 }, (error) => {
+  console.error('Error in request interceptor:', error);
   return Promise.reject(error);
 });
 
@@ -29,6 +37,7 @@ apiClient.interceptors.response.use(
       sessionStorage.clear();
       window.location.href = '/login';
     }
+    console.error('Error in response interceptor:', error);
     return Promise.reject(error);
   }
 );

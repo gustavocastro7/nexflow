@@ -4,263 +4,269 @@ import {
   Typography, 
   Paper, 
   Container, 
-  Grid,
   Card,
   CardContent,
   Button,
-  alpha,
-  useTheme,
-  Skeleton
+  Skeleton,
+  Stack,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemIcon
 } from '@mui/material';
-import BusinessIcon from '@mui/icons-material/Business';
-import ReceiptIcon from '@mui/icons-material/Receipt';
-import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import PeopleIcon from '@mui/icons-material/People';
-import GroupsIcon from '@mui/icons-material/Groups';
-import PhoneIcon from '@mui/icons-material/Phone';
+import Grid from '@mui/material/Grid';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
-import { Link } from 'react-router-dom';
-import { ROUTES } from '../routes/routes';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import GetAppIcon from '@mui/icons-material/GetApp';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
+
+import { 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer, 
+  AreaChart, 
+  Area, 
+  Cell 
+} from 'recharts';
+
 import apiClient from '../api/client';
 import type { Workspace } from '../types';
 
+interface DashboardData {
+  summary: {
+    totalSpent: number;
+    trend: number;
+    dataUsage: number;
+    voiceUsage: number;
+    smsUsage: number;
+  };
+  alerts: {
+    hasExcessConsumption: boolean;
+    excessValue: number;
+    excessCount: number;
+    hasBillingErrors: boolean;
+    errorValue: number;
+    errorCount: number;
+  };
+  charts: {
+    costsByDepartment: Array<{ name: string, total: number }>;
+    monthlyTrends: Array<{ month: string, data_gb: number, voice_min: number, total_spent: number }>;
+    expensiveLines: Array<{ phone: string, total: number }>;
+  };
+  opportunities: Array<{ type: string, description: string, impact: number }>;
+  errors: Array<{ type: string, description: string, count: number }>;
+}
+
 const DashboardPage: React.FC = () => {
-  const theme = useTheme();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [activeWorkspace, setActiveWorkspace] = useState<Workspace | null>(null);
-  const [stats, setStats] = useState({
-    costCenters: 0,
-    claroInvoices: 0,
-    vivoInvoices: 0,
-    totalSpent: 0,
-    users: 0,
-    collaborators: 0,
-    phoneLines: 0,
-    phoneLinesWithoutCC: 0
-  });
+  const [data, setData] = useState<DashboardData | null>(null);
 
   useEffect(() => {
     try {
       const wsData = sessionStorage.getItem('activeWorkspace');
       const ws = wsData ? JSON.parse(wsData) as Workspace : null;
-      if (ws && ws?.id) {
-        setActiveWorkspace(ws);
-      }
-    } catch (e: unknown) {
-      console.error('Error parsing activeWorkspace');
+      if (ws?.id) setActiveWorkspace(ws);
+    } catch (_e) {
+      console.error('Error parsing workspace');
     }
   }, []);
 
-  const fetchStats = useCallback(async () => {
-    if (!activeWorkspace || !activeWorkspace?.id) return;
+  const fetchData = useCallback(async () => {
+    if (!activeWorkspace?.id) return;
     setLoading(true);
     try {
-      const response = await apiClient.get<{
-        costCenters: number;
-        claroInvoices: number;
-        vivoInvoices: number;
-        totalSpent: number;
-        users: number;
-        collaborators: number;
-        phoneLines: number;
-        phoneLinesWithoutCC: number;
-      }>(`/reports/dashboard-stats?workspaceId=${activeWorkspace.id}`);
-
-      const data = response.data;
-
-      setStats({
-        costCenters: data.costCenters || 0,
-        claroInvoices: data.claroInvoices || 0,
-        vivoInvoices: data.vivoInvoices || 0,
-        totalSpent: data.totalSpent || 0,
-        users: data.users || 0,
-        collaborators: data.collaborators || 0,
-        phoneLines: data.phoneLines || 0,
-        phoneLinesWithoutCC: data.phoneLinesWithoutCC || 0
-      });
-    } catch (_err: unknown) {
-      console.error('Error fetching statistics');
+      const response = await apiClient.get<DashboardData>(`/reports/dashboard-stats?workspaceId=${activeWorkspace.id}`);
+      setData(response.data);
+    } catch (err) {
+      console.error('Error fetching dashboard data', err);
     } finally {
       setLoading(false);
     }
   }, [activeWorkspace]);
 
   useEffect(() => {
-    fetchStats();
-  }, [fetchStats]);
+    fetchData();
+  }, [fetchData]);
 
-  if (!activeWorkspace || !activeWorkspace?.id) {
+  if (!activeWorkspace) {
     return (
-      <Container maxWidth="md" sx={{ mt: 10, textAlign: 'center' }}>
-        <Paper sx={{ p: 8, borderRadius: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
-          <BusinessIcon sx={{ fontSize: 64, color: theme.palette.primary.main, opacity: 0.5 }} />
-          <Box>
-            <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>Nenhum Workspace</Typography>
-            <Typography variant="body1" color="textSecondary">
-              Você precisa selecionar um workspace para visualizar os dados.
-            </Typography>
-          </Box>
-          <Button variant="contained" component={Link} to={ROUTES.WORKSPACES} size="large">
-            Selecionar Workspace
-          </Button>
-        </Paper>
-      </Container>
+      <Box sx={{ p: 4, textAlign: 'center' }}>
+        <Typography>Selecione um workspace para continuar.</Typography>
+      </Box>
     );
   }
 
-  const statCards = [
-    { 
-      label: 'Total Gasto', 
-      value: stats.totalSpent !== undefined ? `R$ ${stats.totalSpent.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : 'R$ 0,00', 
-      icon: <TrendingUpIcon />, 
-      color: '#10B981'
-    },
-    { 
-      label: 'Faturas', 
-      value: stats.claroInvoices + stats.vivoInvoices, 
-      icon: <ReceiptIcon />, 
-      color: '#E11D48' 
-    },
-    { 
-      label: 'Telefones', 
-      value: stats.phoneLines, 
-      icon: <PhoneIcon />, 
-      color: '#3B82F6' 
-    },
-    { 
-      label: 'Sem Centro de Custo', 
-      value: stats.phoneLinesWithoutCC, 
-      icon: <ErrorOutlineIcon />, 
-      color: '#F59E0B' 
-    },
-    { 
-      label: 'Centros de Custo', 
-      value: stats.costCenters, 
-      icon: <AccountBalanceWalletIcon />, 
-      color: theme.palette.primary.main 
-    },
-    { 
-      label: 'Colaboradores', 
-      value: stats.collaborators, 
-      icon: <GroupsIcon />, 
-      color: '#8B5CF6' 
-    },
-    { 
-      label: 'Operadoras', 
-      value: (stats.claroInvoices > 0 ? 1 : 0) + (stats.vivoInvoices > 0 ? 1 : 0) || 1, 
-      icon: <BusinessIcon />, 
-      color: '#EC4899' 
-    },
-    { 
-      label: 'Usuários', 
-      value: stats.users, 
-      icon: <PeopleIcon />, 
-      color: '#64748B' 
-    },
-  ];
+  const formatCurrency = (val: number) => 
+    val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+  const COLORS = ['#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#6366F1'];
 
   return (
-    <Container 
-      maxWidth={false} 
-      disableGutters 
-      sx={{ 
-        height: 'auto', 
-        display: 'flex', 
-        flexDirection: 'column',
-        px: { xs: 2, sm: 4 },
-        pb: 4
-      }}
-    >
-      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-        <Box>
-          <Typography variant="h5" sx={{ fontWeight: 800, mb: 0.5 }}>
-            Dashboard
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Visão geral: {activeWorkspace?.name}
-          </Typography>
-        </Box>
-        {loading && <Typography variant="caption" color="primary" sx={{ fontWeight: 700 }}>Atualizando...</Typography>}
+    <Container maxWidth={false} sx={{ py: 3, bgcolor: '#f8fafc', minHeight: '100vh' }}>
+      {/* Header Section */}
+      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Typography variant="h5" sx={{ fontWeight: 800, color: '#1e293b' }}>
+          Visão Geral da Fatura
+        </Typography>
       </Box>
 
-      <Grid container spacing={2}>
-        {statCards.map((card, idx) => (
-          <Grid key={idx} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
-            <Card sx={{ 
-              display: 'flex',
-              flexDirection: 'column',
-              width: '100%',
-              position: 'relative', 
-              overflow: 'hidden',
-              boxShadow: 'none',
-              border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-              borderRadius: 2
-            }}>
-              <Box sx={{ 
-                position: 'absolute', 
-                top: -10, 
-                right: -10, 
-                width: 60, 
-                height: 60, 
-                borderRadius: '50%', 
-                bgcolor: alpha(card.color, 0.05),
-                zIndex: 0
-              }} />
-              <CardContent sx={{ 
-                position: 'relative', 
-                zIndex: 1, 
-                p: 2,
-                '&:last-child': { pb: 2 },
-                display: 'flex',
-                alignItems: 'center',
-                gap: 2
-              }}>
-                <Box sx={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center', 
-                  width: 42, 
-                  height: 42, 
-                  borderRadius: 2, 
-                  bgcolor: alpha(card.color, 0.1), 
-                  color: card.color,
-                  flexShrink: 0
-                }}>
-                  {React.cloneElement(card.icon as React.ReactElement, { sx: { fontSize: 22 } })}
-                </Box>
-                <Box sx={{ minWidth: 0, flex: 1 }}>
-                  <Typography variant="caption" sx={{ 
-                    color: theme.palette.text.secondary, 
-                    fontWeight: 700, 
-                    textTransform: 'uppercase', 
-                    letterSpacing: 0.5,
-                    display: 'block',
-                    lineHeight: 1.2,
-                    mb: 0.5
-                  }}>
-                    {card.label}
+      {/* Metrics Row */}
+      <Paper elevation={0} sx={{ p: 2, mb: 3, borderRadius: 3, border: '1px solid #e2e8f0' }}>
+        <Grid container spacing={2} alignItems="center">
+          <Grid size={{ xs: 12, md: 4 }}>
+            <Stack direction="row" spacing={2} alignItems="center">
+              <Box>
+                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>Valor Total:</Typography>
+                <Stack direction="row" spacing={1} alignItems="baseline">
+                  <Typography variant="h3" sx={{ fontWeight: 900, color: '#1e293b' }}>
+                    {loading ? <Skeleton width={150} /> : formatCurrency(data?.summary.totalSpent || 0)}
                   </Typography>
-                  {loading && stats.totalSpent === 0 ? (
-                    <Skeleton variant="text" width="60%" />
-                  ) : (
-                    <Typography variant="h6" sx={{ 
-                      fontWeight: 800, 
-                      color: theme.palette.text.primary,
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      lineHeight: 1
-                    }}>
-                      {card.value}
-                    </Typography>
-                  )}
-                </Box>
-              </CardContent>
-            </Card>
+                  <ArrowDropDownIcon sx={{ color: '#dc2626', fontSize: 32 }} />
+                </Stack>
+                <Typography variant="caption" sx={{ color: '#dc2626', fontWeight: 700 }}>
+                  {data?.summary.trend}% em relação ao mês anterior
+                </Typography>
+              </Box>
+            </Stack>
           </Grid>
-        ))}
+          <Grid size={{ xs: 12, md: 8 }}>
+            <Stack direction="row" spacing={2} justifyContent="flex-end">
+              {[
+                { label: 'Dados', value: `${data?.summary.dataUsage.toFixed(1)} GB`, color: '#f1f5f9' },
+                { label: 'SMS', value: data?.summary.smsUsage, color: '#f1f5f9' },
+              ].map((item, i) => (
+                <Box key={i} sx={{ bgcolor: item.color, px: 3, py: 1.5, borderRadius: 2, textAlign: 'center', minWidth: 120 }}>
+                  <Typography variant="caption" sx={{ display: 'block', color: '#64748b', fontWeight: 600 }}>{item.label}:</Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 800, color: '#1e293b' }}>{loading ? <Skeleton /> : item.value}</Typography>
+                </Box>
+              ))}
+            </Stack>
+          </Grid>
+        </Grid>
+      </Paper>
+
+      {/* Main Content Grid */}
+      <Grid container spacing={3}>
+        {/* Row 1: Charts */}
+        <Grid size={{ xs: 12, md: 4 }}>
+          <Card sx={{ height: '100%', borderRadius: 3, boxShadow: 'none', border: '1px solid #e2e8f0' }}>
+            <CardContent>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>Custos por Departamento</Typography>
+              <Box sx={{ height: 250 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart layout="vertical" data={data?.charts.costsByDepartment} margin={{ left: 10, right: 60, top: 10, bottom: 10 }}>
+                    <XAxis type="number" hide />
+                    <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} width={70} style={{ fontSize: '11px', fontWeight: 600 }} />
+                    <Tooltip cursor={{ fill: 'transparent' }} />
+                    <Bar dataKey="total" radius={[0, 4, 4, 0]} barSize={20} label={{ position: 'right', formatter: (val: number) => formatCurrency(val), fontSize: 10, fontWeight: 700, fill: '#64748b' }}>
+                      {data?.charts.costsByDepartment.map((_, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid size={{ xs: 12, md: 4 }}>
+          <Card sx={{ height: '100%', borderRadius: 3, boxShadow: 'none', border: '1px solid #e2e8f0' }}>
+            <CardContent>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>Consumo de Dados (GB)</Typography>
+              <Box sx={{ height: 250 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={data?.charts.monthlyTrends} margin={{ left: -20, right: 10 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <XAxis dataKey="month" axisLine={false} tickLine={false} style={{ fontSize: '12px' }} />
+                    <YAxis axisLine={false} tickLine={false} style={{ fontSize: '12px' }} />
+                    <Tooltip cursor={{ fill: '#f8fafc' }} />
+                    <Bar dataKey="data_gb" fill="#3B82F6" radius={[4, 4, 0, 0]} barSize={30} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid size={{ xs: 12, md: 4 }}>
+          <Card sx={{ height: '100%', borderRadius: 3, boxShadow: 'none', border: '1px solid #e2e8f0' }}>
+            <CardContent>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>Linhas Mais Caras</Typography>
+              <List disablePadding>
+                {data?.charts.expensiveLines.map((line, i) => (
+                  <ListItem key={i} divider={i < 4} sx={{ px: 0, py: 1.5 }}>
+                    <ListItemText 
+                      primary={line.phone} 
+                      primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem' }} 
+                    />
+                    <Typography sx={{ fontWeight: 800, color: '#1e293b' }}>{formatCurrency(line.total)}</Typography>
+                  </ListItem>
+                ))}
+              </List>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid size={{ xs: 12, md: 4 }}>
+          <Card sx={{ height: '100%', borderRadius: 3, boxShadow: 'none', border: '1px solid #e2e8f0' }}>
+            <CardContent>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>Comparativo com Contrato</Typography>
+              <Box sx={{ overflowX: 'auto' }}>
+                <Box component="table" sx={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <Box component="tr" sx={{ bgcolor: '#334155', color: 'white' }}>
+                      <Box component="th" sx={{ p: 1.5, textAlign: 'left', borderRadius: '8px 0 0 0' }}>Contratado</Box>
+                      <Box component="th" sx={{ p: 1.5, textAlign: 'left', borderRadius: '0 8px 0 0' }}>Utilizado</Box>
+                    </Box>
+                  </thead>
+                  <tbody>
+                    <Box component="tr">
+                      <Box component="td" sx={{ p: 1.5, borderBottom: '1px solid #f1f5f9' }}>
+                        <Typography variant="body2" sx={{ color: '#64748b' }}>Franquia de Dados:</Typography>
+                        <Typography variant="body1" sx={{ fontWeight: 700 }}>600 GB</Typography>
+                      </Box>
+                      <Box component="td" sx={{ p: 1.5, borderBottom: '1px solid #f1f5f9' }}>
+                        <Typography variant="body2" sx={{ color: '#64748b' }}>Consumo:</Typography>
+                        <Typography variant="body1" sx={{ fontWeight: 700, color: '#dc2626' }}>{data?.summary.dataUsage.toFixed(0)} GB</Typography>
+                      </Box>
+                    </Box>
+                    <Box component="tr">
+                      <Box component="td" sx={{ p: 1.5 }}>
+                        <Typography variant="body2" sx={{ color: '#64748b' }}>Desconto Mensal:</Typography>
+                        <Typography variant="body1" sx={{ fontWeight: 700 }}>20%</Typography>
+                      </Box>
+                      <Box component="td" sx={{ p: 1.5 }}>
+                        <Typography variant="body2" sx={{ color: '#64748b' }}>Aplicado:</Typography>
+                        <Typography variant="body1" sx={{ fontWeight: 700, color: '#dc2626' }}>10%</Typography>
+                      </Box>
+                    </Box>
+                  </tbody>
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
       </Grid>
+
+      {/* Footer Actions */}
+      <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+        <Button 
+          variant="outlined" 
+          startIcon={<GetAppIcon />} 
+          endIcon={<ArrowDropDownIcon />}
+          sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 700, py: 1, px: 3, borderColor: '#e2e8f0', color: '#334155' }}
+        >
+          Exportar Relatório
+        </Button>
+      </Box>
     </Container>
   );
 };

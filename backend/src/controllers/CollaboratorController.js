@@ -1,4 +1,5 @@
 const Collaborator = require('../models/Collaborator');
+const { logOperation } = require('../utils/auditLogger');
 
 class CollaboratorController {
   async index(req, res) {
@@ -40,6 +41,17 @@ class CollaboratorController {
         workspace_id
       });
 
+      // Log creation
+      await logOperation({
+        user_id: req.userId,
+        workspace_id,
+        action: 'CREATE',
+        entity: 'Collaborator',
+        entity_id: collaborator.id,
+        ip_address: req.ip,
+        payload: { name, email, external_id }
+      });
+
       return res.status(201).json(collaborator);
     } catch (error) {
       console.error('Collaborator store error:', error);
@@ -77,6 +89,17 @@ class CollaboratorController {
         department
       });
 
+      // Log update
+      await logOperation({
+        user_id: req.userId,
+        workspace_id: collaborator.workspace_id,
+        action: 'UPDATE',
+        entity: 'Collaborator',
+        entity_id: collaborator.id,
+        ip_address: req.ip,
+        payload: { name, email, external_id }
+      });
+
       return res.json(collaborator);
     } catch (error) {
       return res.status(500).json({ error: 'Error updating collaborator' });
@@ -90,7 +113,24 @@ class CollaboratorController {
       if (!collaborator) {
         return res.status(404).json({ error: 'Collaborator not found' });
       }
+      
+      const workspace_id = collaborator.workspace_id;
+      const collaborator_id = collaborator.id;
+      const collaborator_name = collaborator.name;
+
       await collaborator.destroy();
+
+      // Log deletion
+      await logOperation({
+        user_id: req.userId,
+        workspace_id,
+        action: 'DELETE',
+        entity: 'Collaborator',
+        entity_id: collaborator_id,
+        ip_address: req.ip,
+        payload: { name: collaborator_name }
+      });
+
       return res.json({ message: 'Collaborator removed successfully' });
     } catch (error) {
       return res.status(500).json({ error: 'Error removing collaborator' });

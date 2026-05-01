@@ -16,6 +16,8 @@ const faturaRoutes = require('./routes/invoiceRoutes');
 const reportRoutes = require('./routes/reportRoutes');
 const collaboratorRoutes = require('./routes/collaboratorRoutes');
 const phoneLineRoutes = require('./routes/phoneLineRoutes');
+const userConfigRoutes = require('./routes/userConfigRoutes');
+const auditRoutes = require('./routes/auditRoutes');
 
 const app = express();
 
@@ -74,6 +76,8 @@ apiRouter.use('/invoices', faturaRoutes);
 apiRouter.use('/reports', reportRoutes);
 apiRouter.use('/collaborators', collaboratorRoutes);
 apiRouter.use('/phone-lines', phoneLineRoutes);
+apiRouter.use('/user/config', userConfigRoutes);
+apiRouter.use('/audit', auditRoutes);
 
 app.use('/api', apiRouter);
 

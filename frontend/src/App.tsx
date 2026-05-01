@@ -9,6 +9,7 @@ import ProfilePage from './pages/ProfilePage';
 import RelatoriosPage from './pages/RelatoriosPage';
 import CollaboratorsPage from './pages/CollaboratorsPage';
 import UsersPage from './pages/UsersPage';
+import AuditPage from './pages/AuditPage';
 import WorkspaceSelectionPage from './pages/WorkspaceSelectionPage';
 import RoleAssignmentPage from './pages/RoleAssignmentPage';
 import Layout from './components/Layout';
@@ -36,6 +37,7 @@ const App: React.FC = () => {
               <Route path={ROUTES.PROFILE} element={<ProfilePage />} />
               <Route path={ROUTES.ADMIN_ROLES} element={<RoleAssignmentPage />} />
               <Route path={ROUTES.USERS} element={<UsersPage />} />
+              <Route path={ROUTES.AUDIT} element={<AuditPage />} />
             </Route>
 
             <Route path={ROUTES.ROOT} element={<Navigate to={ROUTES.LOGIN} replace />} />

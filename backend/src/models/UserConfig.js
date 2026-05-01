@@ -38,6 +38,10 @@ const UserConfig = sequelize.define('UserConfig', {
       key: 'id'
     }
   },
+  menu_behavior: {
+    type: DataTypes.ENUM('always_open', 'hover', 'collapsible'),
+    defaultValue: 'collapsible',
+  },
 }, {
   tableName: 'user_configs',
   schema: 'public',

@@ -116,18 +116,18 @@ class MockSeeder {
           ],
           users: [],
           claroInvoices: [
-            { source_phone: '11900001111', item_date: '2025-02-10', item_time: '10:00:00', description: 'SERVIÇO VOZ', total_value: 150.50, charged_value: 150.50 },
+            { source_phone: '11900001111', item_date: '2025-02-10', item_time: '10:00:00', description: 'SERVIÇO BASE', total_value: 150.50, charged_value: 150.50 },
             { source_phone: '11900003333', item_date: '2025-02-12', item_time: '11:00:00', description: 'DADOS MÓVEIS', total_value: 89.90, charged_value: 89.90 },
-            { source_phone: '11900005555', item_date: '2025-02-15', item_time: '09:00:00', description: 'SERVIÇO VOZ', total_value: 210.00, charged_value: 210.00 },
-            { source_phone: '11900001111', item_date: '2025-03-01', item_time: '08:30:00', description: 'SERVIÇO VOZ', total_value: 120.00, charged_value: 120.00 },
+            { source_phone: '11900005555', item_date: '2025-02-15', item_time: '09:00:00', description: 'SERVIÇO BASE', total_value: 210.00, charged_value: 210.00 },
+            { source_phone: '11900001111', item_date: '2025-03-01', item_time: '08:30:00', description: 'SERVIÇO BASE', total_value: 120.00, charged_value: 120.00 },
             { source_phone: '11900003333', item_date: '2025-03-02', item_time: '14:00:00', description: 'INTERNET 5G', total_value: 95.00, charged_value: 95.00 },
             { source_phone: '11999999999', item_date: '2025-03-03', item_time: '15:00:00', description: 'LIGAÇÃO LOCAL (NÃO ALOCADO)', total_value: 25.00, charged_value: 25.00 }
           ],
           vivoInvoices: [
-            { item_date: '2025-02-05', item_time: '14:00:00', source_phone: '11900002222', destination_phone: '11988887777', duration: '00:05:00', description: 'VOZ', charged_value: 12.00, total_value: 12.00 },
+            { item_date: '2025-02-05', item_time: '14:00:00', source_phone: '11900002222', destination_phone: '11988887777', duration: '00:05:00', description: 'BASE', charged_value: 12.00, total_value: 12.00 },
             { item_date: '2025-02-08', item_time: '16:00:00', source_phone: '11900004444', destination_phone: '11988887777', duration: '00:10:00', description: 'ROAMING', charged_value: 45.00, total_value: 45.00 },
             { item_date: '2025-03-02', item_time: '09:00:00', source_phone: '11900007777', destination_phone: '11911111111', duration: '00:10:00', description: 'SUPORTE VIVO', charged_value: 35.50, total_value: 35.50 },
-            { item_date: '2025-03-04', item_time: '10:30:00', source_phone: '11900002222', destination_phone: '11911111111', duration: '00:02:00', description: 'VOZ', charged_value: 5.00, total_value: 5.00 }
+            { item_date: '2025-03-04', item_time: '10:30:00', source_phone: '11900002222', destination_phone: '11911111111', duration: '00:02:00', description: 'BASE', charged_value: 5.00, total_value: 5.00 }
           ]
         },
       ];

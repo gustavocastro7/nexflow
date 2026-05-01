@@ -6,6 +6,7 @@ const UserWorkspace = require('../models/UserWorkspace');
 const Collaborator = require('../models/Collaborator');
 const sequelize = require('../config/database');
 const { Op, fn, col, literal } = require('sequelize');
+const { logOperation } = require('../utils/auditLogger');
 
 const PAGE_SIZE = 50;
 
@@ -31,12 +32,13 @@ class ReportController {
         return res.status(400).json({ error: 'Workspace ID is required' });
       }
 
+      // Basic stats
       const [
-        costCentersCount, 
-        claroCount, 
-        vivoCount, 
-        claroTxtCount, 
-        totalSpent,
+        costCentersCount,
+        claroCount,
+        vivoCount,
+        claroTxtCount,
+        totalSpentResult,
         usersCount,
         collaboratorsCount
       ] = await Promise.all([
@@ -49,7 +51,9 @@ class ReportController {
         Collaborator.count({ where: { workspace_id: workspaceId } })
       ]);
 
-      // Count unique phone numbers and those without cost center
+      const totalSpent = parseFloat(totalSpentResult) || 0;
+
+      // Unique phone numbers
       const [[{ phone_lines_count, phone_lines_without_cc }]] = await sequelize.query(`
         SELECT 
           COUNT(*)::int AS phone_lines_count,
@@ -66,15 +70,150 @@ class ReportController {
         LEFT JOIN phone_lines pl ON pl.phone_number = unique_phones.source_phone AND pl.workspace_id = unique_phones.workspace_id
       `, { replacements: { workspaceId } });
 
+      // Costs by Department (Cost Center)
+      const [costsByCC] = await sequelize.query(`
+        SELECT 
+          COALESCE(cc.name, 'Não Alocado') as name,
+          SUM(i.charged_value)::float as total
+        FROM invoices i
+        LEFT JOIN phone_lines pl ON pl.phone_number = i.source_phone AND pl.workspace_id = i.workspace_id
+        LEFT JOIN cost_centers cc ON cc.id = pl.cost_center_id
+        WHERE i.workspace_id = :workspaceId
+        GROUP BY cc.name
+        ORDER BY total DESC
+        LIMIT 5
+      `, { replacements: { workspaceId } });
+
+      // Monthly Trends (Last 6 months)
+      const [monthlyTrends] = await sequelize.query(`
+        SELECT 
+          TO_CHAR(item_date, 'YYYY-MM') as month,
+          SUM(CASE WHEN section ILIKE '%DADOS%' OR sub_section ILIKE '%DADOS%' OR description ILIKE '%DADOS%' OR description ILIKE '%INTERNET%' THEN quantity ELSE 0 END)::float as data_gb,
+          SUM(CASE WHEN section ILIKE '%VOZ%' OR sub_section ILIKE '%VOZ%' OR description ILIKE '%VOZ%' OR description ILIKE '%LIGACAO%' THEN 
+            CASE 
+              WHEN duration ~ '^[0-9]+:[0-9]+:[0-9]+$' THEN 
+                (EXTRACT(EPOCH FROM duration::interval) / 60)
+              ELSE quantity 
+            END
+          ELSE 0 END)::float as voice_min,
+          SUM(CASE WHEN section ILIKE '%SMS%' OR sub_section ILIKE '%SMS%' OR description ILIKE '%SMS%' OR description ILIKE '%MENSAGEM%' THEN quantity ELSE 0 END)::float as sms_count,
+          SUM(charged_value)::float as total_spent
+        FROM invoices
+        WHERE workspace_id = :workspaceId AND item_date IS NOT NULL
+        GROUP BY month
+        ORDER BY month DESC
+        LIMIT 6
+      `, { replacements: { workspaceId } });
+
+      // Most Expensive Lines
+      const [expensiveLines] = await sequelize.query(`
+        SELECT 
+          source_phone as phone,
+          SUM(charged_value)::float as total
+        FROM invoices
+        WHERE workspace_id = :workspaceId AND source_phone IS NOT NULL AND source_phone != ''
+        GROUP BY source_phone
+        ORDER BY total DESC
+        LIMIT 5
+      `, { replacements: { workspaceId } });
+
+      // Savings Opportunities (Mock logic)
+      const [idleLines] = await sequelize.query(`
+        SELECT source_phone
+        FROM invoices
+        WHERE workspace_id = :workspaceId
+        GROUP BY source_phone
+        HAVING SUM(charged_value) > 0 AND COUNT(*) < 5
+        LIMIT 3
+      `, { replacements: { workspaceId } });
+
+      // Detected Errors (Enhanced Phase 3)
+      const auditKeywords = {
+        errors: ['%DUPLICADO%', '%ERRO%', '%MULTA%', '%JUROS%', '%NÃO CONTRATADO%', '%PENALIDADE%', '%COBRANÇA INDEVIDA%', '%VALOR RETIDO%'],
+        excess: ['%EXCEDENTE%', '%ADICIONAL%', '%EXTRA%', '%AVULSO%', '%FORA DO PACOTE%', '%PAGAMENTO POR USO%', '%EXCEDO%']
+      };
+
+      const [detectedErrors] = await sequelize.query(`
+        SELECT 
+          COUNT(*) FILTER (WHERE description ILIKE ANY(ARRAY[:errorKeys]))::int as error_count,
+          SUM(charged_value) FILTER (WHERE description ILIKE ANY(ARRAY[:errorKeys]))::float as error_value,
+          COUNT(*) FILTER (WHERE description ILIKE ANY(ARRAY[:excessKeys]))::int as excess_count,
+          SUM(charged_value) FILTER (WHERE description ILIKE ANY(ARRAY[:excessKeys]))::float as excess_value
+        FROM invoices
+        WHERE workspace_id = :workspaceId 
+          AND item_date >= (CURRENT_DATE - INTERVAL '90 days')
+      `, { 
+        replacements: { 
+          workspaceId, 
+          errorKeys: auditKeywords.errors, 
+          excessKeys: auditKeywords.excess 
+        } 
+      });
+
+      const alertsData = detectedErrors[0] || { error_count: 0, error_value: 0, excess_count: 0, excess_value: 0 };
+
+      // Detailed list of recent errors - Synchronized with header alerts
+      const [errorList] = await sequelize.query(`
+        SELECT description, COUNT(*) as count, SUM(charged_value) as total_value
+        FROM invoices
+        WHERE workspace_id = :workspaceId 
+          AND description ILIKE ANY(ARRAY[:errorKeys])
+          AND item_date >= (CURRENT_DATE - INTERVAL '90 days')
+        GROUP BY description
+        ORDER BY total_value DESC
+        LIMIT 5
+      `, { 
+        replacements: { 
+          workspaceId, 
+          errorKeys: auditKeywords.errors 
+        } 
+      });
+
+      // Final response mapping
+      const currentMonth = monthlyTrends[0] || { data_gb: 0, voice_min: 0, sms_count: 0, total_spent: 0 };
+      const previousMonth = monthlyTrends[1] || { total_spent: 0 };
+      const trend = previousMonth.total_spent > 0 
+        ? ((currentMonth.total_spent - previousMonth.total_spent) / previousMonth.total_spent) * 100 
+        : 0;
+
       return res.json({
-        costCenters: costCentersCount,
-        claroInvoices: (claroCount || 0) + (claroTxtCount || 0),
-        vivoInvoices: vivoCount || 0,
-        totalSpent: parseFloat(totalSpent) || 0,
-        users: usersCount || 0,
-        collaborators: collaboratorsCount || 0,
-        phoneLines: phone_lines_count || 0,
-        phoneLinesWithoutCC: phone_lines_without_cc || 0
+        summary: {
+          totalSpent,
+          trend: parseFloat(trend.toFixed(2)),
+          dataUsage: currentMonth.data_gb,
+          voiceUsage: currentMonth.voice_min,
+          smsUsage: currentMonth.sms_count,
+        },
+        alerts: {
+          hasExcessConsumption: alertsData.excess_count > 0,
+          excessValue: alertsData.excess_value || 0,
+          excessCount: alertsData.excess_count || 0,
+          hasBillingErrors: alertsData.error_count > 0,
+          errorValue: alertsData.error_value || 0,
+          errorCount: alertsData.error_count || 0,
+        },
+        counts: {
+          costCenters: costCentersCount,
+          invoices: (claroCount || 0) + (claroTxtCount || 0) + (vivoCount || 0),
+          phoneLines: phone_lines_count || 0,
+          phoneLinesWithoutCC: phone_lines_without_cc || 0,
+          users: usersCount || 0,
+          collaborators: collaboratorsCount || 0,
+        },
+        charts: {
+          costsByDepartment: costsByCC,
+          monthlyTrends: monthlyTrends.reverse(), // Chronological
+          expensiveLines,
+        },
+        opportunities: [
+          { type: 'idle_lines', description: 'Linhas com baixo uso detectadas', impact: idleLines.length * 50 },
+          { type: 'plan_optimization', description: 'Migração de plano sugerida', impact: totalSpent * 0.05 }
+        ],
+        errors: errorList.map(e => ({
+          type: 'billing_error',
+          description: e.description,
+          count: parseInt(e.count)
+        }))
       });
     } catch (error) {
       console.error('Dashboard Stats Error:', error);
@@ -89,6 +228,16 @@ class ReportController {
       if (!workspaceId) {
         return res.status(400).json({ error: 'Workspace ID is required' });
       }
+
+      // Log report generation
+      await logOperation({
+        user_id: req.userId,
+        workspace_id: workspaceId,
+        action: 'REPORT',
+        entity: 'SpendingByCostCenter',
+        ip_address: req.ip,
+        payload: { mes, ano, centroCustoId, telefone }
+      });
 
       const workspace = await Workspace.findByPk(workspaceId);
       const startDay = workspace?.billing_cycle_start_day || 1;
@@ -343,7 +492,19 @@ class ReportController {
       if (!workspaceId) return res.status(400).json({ error: 'Workspace ID is required' });
       if (!dueDate) return res.status(400).json({ error: 'Due date is required' });
 
-      const offset = parseInt(page, 10) * PAGE_SIZE;
+      // Log report generation (only on first page to avoid spam)
+      if (parseInt(page.toString()) === 0) {
+        await logOperation({
+          user_id: req.userId,
+          workspace_id: workspaceId,
+          action: 'REPORT',
+          entity: 'ConsumptionByResponsible',
+          ip_address: req.ip,
+          payload: { dueDate, search }
+        });
+      }
+
+      const offset = parseInt(page.toString(), 10) * PAGE_SIZE;
       const like = search ? `%${search}%` : null;
 
       const whereSql = `

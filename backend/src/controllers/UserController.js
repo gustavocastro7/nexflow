@@ -2,6 +2,7 @@ const User = require('../models/User');
 const UserConfig = require('../models/UserConfig');
 const UserWorkspace = require('../models/UserWorkspace');
 const Workspace = require('../models/Workspace');
+const { logOperation } = require('../utils/auditLogger');
 
 class UserController {
   async index(req, res) {
@@ -59,6 +60,7 @@ class UserController {
 
       // Check if user already exists
       let user = await User.findOne({ where: { email } });
+      let isNew = false;
 
       if (user) {
         // If user exists, check if already in workspace
@@ -78,12 +80,24 @@ class UserController {
           profile: profile || 'user',
           default_workspace_id: workspaceId
         });
+        isNew = true;
       }
 
       // Associate with workspace
       await UserWorkspace.create({
         user_id: user.id,
         workspace_id: workspaceId
+      });
+
+      // Log creation/association
+      await logOperation({
+        user_id: req.userId,
+        workspace_id: workspaceId,
+        action: isNew ? 'CREATE' : 'ASSOCIATE',
+        entity: 'User',
+        entity_id: user.id,
+        ip_address: req.ip,
+        payload: { email: user.email, name: user.name, profile: user.profile }
       });
 
       return res.status(201).json({
@@ -130,6 +144,17 @@ class UserController {
       }
 
       await user.update(updatedData);
+
+      // Log update
+      await logOperation({
+        user_id: req.userId,
+        workspace_id: user.default_workspace_id || '00000000-0000-0000-0000-000000000000',
+        action: 'UPDATE',
+        entity: 'User',
+        entity_id: user.id,
+        ip_address: req.ip,
+        payload: { updatedFields: Object.keys(updatedData) }
+      });
 
       return res.json({
         id: user.id,
@@ -184,6 +209,16 @@ class UserController {
       }
 
       await user.update({ active: false });
+
+      // Log deactivation
+      await logOperation({
+        user_id: req.userId,
+        workspace_id: user.default_workspace_id || '00000000-0000-0000-0000-000000000000',
+        action: 'DEACTIVATE',
+        entity: 'User',
+        entity_id: user.id,
+        ip_address: req.ip
+      });
 
       return res.json({ message: 'User deactivated successfully' });
     } catch (error) {
