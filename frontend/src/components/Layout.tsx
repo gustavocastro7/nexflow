@@ -270,7 +270,7 @@ const Layout: React.FC = () => {
                 {isDrawerExpanded && (
                   <ListItemText 
                     primary={item.text} 
-                    primaryTypographyProps={{ fontSize: '0.85rem', fontWeight: location.pathname === item.path ? 700 : 500, noWrap: true }} 
+                    primaryTypographyProps={{ fontSize: '1rem', fontWeight: location.pathname === item.path ? 700 : 500, noWrap: true }} 
                   />
                 )}
               </ListItemButton>
@@ -303,12 +303,12 @@ const Layout: React.FC = () => {
           user ? (
             <Paper sx={{ p: 1, bgcolor: alpha(theme.palette.primary.main, 0.05), borderRadius: 1, border: 'none', mb: 0.5 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Avatar sx={{ width: 28, height: 28, bgcolor: theme.palette.primary.main, fontSize: '0.75rem' }}>
+                <Avatar sx={{ width: 32, height: 32, bgcolor: theme.palette.primary.main, fontSize: '0.9rem' }}>
                   {user.name?.charAt(0) || '?'}
                 </Avatar>
                 <Box sx={{ overflow: 'hidden' }}>
-                  <Typography variant="subtitle2" noWrap sx={{ fontWeight: 700, fontSize: '0.75rem' }}>{user.name || 'User'}</Typography>
-                  <Typography variant="caption" noWrap sx={{ color: theme.palette.text.secondary, fontSize: '0.65rem' }}>{user.profile}</Typography>
+                  <Typography variant="subtitle2" noWrap sx={{ fontWeight: 700, fontSize: '0.9rem' }}>{user.name || 'User'}</Typography>
+                  <Typography variant="caption" noWrap sx={{ color: theme.palette.text.secondary, fontSize: '0.8rem' }}>{user.profile}</Typography>
                 </Box>
               </Box>
             </Paper>

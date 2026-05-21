@@ -161,14 +161,21 @@ const AuditPage: React.FC = () => {
       {/* Filters */}
       <Paper sx={{ p: 3, mb: 4, borderRadius: 2 }}>
         <Grid container spacing={3} alignItems="center">
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} sm={6} md="auto">
             <TextField
-              fullWidth
               select
               label={t('audit.action')}
               value={actionFilter}
               onChange={(e) => { setActionFilter(e.target.value); setPage(0); }}
               size="small"
+              sx={{ minWidth: 240 }}
+              SelectProps={{
+                MenuProps: {
+                  PaperProps: {
+                    sx: { minWidth: 240 }
+                  }
+                }
+              }}
             >
               <MenuItem value="">{t('audit.all_actions')}</MenuItem>
               {actions.map(action => (
@@ -176,14 +183,21 @@ const AuditPage: React.FC = () => {
               ))}
             </TextField>
           </Grid>
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} sm={6} md="auto">
             <TextField
-              fullWidth
               select
               label={t('audit.entity')}
               value={entityFilter}
               onChange={(e) => { setEntityFilter(e.target.value); setPage(0); }}
               size="small"
+              sx={{ minWidth: 240 }}
+              SelectProps={{
+                MenuProps: {
+                  PaperProps: {
+                    sx: { minWidth: 240 }
+                  }
+                }
+              }}
             >
               <MenuItem value="">{t('audit.all_entities')}</MenuItem>
               {entities.map(entity => (
@@ -191,11 +205,12 @@ const AuditPage: React.FC = () => {
               ))}
             </TextField>
           </Grid>
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} md="auto">
             <Button 
               variant="outlined" 
               startIcon={<FilterIcon />} 
               onClick={() => { setActionFilter(''); setEntityFilter(''); setPage(0); }}
+              sx={{ height: 40 }}
             >
               {t('audit.clear_filters')}
             </Button>
