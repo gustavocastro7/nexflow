@@ -12,6 +12,7 @@ routes.use(authMiddleware);
  *   post:
  *     summary: Import invoices Claro (Positional)
  */
+routes.post('/claro/preview', InvoiceController.previewClaro);
 routes.post('/claro/import', InvoiceController.importClaro);
 
 /**
@@ -20,6 +21,7 @@ routes.post('/claro/import', InvoiceController.importClaro);
  *   post:
  *     summary: Import invoices Vivo (Tabulated)
  */
+routes.post('/vivo/preview', InvoiceController.previewVivo);
 routes.post('/vivo/import', InvoiceController.importVivo);
 
 /**
@@ -28,6 +30,7 @@ routes.post('/vivo/import', InvoiceController.importVivo);
  *   post:
  *     summary: Import invoices Claro TXT (Delimited)
  */
+routes.post('/claro-txt/preview', InvoiceController.previewClaroTXT);
 routes.post('/claro-txt/import', InvoiceController.importClaroTXT);
 
 /**

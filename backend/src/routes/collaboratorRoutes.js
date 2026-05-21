@@ -8,6 +8,8 @@ routes.use(authMiddleware);
 
 routes.get('/', CollaboratorController.index);
 routes.post('/', CollaboratorController.store);
+routes.post('/csv/preview', CollaboratorController.previewCSV);
+routes.post('/csv/import', CollaboratorController.importCSV);
 routes.get('/:id', CollaboratorController.show);
 routes.put('/:id', CollaboratorController.update);
 routes.delete('/:id', CollaboratorController.destroy);

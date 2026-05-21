@@ -18,6 +18,7 @@ export interface Workspace {
   schema_name: string;
   status?: string;
   billing_cycle_start_day?: number;
+  logo?: string | null;
 }
 
 export interface CostCenter {
@@ -70,4 +71,48 @@ export interface RawInvoice {
     }
   };
   created_at: string;
+}
+
+export interface InvalidItem {
+  line: number;
+  content: string;
+  errors: string[];
+}
+
+export interface ImportPreview {
+  total: number;
+  validCount: number;
+  invalidCount: number;
+  invalidItems: InvalidItem[];
+  phonesDiscovered: string[];
+  header?: {
+    data_vencimento?: string;
+    valor_total?: string;
+    cliente?: string;
+  };
+  preview: Invoice[];
+}
+
+export interface CSVImportPreview {
+  total: number;
+  validCount: number;
+  invalidCount: number;
+  invalidRows: { row: number; data: { phone: string; name: string; cpf: string; costCenter: string }; errors: string[] }[];
+  toCreate: number;
+  toUpdate: number;
+  costCentersFound: number;
+  costCentersToCreate: number;
+  costCentersToCreateNames: string[];
+}
+
+export interface CSVImportResult {
+  message: string;
+  collaboratorsCreated: number;
+  collaboratorsUpdated: number;
+  costCentersCreated: number;
+  costCentersFound: number;
+  phoneLinesCreated: number;
+  phoneLinesUpdated: number;
+  skipped: number;
+  costCentersCreatedNames: string[];
 }

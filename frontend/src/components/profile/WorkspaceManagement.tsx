@@ -26,6 +26,8 @@ import {
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
+import ImageIcon from '@mui/icons-material/Image';
+import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import apiClient from '../../api/client';
 import type { Workspace } from '../../types';
 
@@ -44,6 +46,8 @@ const WorkspaceManagement: React.FC = () => {
   const [schema_name, setSchemaName] = useState('');
   const [status, setStatus] = useState('active');
   const [billingCycleStartDay, setBillingCycleStartDay] = useState(1);
+  const [logo, setLogo] = useState<string | null>(null);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
 
   const fetchWorkspaces = useCallback(async () => {
     try {
@@ -67,6 +71,8 @@ const WorkspaceManagement: React.FC = () => {
     setSchemaName(ws ? ws.schema_name : '');
     setStatus(ws ? ws.status : 'active');
     setBillingCycleStartDay(ws ? ws.billing_cycle_start_day || 1 : 1);
+    setLogo(ws ? ws.logo || null : null);
+    setLogoFile(null);
     setOpen(true);
   };
 
@@ -75,19 +81,37 @@ const WorkspaceManagement: React.FC = () => {
     setCurrentWS(null);
   };
 
+  const handleLogoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLogoFile(file);
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setLogo(ev.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleLogoRemove = () => {
+    setLogo(null);
+    setLogoFile(null);
+  };
+
   const handleSave = async () => {
     try {
       if (currentWS) {
         await apiClient.put(`/workspaces/${currentWS.id}`, {
           name,
           status,
-          billing_cycle_start_day: billingCycleStartDay
+          billing_cycle_start_day: billingCycleStartDay,
+          logo
         });
       } else {
         await apiClient.post('/workspaces', {
           name,
           schema_name,
-          billing_cycle_start_day: billingCycleStartDay
+          billing_cycle_start_day: billingCycleStartDay,
+          logo
         });
       }
       fetchWorkspaces();
@@ -209,6 +233,27 @@ const WorkspaceManagement: React.FC = () => {
               inputProps={{ min: 1, max: 31 }}
               helperText="Day of the month the cycle begins (e.g., 21)"
             />
+            <Box>
+              <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>Logo</Typography>
+              {logo ? (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Box
+                    component="img"
+                    src={logo}
+                    alt="Logo preview"
+                    sx={{ width: 80, height: 80, borderRadius: 2, objectFit: 'contain', border: '1px solid', borderColor: 'divider', p: 0.5 }}
+                  />
+                  <Button size="small" color="error" startIcon={<DeleteForeverIcon />} onClick={handleLogoRemove}>
+                    Remove
+                  </Button>
+                </Box>
+              ) : (
+                <Button component="label" variant="outlined" startIcon={<ImageIcon />} sx={{ color: 'text.secondary', borderColor: 'divider' }}>
+                  Upload Logo
+                  <input type="file" accept="image/*" hidden onChange={handleLogoSelect} />
+                </Button>
+              )}
+            </Box>
           </Box>
         </DialogContent>
         <DialogActions sx={{ p: 3 }}>

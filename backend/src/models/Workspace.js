@@ -26,6 +26,10 @@ const Workspace = sequelize.define('Workspace', {
     allowNull: false,
     defaultValue: 1,
   },
+  logo: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+  },
 }, {
   tableName: 'workspaces',
   schema: 'public',

@@ -26,7 +26,7 @@ import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import DeleteIcon from '@mui/icons-material/Delete';
 import apiClient from '../api/client';
-import type { Workspace, Invoice, RawInvoice } from '../types';
+import type { Workspace, Invoice, RawInvoice, CostCenter, ImportPreview } from '../types';
 import InvoiceList from '../components/invoices/InvoiceList';
 import { useNotification } from '../context/NotificationContext';
 
@@ -67,6 +67,16 @@ const FaturasPage: React.FC = () => {
   const activeWorkspace = getActiveWorkspace();
   const [dueDate, setDueDate] = useState<string>('');
   const [dueDates, setDueDates] = useState<string[]>([]);
+  const [dueDatesLoaded, setDueDatesLoaded] = useState(false);
+
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [importStep, setImportStep] = useState<'select' | 'preview' | 'importing'>('select');
+  const [pendingFile, setPendingFile] = useState<{ content: string; type: string } | null>(null);
+  const [previewResult, setPreviewResult] = useState<ImportPreview | null>(null);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  const [importResult, setImportResult] = useState<{ message: string; imported: number; skipped: number } | null>(null);
+  const [costCenters, setCostCenters] = useState<CostCenter[]>([]);
+  const [selectedCostCenterId, setSelectedCostCenterId] = useState<string>('');
 
   // Load available due dates
   useEffect(() => {
@@ -74,14 +84,23 @@ const FaturasPage: React.FC = () => {
     apiClient.get<string[]>(`/reports/due-dates?workspaceId=${activeWorkspace.id}`)
       .then(res => {
         setDueDates(res.data);
+        setDueDatesLoaded(true);
         if (res.data.length && !dueDate) {
-          // If we had a filter before, try to keep it, else pick the latest
           setDueDate(res.data[0]);
         }
       })
       .catch((err) => {
         console.error('Error loading due dates', err);
+        setDueDatesLoaded(true);
       });
+  }, [activeWorkspace?.id]);
+
+  // Load cost centers for import dialog
+  useEffect(() => {
+    if (!activeWorkspace?.id) return;
+    apiClient.get<CostCenter[]>(`/cost-centers?workspaceId=${activeWorkspace.id}`)
+      .then(res => setCostCenters(res.data))
+      .catch(() => {});
   }, [activeWorkspace?.id]);
 
   const fetchRawInvoices = useCallback(async () => {
@@ -141,8 +160,9 @@ const FaturasPage: React.FC = () => {
   }, [activeWorkspace?.id, dueDate, showError]);
 
   useEffect(() => {
+    if (!dueDatesLoaded) return;
     fetchRawInvoices();
-  }, [activeWorkspace?.id, dueDate]); // Reload list when workspace OR filters change
+  }, [activeWorkspace?.id, dueDate, dueDatesLoaded]);
 
   // Triggered when selectedRaw changes
   useEffect(() => {
@@ -179,26 +199,66 @@ const FaturasPage: React.FC = () => {
     }
   };
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, type: string) => {
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || !activeWorkspace?.id) return;
 
     const reader = new FileReader();
-    reader.onload = async (e) => {
+    reader.onload = (e) => {
       const content = e.target?.result as string;
-      try {
-        await apiClient.post(`/invoices/${type}/import`, {
-          content,
-          workspaceId: activeWorkspace.id,
-        });
-        showSuccess(`Fatura ${type.toUpperCase()} importada com sucesso!`);
-        fetchRawInvoices();
-      } catch (err: any) {
-        showError(err.response?.data?.error || 'Erro ao importar arquivo.');
-      }
+      setPendingFile({ content, type: 'claro-txt' });
     };
     reader.readAsText(file);
     event.target.value = '';
+  };
+
+  const handleRunPreview = async () => {
+    if (!pendingFile || !activeWorkspace?.id) return;
+
+    setImportStep('preview');
+    setPreviewError(null);
+    setPreviewResult(null);
+
+    try {
+      const res = await apiClient.post<ImportPreview>(`/invoices/${pendingFile.type}/preview`, {
+        content: pendingFile.content,
+        workspaceId: activeWorkspace.id,
+      });
+      setPreviewResult(res.data);
+    } catch (err: any) {
+      setPreviewError(err.response?.data?.error || 'Erro ao validar arquivo.');
+    }
+  };
+
+  const handleConfirmImport = async () => {
+    if (!pendingFile || !activeWorkspace?.id || !previewResult) return;
+
+    setImportStep('importing');
+    try {
+      const body: any = {
+        content: pendingFile.content,
+        workspaceId: activeWorkspace.id,
+      };
+      if (selectedCostCenterId) {
+        body.costCenterId = selectedCostCenterId;
+      }
+
+      const res = await apiClient.post<{ message: string; imported: number; skipped: number }>(`/invoices/${pendingFile.type}/import`, body);
+      setImportResult(res.data);
+      fetchRawInvoices();
+    } catch (err: any) {
+      setPreviewError(err.response?.data?.error || 'Erro ao importar arquivo.');
+      setImportStep('preview');
+    }
+  };
+
+  const handleCloseImportDialog = () => {
+    setImportDialogOpen(false);
+    setPendingFile(null);
+    setPreviewResult(null);
+    setPreviewError(null);
+    setImportResult(null);
+    setImportStep('select');
   };
 
   return (
@@ -211,17 +271,21 @@ const FaturasPage: React.FC = () => {
           </Typography>
         </Box>
 
-        <Stack direction="row" spacing={2}>
-          <Button
-            component="label"
-            variant="contained"
-            startIcon={<CloudUploadIcon />}
-            sx={{ bgcolor: '#E11D48', '&:hover': { bgcolor: '#BE123C' }, px: 3 }}
-          >
-            Upload Fatura (Claro TXT)
-            <input type="file" hidden onChange={(e) => handleFileUpload(e, 'claro-txt')} />
-          </Button>
-        </Stack>
+        <Button
+          variant="contained"
+          startIcon={<CloudUploadIcon />}
+          onClick={() => {
+            setImportStep('select');
+            setPreviewResult(null);
+            setPreviewError(null);
+            setImportResult(null);
+            setPendingFile(null);
+            setImportDialogOpen(true);
+          }}
+          sx={{ bgcolor: '#E11D48', '&:hover': { bgcolor: '#BE123C' }, px: 3 }}
+        >
+          Importar Fatura
+        </Button>
       </Box>
 
       <Box sx={{ display: 'flex', gap: 3, flex: 1, minHeight: 0 }}>
@@ -245,7 +309,7 @@ const FaturasPage: React.FC = () => {
                 <MenuItem value="">Todos os Vencimentos</MenuItem>
                 {dueDates.map(d => (
                   <MenuItem key={d} value={d}>
-                    {new Date(d + 'T12:00:00Z').toLocaleDateString('pt-BR')}
+                    {d === 'NO_DATE' ? 'Sem data' : new Date(d + 'T12:00:00Z').toLocaleDateString('pt-BR')}
                   </MenuItem>
                 ))}
               </TextField>
@@ -349,6 +413,189 @@ const FaturasPage: React.FC = () => {
           </Box>
         </Paper>
       </Box>
+
+      {/* Dialog de Importação com CC + Arquivo + Validação */}
+      <Dialog
+        open={importDialogOpen}
+        onClose={handleCloseImportDialog}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          {importStep === 'select' && 'Importar Fatura'}
+          {importStep === 'preview' && 'Relatório de Validação'}
+          {importStep === 'importing' && 'Importando...'}
+        </DialogTitle>
+
+        <DialogContent>
+          {importStep === 'select' && (
+            <Stack spacing={2} sx={{ mt: 1 }}>
+              {/* Centro de Custo */}
+              <Box>
+                <Typography variant="body2" sx={{ fontWeight: 700, mb: 0.5 }}>
+                  Centro de custo:
+                </Typography>
+                <TextField
+                  select
+                  fullWidth
+                  size="small"
+                  value={selectedCostCenterId}
+                  onChange={(e) => setSelectedCostCenterId(e.target.value)}
+                >
+                  <MenuItem value="">Padrão (Matriz)</MenuItem>
+                  {costCenters.map(cc => (
+                    <MenuItem key={cc.id} value={cc.id}>
+                      {cc.code ? `${cc.code} - ` : ''}{cc.name}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Box>
+
+              {/* Arquivo */}
+              <Box>
+                <Typography variant="body2" sx={{ fontWeight: 700, mb: 0.5 }}>
+                  Arquivo da fatura:
+                </Typography>
+                <Button
+                  component="label"
+                  variant="outlined"
+                  fullWidth
+                  sx={{ py: 1.5, borderStyle: 'dashed', justifyContent: 'flex-start' }}
+                >
+                  {pendingFile ? pendingFile.content.substring(0, 40) + '...' : 'Selecionar arquivo'}
+                  <input type="file" hidden onChange={handleFileSelect} />
+                </Button>
+              </Box>
+            </Stack>
+          )}
+
+          {importStep === 'preview' && previewError && (
+            <Alert severity="error" sx={{ mt: 1 }}>{previewError}</Alert>
+          )}
+
+          {importStep === 'preview' && previewResult && !previewError && (
+            <Stack spacing={2} sx={{ mt: 1 }}>
+              <Box>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>Relatório de Validação</Typography>
+                <Stack direction="row" spacing={3}>
+                  <Box sx={{ textAlign: 'center', p: 2, bgcolor: alpha('#10B981', 0.08), borderRadius: 2, flex: 1 }}>
+                    <Typography variant="h5" sx={{ fontWeight: 800, color: '#10B981' }}>{previewResult.total}</Typography>
+                    <Typography variant="caption">Registros</Typography>
+                  </Box>
+                  <Box sx={{ textAlign: 'center', p: 2, bgcolor: alpha('#10B981', 0.08), borderRadius: 2, flex: 1 }}>
+                    <Typography variant="h5" sx={{ fontWeight: 800, color: '#10B981' }}>{previewResult.validCount}</Typography>
+                    <Typography variant="caption">Válidos</Typography>
+                  </Box>
+                  <Box sx={{ textAlign: 'center', p: 2, bgcolor: alpha(previewResult.invalidCount > 0 ? '#E11D48' : '#10B981', 0.08), borderRadius: 2, flex: 1 }}>
+                    <Typography variant="h5" sx={{ fontWeight: 800, color: previewResult.invalidCount > 0 ? '#E11D48' : '#10B981' }}>{previewResult.invalidCount}</Typography>
+                    <Typography variant="caption">Com Erro</Typography>
+                  </Box>
+                </Stack>
+              </Box>
+
+              {previewResult.phonesDiscovered && previewResult.phonesDiscovered.length > 0 && (
+                <Box>
+                  <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary' }}>
+                    Telefones encontrados ({previewResult.phonesDiscovered.length}):
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5, fontSize: 12 }}>
+                    {previewResult.phonesDiscovered.slice(0, 10).join(', ')}
+                    {previewResult.phonesDiscovered.length > 10 ? '...' : ''}
+                  </Typography>
+                </Box>
+              )}
+
+              {previewResult.invalidCount > 0 && (
+                <Box>
+                  <Typography variant="body2" sx={{ fontWeight: 700, color: '#E11D48', mb: 1 }}>
+                    Registros com erro (serão pulados):
+                  </Typography>
+                  <Box sx={{ maxHeight: 200, overflowY: 'auto', bgcolor: alpha('#E11D48', 0.03), borderRadius: 1, p: 1 }}>
+                    {previewResult.invalidItems.slice(0, 20).map((item, idx) => (
+                      <Box key={idx} sx={{ mb: 1, pb: 1, borderBottom: '1px solid', borderColor: 'divider' }}>
+                        <Typography variant="caption" sx={{ fontWeight: 700 }}>Linha {item.line}:</Typography>
+                        <Typography variant="caption" sx={{ color: 'text.secondary', ml: 1 }}>{item.content}</Typography>
+                        {item.errors.map((err, ei) => (
+                          <Typography key={ei} variant="caption" sx={{ display: 'block', color: '#E11D48', ml: 1 }}>
+                            - {err}
+                          </Typography>
+                        ))}
+                      </Box>
+                    ))}
+                    {previewResult.invalidItems.length > 20 && (
+                      <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', textAlign: 'center' }}>
+                        ...e mais {previewResult.invalidItems.length - 20} erro(s)
+                      </Typography>
+                    )}
+                  </Box>
+                </Box>
+              )}
+            </Stack>
+          )}
+
+          {importStep === 'importing' && importResult && (
+            <Box sx={{ textAlign: 'center', py: 3 }}>
+              <Typography variant="h6" sx={{ color: '#10B981', fontWeight: 700, mb: 1 }}>
+                Importação concluída!
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {importResult.imported} registro{importResult.imported !== 1 ? 's' : ''} importado{importResult.imported !== 1 ? 's' : ''}
+                {importResult.skipped > 0 && ` (${importResult.skipped} pulado${importResult.skipped !== 1 ? 's' : ''} por erros)`}
+              </Typography>
+            </Box>
+          )}
+
+          {importStep === 'importing' && !importResult && !previewError && (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 4 }}>
+              <CircularProgress size={24} />
+              <Typography>Importando fatura...</Typography>
+            </Box>
+          )}
+        </DialogContent>
+
+        <DialogActions sx={{ p: 2, gap: 1 }}>
+          {importStep === 'select' && (
+            <>
+              <Button onClick={handleCloseImportDialog} color="inherit">Cancelar</Button>
+              <Button
+                onClick={handleRunPreview}
+                variant="contained"
+                disabled={!pendingFile}
+                sx={{
+                  bgcolor: '#E11D48',
+                  '&:hover': { bgcolor: '#BE123C' },
+                  '&.Mui-disabled': { bgcolor: alpha('#E11D48', 0.4) }
+                }}
+              >
+                Importar
+              </Button>
+            </>
+          )}
+          {importStep === 'preview' && previewError && (
+            <Button onClick={handleCloseImportDialog} color="inherit">Fechar</Button>
+          )}
+          {importStep === 'preview' && previewResult && !previewError && (
+            <>
+              <Button onClick={handleCloseImportDialog} color="inherit">Cancelar</Button>
+              <Button
+                onClick={handleConfirmImport}
+                variant="contained"
+                sx={{
+                  bgcolor: '#E11D48',
+                  '&:hover': { bgcolor: '#BE123C' },
+                }}
+              >
+                Confirmar Importação
+              </Button>
+            </>
+          )}
+          {importStep === 'importing' && importResult && (
+            <Button onClick={handleCloseImportDialog} variant="contained" sx={{ bgcolor: '#10B981' }}>
+              Concluído
+            </Button>
+          )}
+        </DialogActions>
+      </Dialog>
 
       {/* Confirmação de Exclusão */}
       <Dialog

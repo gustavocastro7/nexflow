@@ -684,7 +684,15 @@ class ReportController {
         ORDER BY due_date DESC
       `, { replacements: { workspaceId } });
 
-      return res.json(rows.map(r => r.due_date));
+      const [[{ hasNull }]] = await sequelize.query(`
+        SELECT COUNT(*)::int > 0 AS "hasNull"
+        FROM raw_invoices
+        WHERE workspace_id = :workspaceId AND due_date IS NULL
+      `, { replacements: { workspaceId } });
+
+      const dates = rows.map(r => r.due_date);
+      if (hasNull) dates.push('NO_DATE');
+      return res.json(dates);
     } catch (error) {
       console.error('DueDates Error:', error);
       return res.status(500).json({ error: 'Error fetching due dates' });

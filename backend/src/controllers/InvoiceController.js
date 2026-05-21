@@ -17,6 +17,9 @@ class InvoiceController {
     this.indexVivo = this.indexVivo.bind(this);
     this.listRawInvoices = this.listRawInvoices.bind(this);
     this.destroy = this.destroy.bind(this);
+    this.previewClaro = this.previewClaro.bind(this);
+    this.previewVivo = this.previewVivo.bind(this);
+    this.previewClaroTXT = this.previewClaroTXT.bind(this);
   }
 
   async destroy(req, res) {
@@ -70,7 +73,11 @@ class InvoiceController {
       if (!workspaceId) return res.status(400).json({ error: 'Workspace ID é obrigatório' });
 
       const where = { workspace_id: workspaceId };
-      if (dueDate) where.due_date = dueDate;
+      if (dueDate === 'NO_DATE') {
+        where.due_date = { [Op.is]: null };
+      } else if (dueDate) {
+        where.due_date = dueDate;
+      }
 
       const raws = await RawInvoice.findAll({
         where,
@@ -85,7 +92,7 @@ class InvoiceController {
     }
   }
 
-  async _ensurePhoneLine(phoneNumber, workspaceId) {
+  async _ensurePhoneLine(phoneNumber, workspaceId, costCenterId) {
     if (!phoneNumber) return;
     
     // Check if phone line already exists
@@ -93,8 +100,19 @@ class InvoiceController {
       where: { phone_number: phoneNumber, workspace_id: workspaceId } 
     });
     
-    if (!existing) {
-      // Find or create Matriz cost center
+    if (existing) {
+      // If existing phone line has no cost center and one was provided, update it
+      if (costCenterId && !existing.cost_center_id) {
+        await existing.update({ cost_center_id: costCenterId });
+      }
+      return;
+    }
+    
+    // Determine cost center to associate
+    let targetCostCenterId = costCenterId;
+    
+    if (!targetCostCenterId) {
+      // Find or create Matriz cost center (default)
       const [matriz] = await CostCenter.findOrCreate({
         where: { name: 'Matriz', workspace_id: workspaceId },
         defaults: {
@@ -104,15 +122,237 @@ class InvoiceController {
           workspace_id: workspaceId
         }
       });
-      
-      // Create new phone line associated with Matriz
-      await PhoneLine.create({
-        phone_number: phoneNumber,
-        cost_center_id: matriz.id,
+      targetCostCenterId = matriz.id;
+    }
+    
+    // Create new phone line associated with the chosen cost center
+    await PhoneLine.create({
+      phone_number: phoneNumber,
+      cost_center_id: targetCostCenterId,
+      workspace_id: workspaceId,
+      responsible_name: 'Novo Número (Auto)'
+    });
+  }
+
+  _validateDate(dateStr) {
+    if (!dateStr || typeof dateStr !== 'string') return 'Data vazia ou inválida';
+    const parts = dateStr.split('/');
+    if (parts.length !== 3) return 'Formato de data inválido (esperado dd/mm/aaaa)';
+    const [d, m, y] = parts.map(Number);
+    if (!d || !m || !y || d < 1 || d > 31 || m < 1 || m > 12) return 'Data inválida';
+    return null;
+  }
+
+  _validatePhone(phone) {
+    if (!phone || phone.trim() === '') return 'Telefone de origem vazio';
+    return null;
+  }
+
+  _validateNumber(val, label) {
+    if (val === undefined || val === null || val === '') return `${label} vazio`;
+    const num = typeof val === 'string' ? parseFloat(val.replace(',', '.').replace(/\./g, '')) : val;
+    if (isNaN(num)) return `${label} não é um número válido`;
+    return null;
+  }
+
+  _validateClaroTXTLine(parts, lineIndex) {
+    const errors = [];
+    if (parts.length < 10) {
+      errors.push(`Linha ${lineIndex}: poucos campos (${parts.length}, esperado >= 10)`);
+      return errors;
+    }
+    const phoneErr = this._validatePhone(parts[0]);
+    if (phoneErr) errors.push(`Linha ${lineIndex}: ${phoneErr}`);
+    const dateErr = parts[2] ? this._validateDate(parts[2]) : null;
+    if (dateErr) errors.push(`Linha ${lineIndex}: ${dateErr}`);
+    const valErr = this._validateNumber(parts[8], 'Valor total');
+    if (valErr) errors.push(`Linha ${lineIndex}: ${valErr}`);
+    return errors;
+  }
+
+  _validateClaroLine(line, lineIndex) {
+    const errors = [];
+    if (!line.startsWith('30')) return errors;
+    if (line.length < 107) {
+      errors.push(`Linha ${lineIndex}: linha muito curta (${line.length} caracteres, esperado >= 107)`);
+      return errors;
+    }
+    const phone = line.substring(2, 27).trim();
+    const phoneErr = this._validatePhone(phone);
+    if (phoneErr) errors.push(`Linha ${lineIndex}: ${phoneErr}`);
+    const valStr = line.substring(93, 106);
+    if (valStr.trim() === '' || isNaN(parseFloat(valStr))) {
+      errors.push(`Linha ${lineIndex}: Valor total inválido`);
+    }
+    return errors;
+  }
+
+  _validateVivoLine(parts, lineIndex) {
+    const errors = [];
+    if (parts.length < 7) {
+      errors.push(`Linha ${lineIndex}: poucos campos (${parts.length}, esperado >= 7)`);
+      return errors;
+    }
+    const phoneErr = this._validatePhone(parts[2]);
+    if (phoneErr) errors.push(`Linha ${lineIndex}: ${phoneErr}`);
+    if (parts[0] && parts[0].includes('/')) {
+      const dateErr = this._validateDate(parts[0]);
+      if (dateErr) errors.push(`Linha ${lineIndex}: ${dateErr}`);
+    }
+    return errors;
+  }
+
+  _parseAndValidateClaroTXT(content, workspaceId) {
+    const lines = content.split('\n').map(l => l.trim());
+    const items = [];
+    const invalidItems = [];
+    const processedPhones = new Set();
+    let startParsing = false;
+
+    const parseValue = (val) => {
+      if (!val) return 0;
+      const cleanVal = val.replace(/\./g, '').replace(',', '.');
+      return parseFloat(cleanVal) || 0;
+    };
+
+    for (let li = 0; li < lines.length; li++) {
+      const line = lines[li];
+      if (line.startsWith('Tel;Se')) {
+        startParsing = true;
+        continue;
+      }
+      if (!startParsing || !line) continue;
+
+      const parts = line.split(';');
+      const lineErrors = this._validateClaroTXTLine(parts, li + 1);
+
+      if (lineErrors.length > 0) {
+        invalidItems.push({ line: li + 1, content: line.substring(0, 80), errors: lineErrors });
+        continue;
+      }
+
+      let item_date = parts[2];
+      if (item_date && item_date.includes('/')) {
+        const [d, m, y] = item_date.split('/');
+        item_date = `${y}-${m}-${d}`;
+      }
+
+      const phone = parts[0];
+      if (phone && !processedPhones.has(phone)) {
+        processedPhones.add(phone);
+      }
+
+      items.push({
         workspace_id: workspaceId,
-        responsible_name: 'Novo Número (Auto)'
+        operator: 'claro_txt',
+        source_phone: phone,
+        section: parts[1],
+        item_date: (item_date && item_date.length === 10) ? item_date : null,
+        item_time: parts[3] || null,
+        source_location: parts[4],
+        destination_phone: parts[5],
+        duration: parts[6],
+        quantity: parseValue(parts[6]),
+        total_value: parseValue(parts[8]),
+        charged_value: parseValue(parts[9]),
+        original_user: parts[10],
+        original_cost_center: parts[11],
+        sub_section: parts[13],
+        tax_type: parts[14],
+        description: parts[15],
       });
     }
+
+    return { items, invalidItems, processedPhones };
+  }
+
+  _parseAndValidateClaro(content, workspaceId) {
+    const lines = content.split('\n');
+    const items = [];
+    const invalidItems = [];
+    const processedPhones = new Set();
+
+    for (let li = 0; li < lines.length; li++) {
+      const line = lines[li];
+      if (!line.startsWith('30')) continue;
+
+      const lineErrors = this._validateClaroLine(line, li + 1);
+      if (lineErrors.length > 0) {
+        invalidItems.push({ line: li + 1, content: line.substring(0, 80), errors: lineErrors });
+        continue;
+      }
+
+      const source_phone = line.substring(2, 27).trim();
+      const data_servico_raw = line.substring(27, 35);
+      const item_date = `${data_servico_raw.substring(0, 4)}-${data_servico_raw.substring(4, 6)}-${data_servico_raw.substring(6, 8)}`;
+      const hora_servico_raw = line.substring(43, 49);
+      const item_time = `${hora_servico_raw.substring(0, 2)}:${hora_servico_raw.substring(2, 4)}:${hora_servico_raw.substring(4, 6)}`;
+      const total_value = parseFloat(line.substring(93, 106)) / 100;
+
+      if (source_phone && !processedPhones.has(source_phone)) {
+        processedPhones.add(source_phone);
+      }
+
+      items.push({
+        workspace_id: workspaceId,
+        operator: 'claro',
+        source_phone,
+        item_date,
+        item_time,
+        description: line.substring(49, 93).trim(),
+        total_value,
+        charged_value: total_value,
+      });
+    }
+
+    return { items, invalidItems, processedPhones };
+  }
+
+  _parseAndValidateVivo(content, workspaceId) {
+    const lines = content.split('\n');
+    const items = [];
+    const invalidItems = [];
+    const processedPhones = new Set();
+    const startIndex = lines[0].includes('Data') ? 1 : 0;
+
+    for (let li = startIndex; li < lines.length; li++) {
+      const line = lines[li].trim();
+      if (!line) continue;
+
+      const parts = line.split('\t');
+      const lineErrors = this._validateVivoLine(parts, li + 1);
+
+      if (lineErrors.length > 0) {
+        invalidItems.push({ line: li + 1, content: line.substring(0, 80), errors: lineErrors });
+        continue;
+      }
+
+      let item_date = parts[0];
+      if (item_date.includes('/')) {
+        const [d, m, y] = item_date.split('/');
+        item_date = `${y}-${m}-${d}`;
+      }
+
+      const phone = parts[2];
+      if (phone && !processedPhones.has(phone)) {
+        processedPhones.add(phone);
+      }
+
+      items.push({
+        workspace_id: workspaceId,
+        operator: 'vivo',
+        item_date,
+        item_time: parts[1],
+        source_phone: phone,
+        destination_phone: parts[3],
+        duration: parts[4],
+        description: parts[5],
+        charged_value: parseFloat(parts[6].replace(',', '.')),
+        total_value: parseFloat(parts[6].replace(',', '.')),
+      });
+    }
+
+    return { items, invalidItems, processedPhones };
   }
 
   _cleanContent(content) {
@@ -155,13 +395,42 @@ class InvoiceController {
     return cleaned;
   }
 
-  async importClaro(req, res) {
+  async previewClaro(req, res) {
     try {
       let { content, workspaceId } = req.body;
+      if (!workspaceId) return res.status(400).json({ error: 'Workspace ID is required' });
+      if (!content) return res.status(400).json({ error: 'Content is required' });
+
+      content = this._cleanContent(content);
+      const { items, invalidItems, processedPhones } = this._parseAndValidateClaro(content, workspaceId);
+
+      return res.json({
+        total: items.length + invalidItems.length,
+        validCount: items.length,
+        invalidCount: invalidItems.length,
+        invalidItems: invalidItems.slice(0, 100),
+        phonesDiscovered: Array.from(processedPhones),
+        preview: items.slice(0, 5),
+      });
+    } catch (error) {
+      console.error('Claro Preview Error:', error);
+      return res.status(500).json({ error: 'Error previewing Claro invoices' });
+    }
+  }
+
+  async importClaro(req, res) {
+    try {
+      let { content, workspaceId, costCenterId } = req.body;
       content = this._cleanContent(content);
 
       if (!workspaceId) {
         return res.status(400).json({ error: 'Workspace ID is required for import' });
+      }
+
+      // Validate costCenterId if provided
+      if (costCenterId) {
+        const cc = await CostCenter.findOne({ where: { id: costCenterId, workspace_id: workspaceId } });
+        if (!cc) return res.status(400).json({ error: 'Centro de custo não encontrado neste workspace' });
       }
 
       const hash = crypto.createHash('md5').update(content).digest('hex');
@@ -170,51 +439,30 @@ class InvoiceController {
         return res.status(400).json({ error: 'This invoice has already been imported for this workspace.' });
       }
 
+      const { items, invalidItems, processedPhones } = this._parseAndValidateClaro(content, workspaceId);
+
+      if (items.length === 0) {
+        return res.status(400).json({ error: 'Nenhum registro válido encontrado para importar' });
+      }
+
       const raw = await RawInvoice.create({
         workspace_id: workspaceId,
         operator: 'claro',
-        content: { raw: content },
+        content: { raw: content, validation: { total: items.length + invalidItems.length, skipped: invalidItems.length } },
         hash,
         processing_status: 'processado',
-        due_date: null // Claro record format doesn't seem to have a clear single due date line like TXT
+        due_date: null
       });
 
-      const lines = content.split('\n');
-      const items = [];
-      const processedPhones = new Set();
-
-      for (const line of lines) {
-        if (line.startsWith('30')) {
-          const source_phone = line.substring(2, 27).trim();
-          const data_servico_raw = line.substring(27, 35);
-          const item_date = `${data_servico_raw.substring(0, 4)}-${data_servico_raw.substring(4, 6)}-${data_servico_raw.substring(6, 8)}`;
-          const hora_servico_raw = line.substring(43, 49);
-          const item_time = `${hora_servico_raw.substring(0, 2)}:${hora_servico_raw.substring(2, 4)}:${hora_servico_raw.substring(4, 6)}`;
-          const description = line.substring(49, 93).trim();
-          const total_value = parseFloat(line.substring(93, 106)) / 100;
-
-          if (source_phone && !processedPhones.has(source_phone)) {
-            await this._ensurePhoneLine(source_phone, workspaceId);
-            processedPhones.add(source_phone);
-          }
-
-          items.push({
-            workspace_id: workspaceId,
-            operator: 'claro',
-            source_phone,
-            item_date,
-            item_time,
-            description,
-            total_value,
-            charged_value: total_value,
-            raw_invoice_id: raw.id
-          });
-        }
+      // Associate phone lines with cost center
+      for (const phone of processedPhones) {
+        await this._ensurePhoneLine(phone, workspaceId, costCenterId);
       }
 
-      await Invoice.bulkCreate(items);
+      // Assign raw_invoice_id to items and batch insert
+      const itemsToInsert = items.map(item => ({ ...item, raw_invoice_id: raw.id }));
+      await Invoice.bulkCreate(itemsToInsert);
 
-      // Log import
       await logOperation({
         user_id: req.userId,
         workspace_id: workspaceId,
@@ -222,22 +470,51 @@ class InvoiceController {
         entity: 'RawInvoice',
         entity_id: raw.id,
         ip_address: req.ip,
-        payload: { operator: 'claro', itemCount: items.length }
+        payload: { operator: 'claro', itemCount: items.length, skipped: invalidItems.length, costCenterId }
       });
 
-      return res.status(201).json({ message: `${items.length} Claro items imported successfully` });
+      const msg = `${items.length} Claro items imported successfully` +
+        (invalidItems.length > 0 ? ` (${invalidItems.length} lines skipped due to errors)` : '');
+      return res.status(201).json({ message: msg, imported: items.length, skipped: invalidItems.length });
     } catch (error) {
       console.error('Claro Import Error:', error);
       return res.status(500).json({ error: 'Error importing Claro invoices' });
     }
   }
 
-  async importVivo(req, res) {
+  async previewVivo(req, res) {
     try {
       const { content, workspaceId } = req.body;
+      if (!workspaceId) return res.status(400).json({ error: 'Workspace ID is required' });
+      if (!content) return res.status(400).json({ error: 'Content is required' });
+
+      const { items, invalidItems, processedPhones } = this._parseAndValidateVivo(content, workspaceId);
+
+      return res.json({
+        total: items.length + invalidItems.length,
+        validCount: items.length,
+        invalidCount: invalidItems.length,
+        invalidItems: invalidItems.slice(0, 100),
+        phonesDiscovered: Array.from(processedPhones),
+        preview: items.slice(0, 5),
+      });
+    } catch (error) {
+      console.error('Vivo Preview Error:', error);
+      return res.status(500).json({ error: 'Error previewing Vivo invoices' });
+    }
+  }
+
+  async importVivo(req, res) {
+    try {
+      const { content, workspaceId, costCenterId } = req.body;
 
       if (!workspaceId) {
         return res.status(400).json({ error: 'Workspace ID is required for import' });
+      }
+
+      if (costCenterId) {
+        const cc = await CostCenter.findOne({ where: { id: costCenterId, workspace_id: workspaceId } });
+        if (!cc) return res.status(400).json({ error: 'Centro de custo não encontrado neste workspace' });
       }
 
       const hash = crypto.createHash('md5').update(content).digest('hex');
@@ -246,58 +523,28 @@ class InvoiceController {
         return res.status(400).json({ error: 'This invoice has already been imported for this workspace.' });
       }
 
+      const { items, invalidItems, processedPhones } = this._parseAndValidateVivo(content, workspaceId);
+
+      if (items.length === 0) {
+        return res.status(400).json({ error: 'Nenhum registro válido encontrado para importar' });
+      }
+
       const raw = await RawInvoice.create({
         workspace_id: workspaceId,
         operator: 'vivo',
-        content: { raw: content },
+        content: { raw: content, validation: { total: items.length + invalidItems.length, skipped: invalidItems.length } },
         hash,
         processing_status: 'processado',
-        due_date: null // Vivo tab usually doesn't have it in the rows
+        due_date: null
       });
 
-      const lines = content.split('\n');
-      const items = [];
-      const processedPhones = new Set();
-
-      const startIndex = lines[0].includes('Data') ? 1 : 0;
-
-      for (let i = startIndex; i < lines.length; i++) {
-        const line = lines[i].trim();
-        if (!line) continue;
-
-        const parts = line.split('	');
-        if (parts.length >= 7) {
-          let item_date = parts[0];
-          if (item_date.includes('/')) {
-            const [d, m, y] = item_date.split('/');
-            item_date = `${y}-${m}-${d}`;
-          }
-
-          const phone = parts[2];
-          if (phone && !processedPhones.has(phone)) {
-            await this._ensurePhoneLine(phone, workspaceId);
-            processedPhones.add(phone);
-          }
-
-          items.push({
-            workspace_id: workspaceId,
-            operator: 'vivo',
-            item_date,
-            item_time: parts[1],
-            source_phone: phone,
-            destination_phone: parts[3],
-            duration: parts[4],
-            description: parts[5],
-            charged_value: parseFloat(parts[6].replace(',', '.')), 
-            total_value: parseFloat(parts[6].replace(',', '.')), 
-            raw_invoice_id: raw.id
-          });
-        }
+      for (const phone of processedPhones) {
+        await this._ensurePhoneLine(phone, workspaceId, costCenterId);
       }
 
-      await Invoice.bulkCreate(items);
+      const itemsToInsert = items.map(item => ({ ...item, raw_invoice_id: raw.id }));
+      await Invoice.bulkCreate(itemsToInsert);
 
-      // Log import
       await logOperation({
         user_id: req.userId,
         workspace_id: workspaceId,
@@ -305,22 +552,69 @@ class InvoiceController {
         entity: 'RawInvoice',
         entity_id: raw.id,
         ip_address: req.ip,
-        payload: { operator: 'vivo', itemCount: items.length }
+        payload: { operator: 'vivo', itemCount: items.length, skipped: invalidItems.length, costCenterId }
       });
 
-      return res.status(201).json({ message: `${items.length} Vivo items imported successfully` });
+      const msg = `${items.length} Vivo items imported successfully` +
+        (invalidItems.length > 0 ? ` (${invalidItems.length} lines skipped due to errors)` : '');
+      return res.status(201).json({ message: msg, imported: items.length, skipped: invalidItems.length });
     } catch (error) {
       console.error('Vivo Import Error:', error);
       return res.status(500).json({ error: 'Error importing Vivo invoices' });
     }
   }
 
-  async importClaroTXT(req, res) {
+  async previewClaroTXT(req, res) {
     try {
       let { content, workspaceId } = req.body;
+      if (!workspaceId) return res.status(400).json({ error: 'Workspace ID is required' });
+      if (!content) return res.status(400).json({ error: 'Content is required' });
+
+      content = this._cleanContent(content);
+      const { items, invalidItems, processedPhones } = this._parseAndValidateClaroTXT(content, workspaceId);
+
+      // Extract header info for preview
+      const lines = content.split('\n').map(l => l.trim());
+      const headerInfo = {};
+      lines.forEach(line => {
+        if (line.includes('Data de Vencimento:')) {
+           const match = line.match(/Data de Vencimento:\s*([\d/]+)/);
+           if (match) headerInfo.data_vencimento = match[1];
+           const valMatch = line.match(/Valor:\s*R\$\s*([\d.,]+)/);
+           if (valMatch) headerInfo.valor_total = valMatch[1];
+        }
+        if (line.includes('Cliente:')) {
+           const parts = line.split('Cliente:');
+           if (parts[1]) headerInfo.cliente = parts[1].trim();
+        }
+      });
+
+      return res.json({
+        total: items.length + invalidItems.length,
+        validCount: items.length,
+        invalidCount: invalidItems.length,
+        invalidItems: invalidItems.slice(0, 100),
+        phonesDiscovered: Array.from(processedPhones),
+        header: headerInfo,
+        preview: items.slice(0, 5),
+      });
+    } catch (error) {
+      console.error('Claro TXT Preview Error:', error);
+      return res.status(500).json({ error: 'Error previewing Claro TXT: ' + error.message });
+    }
+  }
+
+  async importClaroTXT(req, res) {
+    try {
+      let { content, workspaceId, costCenterId } = req.body;
       content = this._cleanContent(content);
       
       if (!workspaceId) return res.status(400).json({ error: 'Workspace ID is required' });
+
+      if (costCenterId) {
+        const cc = await CostCenter.findOne({ where: { id: costCenterId, workspace_id: workspaceId } });
+        if (!cc) return res.status(400).json({ error: 'Centro de custo não encontrado neste workspace' });
+      }
 
       const hash = crypto.createHash('md5').update(content).digest('hex');
       const existing = await RawInvoice.findOne({ where: { hash, workspace_id: workspaceId, operator: 'claro_txt' } });
@@ -348,80 +642,33 @@ class InvoiceController {
         due_date = `${y}-${m}-${d}`;
       }
 
+      const { items, invalidItems, processedPhones } = this._parseAndValidateClaroTXT(content, workspaceId);
+
+      if (items.length === 0) {
+        return res.status(400).json({ error: 'Nenhum registro válido encontrado para importar' });
+      }
+
       const raw = await RawInvoice.create({
         workspace_id: workspaceId,
         operator: 'claro_txt',
-        content: { raw: content, header: headerInfo },
+        content: { raw: content, header: headerInfo, validation: { total: items.length + invalidItems.length, skipped: invalidItems.length } },
         due_date,
         hash,
         processing_status: 'processado'
       });
 
-      const items = [];
-      let startParsing = false;
-      
-      const parseValue = (val) => {
-        if (!val) return 0;
-        // Remove thousands dots, replace comma with dot
-        const cleanVal = val.replace(/\./g, '').replace(',', '.');
-        return parseFloat(cleanVal) || 0;
-      };
-
-      // Set of phones already processed in this import to avoid redundant checks
-      const processedPhones = new Set();
-
-      for (const line of lines) {
-        if (line.startsWith('Tel;Se')) {
-          startParsing = true;
-          continue;
-        }
-        if (startParsing && line) {
-          const parts = line.split(';');
-          if (parts.length >= 10) {
-            let item_date = parts[2];
-            if (item_date && item_date.includes('/')) {
-                const [d, m, y] = item_date.split('/');
-                item_date = `${y}-${m}-${d}`;
-            }
-
-            const total_value = parseValue(parts[8]);
-            const charged_value = parseValue(parts[9]);
-            const quantity = parseValue(parts[6]);
-            const phone = parts[0];
-
-            if (phone && !processedPhones.has(phone)) {
-              await this._ensurePhoneLine(phone, workspaceId);
-              processedPhones.add(phone);
-            }
-
-            items.push({
-              workspace_id: workspaceId,
-              operator: 'claro_txt',
-              source_phone: phone,
-              section: parts[1],
-              item_date: (item_date && item_date.length === 10) ? item_date : null,
-              item_time: parts[3] || null,
-              source_location: parts[4],
-              destination_phone: parts[5],
-              duration: parts[6],
-              quantity: quantity || 0,
-              total_value,
-              charged_value,
-              original_user: parts[10],
-              original_cost_center: parts[11],
-              sub_section: parts[13],
-              tax_type: parts[14],
-              description: parts[15],
-              raw_invoice_id: raw.id
-            });
-          }
-        }
+      // Associate phone lines with cost center
+      for (const phone of processedPhones) {
+        await this._ensurePhoneLine(phone, workspaceId, costCenterId);
       }
+
+      // Assign raw_invoice_id to items
+      const itemsToInsert = items.map(item => ({ ...item, raw_invoice_id: raw.id }));
 
       // Batch bulkCreate to avoid memory/Postgres limits
       const chunkSize = 1000;
-      for (let i = 0; i < items.length; i += chunkSize) {
-        const chunk = items.slice(i, i + chunkSize);
+      for (let i = 0; i < itemsToInsert.length; i += chunkSize) {
+        const chunk = itemsToInsert.slice(i, i + chunkSize);
         await Invoice.bulkCreate(chunk);
       }
 
@@ -433,10 +680,12 @@ class InvoiceController {
         entity: 'RawInvoice',
         entity_id: raw.id,
         ip_address: req.ip,
-        payload: { operator: 'claro_txt', itemCount: items.length, due_date }
+        payload: { operator: 'claro_txt', itemCount: items.length, skipped: invalidItems.length, due_date, costCenterId }
       });
 
-      return res.status(201).json({ message: `${items.length} Claro TXT items imported successfully` });
+      const msg = `${items.length} Claro TXT items imported successfully` +
+        (invalidItems.length > 0 ? ` (${invalidItems.length} lines skipped due to errors)` : '');
+      return res.status(201).json({ message: msg, imported: items.length, skipped: invalidItems.length });
     } catch (error) {
       console.error('Claro TXT Import Error:', error);
       return res.status(500).json({ error: 'Error importing Claro TXT: ' + error.message });
@@ -453,7 +702,15 @@ class InvoiceController {
       if (raw_invoice_id) where.raw_invoice_id = raw_invoice_id;
 
       const include = [];
-      if (dueDate) {
+      if (dueDate === 'NO_DATE') {
+        include.push({
+          model: RawInvoice,
+          as: 'header',
+          attributes: [],
+          where: { due_date: { [Op.is]: null } },
+          required: true
+        });
+      } else if (dueDate) {
         include.push({
           model: RawInvoice,
           as: 'header',

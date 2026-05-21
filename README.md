@@ -24,6 +24,15 @@ Plataforma SaaS com multi‑tenancy por schema.
 *   **Database:** `nexflow_logs`
 *   **Senha:** (Sem senha configurada no ambiente de debug)
 
+## Logotipo do Cliente (Workspace)
+
+Cada workspace (cliente) pode ter um logotipo personalizado, exibido na barra lateral do sistema.
+
+- **Upload**: Ao criar ou editar um workspace (menu Admin > Workspaces), há um campo "Logo" que aceita imagens via upload.
+- **Armazenamento**: A imagem é convertida para base64 e armazenada diretamente no banco de dados (coluna `logo` da tabela `workspaces`).
+- **Exibição**: O logotipo do workspace ativo é exibido no topo da barra lateral. Se o workspace não tiver logotipo, a imagem padrão (`/logo.jpg`) é usada.
+- **Remoção**: É possível remover o logotipo a qualquer momento na edição do workspace.
+
 ## Portas do Sistema
 *   **Backend:** `3000` (API & Swagger)
 *   **Frontend:** `8080` (Vite Dev Server)

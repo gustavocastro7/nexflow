@@ -36,7 +36,8 @@ import {
   Assessment as AssessmentIcon,
   History as HistoryIcon,
   ChevronLeft as ChevronLeftIcon,
-  ChevronRight as ChevronRightIcon
+  ChevronRight as ChevronRightIcon,
+  FileUpload as FileUploadIcon
 } from '@mui/icons-material';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
@@ -198,8 +199,8 @@ const Layout: React.FC = () => {
       }}>
         <Box 
           component="img"
-          src="/logo.jpg"
-          alt="Teleen Logo"
+          src={activeWorkspace?.logo || '/logo.jpg'}
+          alt={activeWorkspace?.name || 'Logo'}
           sx={{ 
             width: !isDrawerExpanded ? 36 : 44, 
             height: !isDrawerExpanded ? 36 : 44, 
@@ -213,7 +214,7 @@ const Layout: React.FC = () => {
         />
         {isDrawerExpanded && (
           <Typography variant="h5" sx={{ fontWeight: 800, letterSpacing: -0.5, whiteSpace: 'nowrap' }}>
-            teleen
+            {activeWorkspace?.name || 'teleen'}
           </Typography>
         )}
       </Toolbar>
@@ -327,6 +328,10 @@ const Layout: React.FC = () => {
         <MenuItem onClick={() => { handleProfileMenuClose(); navigate(ROUTES.PROFILE); }} sx={{ fontSize: '0.8rem' }}>
           <ListItemIcon><PersonIcon fontSize="small" /></ListItemIcon>
           {t('common.profile')}
+        </MenuItem>
+        <MenuItem onClick={() => { handleProfileMenuClose(); navigate(ROUTES.COLLABORATORS, { state: { openCSVImport: true } }); }} sx={{ fontSize: '0.8rem' }}>
+          <ListItemIcon><FileUploadIcon fontSize="small" /></ListItemIcon>
+          Importar CSV
         </MenuItem>
         <Divider />
         <MenuItem onClick={() => { handleProfileMenuClose(); handleLogout(); }} sx={{ color: theme.palette.error.main, fontSize: '0.8rem' }}>
