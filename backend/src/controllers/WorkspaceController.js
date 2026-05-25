@@ -77,13 +77,17 @@ class WorkspaceController {
       }
       const { id } = req.params;
       const { name, status, billing_cycle_start_day, logo } = req.body;
+      console.log('[DEBUG] Workspace update received:', { id, name, status, hasLogo: !!logo, logoType: typeof logo, logoLength: logo?.length });
       const workspace = await Workspace.findByPk(id);
       if (!workspace) {
         return res.status(404).json({ error: 'Workspace not found' });
       }
       await workspace.update({ name, status, billing_cycle_start_day, logo });
-      return res.json(workspace);
+      const updated = await Workspace.findByPk(id);
+      console.log('[DEBUG] Workspace after update:', { id: updated.id, name: updated.name, hasLogo: !!updated.logo, logoLength: updated.logo?.length });
+      return res.json(updated);
     } catch (error) {
+      console.error('[DEBUG] Workspace update error:', error);
       return res.status(500).json({ error: 'Error updating workspace' });
     }
   }

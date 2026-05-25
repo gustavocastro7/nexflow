@@ -54,8 +54,8 @@ const LoginPage: React.FC = () => {
         }
       }
 
-      // Redirect to workspace selection
-      navigate(ROUTES.WORKSPACES);
+      // Redirect to dashboard
+      navigate(ROUTES.DASHBOARD);
     } catch (err: unknown) {
       if (err && typeof err === 'object' && 'response' in err) {
         const axiosError = err as { response?: { data?: { error?: string } } };

@@ -52,6 +52,8 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ImageIcon from '@mui/icons-material/Image';
+import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ColorModeContext } from '../context/ColorModeContext';
@@ -114,6 +116,8 @@ const ProfilePage: React.FC = () => {
     schema_name: '',
     status: 'active'
   });
+  const [wsLogo, setWsLogo] = useState<string | null>(null);
+  const [wsLogoFile, setWsLogoFile] = useState<File | null>(null);
 
   const getUser = (): User | null => {
     try {
@@ -287,28 +291,63 @@ const ProfilePage: React.FC = () => {
       schema_name: ws ? ws.schema_name : '',
       status: (ws as any)?.status || 'active'
     });
+    setWsLogo(ws ? ws.logo || null : null);
+    setWsLogoFile(null);
     setWsDialogOpen(true);
   };
 
   const handleCloseWSDialog = () => {
     setWsDialogOpen(false);
     setEditingWS(null);
+    setWsLogo(null);
+    setWsLogoFile(null);
+  };
+
+  const handleWsLogoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setWsLogoFile(file);
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setWsLogo(ev.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleWsLogoRemove = () => {
+    setWsLogo(null);
+    setWsLogoFile(null);
   };
 
   const handleSaveWorkspace = async () => {
     try {
+      let saved;
       if (editingWS) {
-        await apiClient.put(`/workspaces/${editingWS.id}`, {
+        console.log('[DEBUG] Sending logo update:', { id: editingWS.id, logoLength: wsLogo?.length, logoPreview: wsLogo?.substring(0, 50) });
+        const res = await apiClient.put(`/workspaces/${editingWS.id}`, {
           name: wsFormData.name,
-          status: wsFormData.status
+          status: wsFormData.status,
+          logo: wsLogo
         });
+        saved = res.data;
+        console.log('[DEBUG] Response logo:', { hasLogo: !!saved.logo, logoLength: saved.logo?.length });
         setSuccess(t('profile.workspace_saved'));
       } else {
-        await apiClient.post('/workspaces', {
+        const res = await apiClient.post('/workspaces', {
           name: wsFormData.name,
-          schema_name: wsFormData.schema_name
+          schema_name: wsFormData.schema_name,
+          logo: wsLogo
         });
+        saved = res.data;
         setSuccess(t('profile.workspace_saved'));
+      }
+      // Update activeWorkspace in sessionStorage if it matches the saved workspace
+      const currentActive = sessionStorage.getItem('activeWorkspace');
+      if (currentActive) {
+        const parsed = JSON.parse(currentActive);
+        if (parsed.id === saved.id) {
+          sessionStorage.setItem('activeWorkspace', JSON.stringify(saved));
+        }
       }
       await fetchWorkspaces();
       handleCloseWSDialog();
@@ -572,6 +611,27 @@ const ProfilePage: React.FC = () => {
                 <MenuItem value="inactive">{t('common.inactive')}</MenuItem>
               </TextField>
             )}
+            <Box>
+              <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>Logo</Typography>
+              {wsLogo ? (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Box
+                    component="img"
+                    src={wsLogo}
+                    alt="Logo preview"
+                    sx={{ width: 80, height: 80, borderRadius: 2, objectFit: 'contain', border: '1px solid', borderColor: 'divider', p: 0.5 }}
+                  />
+                  <Button size="small" color="error" startIcon={<DeleteForeverIcon />} onClick={handleWsLogoRemove}>
+                    Remove
+                  </Button>
+                </Box>
+              ) : (
+                <Button component="label" variant="outlined" startIcon={<ImageIcon />} sx={{ color: 'text.secondary', borderColor: 'divider' }}>
+                  Upload Logo
+                  <input type="file" accept="image/*" hidden onChange={handleWsLogoSelect} />
+                </Button>
+              )}
+            </Box>
           </Stack>
         </DialogContent>
         <DialogActions sx={{ p: 3 }}>

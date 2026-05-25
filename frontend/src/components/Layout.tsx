@@ -37,7 +37,8 @@ import {
   History as HistoryIcon,
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,
-  FileUpload as FileUploadIcon
+  FileUpload as FileUploadIcon,
+  SwitchAccount as SwitchAccountIcon
 } from '@mui/icons-material';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
@@ -66,6 +67,7 @@ const Layout: React.FC = () => {
   const [isHovered, setIsHovered] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [langAnchorEl, setLangAnchorEl] = useState<null | HTMLElement>(null);
+  const [wsMenuAnchorEl, setWsMenuAnchorEl] = useState<null | HTMLElement>(null);
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
@@ -95,15 +97,9 @@ const Layout: React.FC = () => {
     try {
       const parsedUser = JSON.parse(userStr) as User;
       const parsedWS = wsStr ? JSON.parse(wsStr) as Workspace : null;
-      
+
       setUser(parsedUser);
-      setActiveWorkspace(parsedWS as Workspace);
-
-      if (!parsedWS && location.pathname !== ROUTES.WORKSPACES) {
-        navigate(ROUTES.WORKSPACES);
-        return;
-      }
-
+      
       // Fetch user config including menu_behavior
       try {
         const configRes = await apiClient.get('/user/config');
@@ -115,11 +111,37 @@ const Layout: React.FC = () => {
       }
 
       // Fetch workspaces for the menu
+      let wsList: Workspace[] = [];
       try {
         const response = await apiClient.get<Workspace[]>(`/workspaces/user/${parsedUser.id}`);
-        setWorkspaces(Array.isArray(response.data) ? response.data : []);
+        wsList = Array.isArray(response.data) ? response.data : [];
+        setWorkspaces(wsList);
       } catch (err: unknown) {
         console.error('Error loading workspaces in menu', err);
+      }
+
+      // Always refresh active workspace from fresh API data
+      if (parsedWS) {
+        const freshWS = wsList.find(w => w.id === parsedWS.id);
+        if (freshWS) {
+          sessionStorage.setItem('activeWorkspace', JSON.stringify(freshWS));
+          setActiveWorkspace(freshWS);
+        } else {
+          setActiveWorkspace(parsedWS);
+        }
+      } else {
+        let selected: Workspace | null = null;
+        const lastId = localStorage.getItem(`lastWorkspace_${parsedUser.id}`);
+        if (lastId) {
+          selected = wsList.find(w => w.id === lastId) || null;
+        }
+        if (!selected && wsList.length > 0) {
+          selected = wsList[0];
+        }
+        if (selected) {
+          sessionStorage.setItem('activeWorkspace', JSON.stringify(selected));
+          setActiveWorkspace(selected);
+        }
       }
 
       setIsLoading(false);
@@ -146,7 +168,18 @@ const Layout: React.FC = () => {
   const handleDrawerToggle = () => setMobileOpen(!mobileOpen);
   const handleCollapseToggle = () => setIsCollapsed(!isCollapsed);
   const handleProfileMenuOpen = (event: React.MouseEvent<HTMLElement>) => setAnchorEl(event.currentTarget);
-  const handleProfileMenuClose = () => setAnchorEl(null);
+  const handleProfileMenuClose = () => { setAnchorEl(null); setWsMenuAnchorEl(null); };
+
+  const handleWorkspaceSelect = (ws: Workspace) => {
+    sessionStorage.setItem('activeWorkspace', JSON.stringify(ws));
+    if (user?.id) {
+      localStorage.setItem(`lastWorkspace_${user.id}`, ws.id);
+      apiClient.put(`/users/${user.id}/config`, { last_workspace_id: ws.id }).catch(() => {});
+    }
+    setAnchorEl(null);
+    setWsMenuAnchorEl(null);
+    window.location.reload();
+  };
 
   const handleLogout = () => {
     sessionStorage.clear();
@@ -304,6 +337,14 @@ const Layout: React.FC = () => {
           user ? (
             <Paper sx={{ p: 1, bgcolor: alpha(theme.palette.primary.main, 0.05), borderRadius: 1, border: 'none', mb: 0.5 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                {activeWorkspace?.logo && (
+                  <Box
+                    component="img"
+                    src="/logo.jpg"
+                    alt="teleen"
+                    sx={{ width: 28, height: 28, borderRadius: 0.5, objectFit: 'contain', bgcolor: 'white', p: 0.3 }}
+                  />
+                )}
                 <Avatar sx={{ width: 32, height: 32, bgcolor: theme.palette.primary.main, fontSize: '0.9rem' }}>
                   {user.name?.charAt(0) || '?'}
                 </Avatar>
@@ -333,6 +374,40 @@ const Layout: React.FC = () => {
           <ListItemIcon><FileUploadIcon fontSize="small" /></ListItemIcon>
           Importar CSV
         </MenuItem>
+        {user?.profile === 'jedi' && (
+          <>
+            <Divider />
+            <MenuItem
+              onClick={(e) => setWsMenuAnchorEl(e.currentTarget)}
+              sx={{ fontSize: '0.8rem' }}
+            >
+              <ListItemIcon><SwitchAccountIcon fontSize="small" /></ListItemIcon>
+              Set Workspace
+            </MenuItem>
+            <Menu
+              anchorEl={wsMenuAnchorEl}
+              open={Boolean(wsMenuAnchorEl)}
+              onClose={() => setWsMenuAnchorEl(null)}
+              anchorOrigin={{ horizontal: 'right', vertical: 'top' }}
+              transformOrigin={{ horizontal: 'left', vertical: 'top' }}
+              PaperProps={{ sx: { minWidth: 180, borderRadius: 1, boxShadow: '0 10px 25px rgba(0,0,0,0.1)' } }}
+            >
+              {workspaces.map((ws) => (
+                <MenuItem
+                  key={ws.id}
+                  selected={ws.id === activeWorkspace?.id}
+                  onClick={() => handleWorkspaceSelect(ws)}
+                  sx={{ fontSize: '0.8rem' }}
+                >
+                  <ListItemIcon>
+                    <BusinessIcon fontSize="small" sx={{ opacity: ws.id === activeWorkspace?.id ? 1 : 0.4 }} />
+                  </ListItemIcon>
+                  {ws.name}
+                </MenuItem>
+              ))}
+            </Menu>
+          </>
+        )}
         <Divider />
         <MenuItem onClick={() => { handleProfileMenuClose(); handleLogout(); }} sx={{ color: theme.palette.error.main, fontSize: '0.8rem' }}>
           <ListItemIcon><LogoutIcon fontSize="small" sx={{ color: theme.palette.error.main }} /></ListItemIcon>

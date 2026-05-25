@@ -10,7 +10,6 @@ import RelatoriosPage from './pages/RelatoriosPage';
 import CollaboratorsPage from './pages/CollaboratorsPage';
 import UsersPage from './pages/UsersPage';
 import AuditPage from './pages/AuditPage';
-import WorkspaceSelectionPage from './pages/WorkspaceSelectionPage';
 import RoleAssignmentPage from './pages/RoleAssignmentPage';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -26,7 +25,6 @@ const App: React.FC = () => {
           <Routes>
             <Route path={ROUTES.LOGIN} element={<LoginPage />} />
             <Route path={ROUTES.REGISTER} element={<RegisterPage />} />
-            <Route path={ROUTES.WORKSPACES} element={<ProtectedRoute><WorkspaceSelectionPage /></ProtectedRoute>} />
 
             <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
               <Route path={ROUTES.DASHBOARD} element={<DashboardPage />} />

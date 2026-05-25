@@ -99,20 +99,31 @@ const WorkspaceManagement: React.FC = () => {
 
   const handleSave = async () => {
     try {
+      let saved;
       if (currentWS) {
-        await apiClient.put(`/workspaces/${currentWS.id}`, {
+        const res = await apiClient.put(`/workspaces/${currentWS.id}`, {
           name,
           status,
           billing_cycle_start_day: billingCycleStartDay,
           logo
         });
+        saved = res.data;
       } else {
-        await apiClient.post('/workspaces', {
+        const res = await apiClient.post('/workspaces', {
           name,
           schema_name,
           billing_cycle_start_day: billingCycleStartDay,
           logo
         });
+        saved = res.data;
+      }
+      // Update activeWorkspace in sessionStorage if it matches
+      const currentActive = sessionStorage.getItem('activeWorkspace');
+      if (currentActive && saved) {
+        const parsed = JSON.parse(currentActive);
+        if (parsed.id === saved.id) {
+          sessionStorage.setItem('activeWorkspace', JSON.stringify(saved));
+        }
       }
       fetchWorkspaces();
       handleClose();
