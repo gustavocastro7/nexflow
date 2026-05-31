@@ -45,6 +45,15 @@ interface ConsumptionSubSectionRow {
   total: number;
 }
 
+interface DataConsumptionRow {
+  phoneNumber: string;
+  responsibleName: string;
+  costCenterCode: string;
+  costCenterName: string;
+  totalDataGb: number;
+  totalCost: number;
+}
+
 interface LineDetailRow {
   id: string;
   item_date: string;
@@ -66,13 +75,14 @@ interface PageResponse<T> {
   grandTotal?: number;
 }
 
-type ReportType = 0 | 1 | 2 | 3;
+type ReportType = 0 | 1 | 2 | 3 | 4;
 
 const REPORT_ENDPOINTS: Record<ReportType, string> = {
   0: '/reports/phone-lines',
   1: '/reports/consumption-by-cost-center',
   2: '/reports/consumption-by-responsible',
   3: '/reports/consumption-by-responsible', // Use responsible report as master list for By Line
+  4: '/reports/data-consumption',
 };
 
 const REPORT_LABELS: Record<ReportType, string> = {
@@ -80,6 +90,7 @@ const REPORT_LABELS: Record<ReportType, string> = {
   1: 'Consumo por Centro de Custo',
   2: 'Consumo por Responsável',
   3: 'Por Linha',
+  4: 'Consumo de Dados',
 };
 
 const fmtMoney = (v: number) =>
@@ -97,6 +108,8 @@ const RelatoriosPage: React.FC = () => {
   const [dueDate, setDueDate] = useState('');
   const [dueDates, setDueDates] = useState<string[]>([]);
   const [grandTotal, setGrandTotal] = useState(0);
+  const [grandTotalGb, setGrandTotalGb] = useState(0);
+  const [grandTotalCost, setGrandTotalCost] = useState(0);
 
   // New states for master-detail (By Line report)
   const [selectedLine, setSelectedLine] = useState<ConsumptionRespRow | null>(null);
@@ -142,7 +155,7 @@ const RelatoriosPage: React.FC = () => {
 
   const fetchPage = useCallback(async (pageNum: number, reset: boolean) => {
     if (!ws?.id) return;
-    if ((tab === 1 || tab === 2 || tab === 3) && !dueDate) return;
+    if ((tab === 1 || tab === 2 || tab === 3 || tab === 4) && !dueDate) return;
 
     setLoading(true);
     setError('');
@@ -152,7 +165,7 @@ const RelatoriosPage: React.FC = () => {
         page: String(pageNum),
         search,
       });
-      if (tab === 1 || tab === 2 || tab === 3) params.set('dueDate', dueDate);
+      if (tab === 1 || tab === 2 || tab === 3 || tab === 4) params.set('dueDate', dueDate);
 
       const { data } = await apiClient.get<PageResponse<any>>(
         `${REPORT_ENDPOINTS[tab]}?${params}`
@@ -163,9 +176,13 @@ const RelatoriosPage: React.FC = () => {
       setHasMore(data.hasMore);
       setPage(pageNum);
       if (data.grandTotal !== undefined) setGrandTotal(data.grandTotal);
+      if (data.grandTotalGb !== undefined) setGrandTotalGb(data.grandTotalGb);
+      if (data.grandTotalCost !== undefined) setGrandTotalCost(data.grandTotalCost);
 
       // Auto-select first line in By Line report
       if (tab === 3 && reset && newItems.length > 0) {
+        setSelectedLine(newItems[0]);
+      } else if (tab === 3 && reset && newItems.length === 0) {
         setSelectedLine(newItems[0]);
       } else if (tab === 3 && reset && newItems.length === 0) {
         setSelectedLine(null);
@@ -220,6 +237,8 @@ const RelatoriosPage: React.FC = () => {
     setPage(0);
     setHasMore(true);
     setGrandTotal(0);
+    setGrandTotalGb(0);
+    setGrandTotalCost(0);
     fetchPage(0, true);
   }, [fetchPage]);
 
@@ -277,6 +296,9 @@ const RelatoriosPage: React.FC = () => {
     } else if (tab === 2) {
       headers = ['Responsável', 'ID', 'Telefone', 'Cod CC', 'Nome CC', 'Total (R$)'];
       mapper = (row: ConsumptionRespRow) => [row.responsibleName, row.responsibleId, row.phoneNumber, row.costCenterCode, row.costCenterName, row.total];
+    } else if (tab === 4) {
+      headers = ['Telefone', 'Responsável', 'Cód. CC', 'Nome CC', 'Dados (GB)', 'Custo (R$)'];
+      mapper = (row: DataConsumptionRow) => [row.phoneNumber, row.responsibleName, row.costCenterCode, row.costCenterName, row.totalDataGb, row.totalCost];
     } else {
       headers = ['Data', 'Hora', 'Descrição', 'Destino', 'Duração', 'Seção', 'Subsessão', 'Valor (R$)'];
       mapper = (row: LineDetailRow) => [row.item_date, row.item_time, row.description, row.destination_phone, row.duration, row.section, row.sub_section, row.charged_value];
@@ -288,6 +310,7 @@ const RelatoriosPage: React.FC = () => {
     ];
     if (tab === 2) lines.push(`"TOTAL";;;;;"${grandTotal.toFixed(2).replace('.', ',')}"`);
     if (tab === 3 && selectedLine) lines.push(`"TOTAL DA LINHA";;;;;;;"${detailsTotal.toFixed(2).replace('.', ',')}"`);
+    if (tab === 4) lines.push(`"TOTAL GERAL";;;;;"${grandTotalGb.toFixed(2).replace('.', ',')}";;"${grandTotalCost.toFixed(2).replace('.', ',')}"`);
 
     const blob = new Blob(['\ufeff' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
     const a = document.createElement('a');
@@ -317,6 +340,13 @@ const RelatoriosPage: React.FC = () => {
       <TableRow>
         <TableCell>Responsável</TableCell><TableCell>ID</TableCell><TableCell>Telefone</TableCell>
         <TableCell>Cód. CC</TableCell><TableCell>Nome CC</TableCell><TableCell align="right">Total</TableCell>
+      </TableRow>
+    );
+    if (tab === 4) return (
+      <TableRow>
+        <TableCell>Telefone</TableCell><TableCell>Responsável</TableCell>
+        <TableCell>Cód. CC</TableCell><TableCell>Nome CC</TableCell>
+        <TableCell align="right">Dados (GB)</TableCell><TableCell align="right">Custo Total</TableCell>
       </TableRow>
     );
     // Detail view for By Line
@@ -367,6 +397,19 @@ const RelatoriosPage: React.FC = () => {
         </TableRow>
       );
     }
+    if (tab === 4) {
+      const d = r as DataConsumptionRow;
+      return (
+        <TableRow key={d.phoneNumber} hover>
+          <TableCell sx={{ fontWeight: 600 }}>{d.phoneNumber}</TableCell>
+          <TableCell>{d.responsibleName}</TableCell>
+          <TableCell sx={{ fontWeight: 700 }}>{d.costCenterCode}</TableCell>
+          <TableCell>{d.costCenterName}</TableCell>
+            <TableCell align="right" sx={{ fontWeight: 700 }}>{((d.totalDataGb || 0)).toFixed(2)}</TableCell>
+          <TableCell align="right" sx={{ fontWeight: 700, color: theme.palette.primary.main }}>{fmtMoney(d.totalCost)}</TableCell>
+        </TableRow>
+      );
+    }
     // tab === 3 is handled by a different view structure, but just in case:
     return null;
   };
@@ -386,11 +429,12 @@ const RelatoriosPage: React.FC = () => {
           <Tab label="Por Centro de Custo" />
           <Tab label="Por Responsável" />
           <Tab label="Por Linha" />
+          <Tab label="Consumo de Dados" />
         </Tabs>
 
         <Box sx={{ flex: 1 }} />
 
-        {(tab === 1 || tab === 2 || tab === 3) && (
+        {(tab === 1 || tab === 2 || tab === 3 || tab === 4) && (
           <FormControl size="small" sx={{ minWidth: 160 }}>
             <Select
               value={dueDate}
@@ -591,14 +635,25 @@ const RelatoriosPage: React.FC = () => {
                   </TableCell>
                 </TableRow>
 
-                {tab === 2 && rows.length > 0 && !hasMore && (
-                  <TableRow sx={{ bgcolor: alpha(theme.palette.primary.main, 0.08) }}>
-                    <TableCell colSpan={5} sx={{ fontWeight: 900 }}>TOTAL DE GASTOS</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 900, color: theme.palette.primary.main, fontSize: '1rem' }}>
-                      {fmtMoney(grandTotal)}
-                    </TableCell>
-                  </TableRow>
-                )}
+    {tab === 2 && rows.length > 0 && !hasMore && (
+      <TableRow sx={{ bgcolor: alpha(theme.palette.primary.main, 0.08) }}>
+        <TableCell colSpan={5} sx={{ fontWeight: 900 }}>TOTAL DE GASTOS</TableCell>
+        <TableCell align="right" sx={{ fontWeight: 900, color: theme.palette.primary.main, fontSize: '1rem' }}>
+          {fmtMoney(grandTotal)}
+        </TableCell>
+      </TableRow>
+    )}
+    {tab === 4 && rows.length > 0 && !hasMore && (
+      <TableRow sx={{ bgcolor: alpha(theme.palette.primary.main, 0.08) }}>
+        <TableCell colSpan={4} sx={{ fontWeight: 900 }}>TOTAL GERAL</TableCell>
+        <TableCell align="right" sx={{ fontWeight: 900, color: theme.palette.primary.main, fontSize: '1rem' }}>
+          {grandTotalGb.toFixed(2)} GB
+        </TableCell>
+        <TableCell align="right" sx={{ fontWeight: 900, color: theme.palette.primary.main, fontSize: '1rem' }}>
+          {fmtMoney(grandTotalCost)}
+        </TableCell>
+      </TableRow>
+    )}
               </TableBody>
             </Table>
           </TableContainer>

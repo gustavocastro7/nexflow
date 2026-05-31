@@ -64,6 +64,14 @@ routes.get('/line-detail', ReportController.getLineDetail);
 
 /**
  * @swagger
+ * /reports/data-consumption:
+ *   get:
+ *     summary: Data consumption per phone line (paginated)
+ */
+routes.get('/data-consumption', ReportController.getDataConsumption);
+
+/**
+ * @swagger
  * /reports/due-dates:
  *   get:
  *     summary: List available due dates from raw invoices

@@ -1,0 +1,10 @@
+{
+  "name": "nexflow-test",
+  "version": "1.0.0",
+  "description": "Nexflow - Site de teste (sem banco)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {}
+}
