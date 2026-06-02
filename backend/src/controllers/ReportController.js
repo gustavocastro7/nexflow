@@ -680,12 +680,12 @@ class ReportController {
       const offset = parseInt(page, 10) * PAGE_SIZE;
       const like = search ? `%${search}%` : null;
 
-      const whereSql = `
-        WHERE i.workspace_id = :workspaceId
-          ${dueDate ? "AND ri.due_date = :dueDate" : ""}
-          AND (i.section ILIKE '%DADOS%' OR i.sub_section ILIKE '%DADOS%' OR i.description ILIKE '%DADOS%' OR i.description ILIKE '%INTERNET%')
-          ${like ? "AND (i.source_phone ILIKE :like OR coll.name ILIKE :like OR pl.responsible_name ILIKE :like OR cc.code ILIKE :like OR cc.name ILIKE :like)" : ""}
-      `;
+       const whereSql = `
+  WHERE i.workspace_id = :workspaceId
+    ${dueDate ? "AND ri.due_date = :dueDate" : ""}
+    AND (i.section ILIKE '%INTERNET (MB)%' OR i.description ILIKE '%INTERNET (MB)%')
+    ${like ? "AND (i.source_phone ILIKE :like OR coll.name ILIKE :like OR pl.responsible_name ILIKE :like OR cc.code ILIKE :like OR cc.name ILIKE :like)" : ""}
+`;
 
       const fromSql = `
         FROM invoices i
@@ -697,41 +697,37 @@ class ReportController {
         GROUP BY i.source_phone, coll.name, pl.responsible_name, i.original_user, cc.code, cc.name
       `;
 
-      const [rows] = await sequelize.query(`
-        SELECT
-          i.source_phone AS phone_number,
-          COALESCE(coll.name, pl.responsible_name, i.original_user, '') AS responsible_name,
-          cc.code AS cc_code,
-          COALESCE(cc.name, 'Unallocated') AS cc_name,
-          SUM(i.quantity)::float AS total_data_gb,
-          SUM(i.charged_value)::float AS total_cost
-        ${fromSql}
-        ORDER BY total_data_gb DESC
-        LIMIT :limit OFFSET :offset
-      `, { replacements: { workspaceId, dueDate, like, limit: PAGE_SIZE, offset } });
+        const [rows] = await sequelize.query(`
+  SELECT
+    i.source_phone AS phone_number,
+    COALESCE(coll.name, pl.responsible_name, i.original_user, '') AS responsible_name,
+    cc.code AS cc_code,
+    COALESCE(cc.name, 'Unallocated') AS cc_name,
+    SUM(regexp_replace(i.quantity::text, '[^0-9.]', '', 'g')::float) * 1024 AS total_data_mb,
+    SUM(i.charged_value)::float AS total_cost
+  ${fromSql}
+  ORDER BY total_data_mb DESC
+  LIMIT :limit OFFSET :offset
+`, { replacements: { workspaceId, dueDate, like, limit: PAGE_SIZE, offset } });
 
-      const [[{ count, grand_total_gb, grand_total_cost }]] = await sequelize.query(`
-        SELECT
-          COUNT(*)::int AS count,
-          COALESCE(SUM(t.total_gb), 0) AS grand_total_gb,
-          COALESCE(SUM(t.total_cost), 0) AS grand_total_cost
-        FROM (SELECT SUM(i.quantity) AS total_gb, SUM(i.charged_value) AS total_cost ${fromSql}) t
-      `, { replacements: { workspaceId, dueDate, like } });
+        const [[{ count, grand_total_mb, grand_total_cost }]] = await sequelize.query(`
+          SELECT
+            COUNT(*)::int AS count,
+            COALESCE(SUM(t.total_mb), 0) AS grand_total_mb,
+            COALESCE(SUM(t.total_cost), 0) AS grand_total_cost
+          FROM (SELECT SUM(regexp_replace(i.quantity::text, '[^0-9.]', '', 'g')::float) * 1024 AS total_mb, SUM(i.charged_value) AS total_cost ${fromSql}) t
+        `, { replacements: { workspaceId, dueDate, like } });
 
-      return res.json({
-        items: rows.map(r => ({
-          phoneNumber: r.phone_number,
-          responsibleName: r.responsible_name,
-          costCenterCode: r.cc_code || '',
-          costCenterName: r.cc_name,
-          totalDataGb: parseFloat(r.total_data_gb || 0),
-          totalCost: parseFloat(r.total_cost || 0),
-        })),
-        total: count,
-        grandTotalGb: parseFloat(grand_total_gb || 0),
-        grandTotalCost: parseFloat(grand_total_cost || 0),
-        hasMore: offset + rows.length < count,
-      });
+       return res.json({
+         items: rows.map(r => ({
+           responsavel: r.responsible_name || '',
+           numeroTelefone: r.phone_number || '',
+           consumo: parseFloat(r.total_data_mb || 0)
+         })),
+         total: count,
+         grandTotalConsumo: parseFloat(grand_total_mb || 0),
+         hasMore: offset + rows.length < count,
+       });
     } catch (error) {
       console.error('DataConsumption Report Error:', error);
       return res.status(500).json({ error: 'Error generating data consumption report' });
