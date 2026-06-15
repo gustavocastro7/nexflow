@@ -10,7 +10,7 @@ routes.use(authMiddleware);
  * @swagger
  * /security/{userId}:
  *   get:
- *     summary: Busca as configurações de segurança do usuário
+ *     summary: Retrieves user security settings
  *     tags: [Security]
  *     security:
  *       - bearerAuth: []
@@ -22,7 +22,7 @@ routes.use(authMiddleware);
  *           type: string
  *     responses:
  *       200:
- *         description: Configurações retornadas com sucesso
+ *         description: Settings returned successfully
  */
 routes.get('/:userId', UserSecurityController.show);
 
@@ -30,7 +30,7 @@ routes.get('/:userId', UserSecurityController.show);
  * @swagger
  * /security/{userId}:
  *   put:
- *     summary: Atualiza as configurações de segurança do usuário
+ *     summary: Updates user security settings
  *     tags: [Security]
  *     security:
  *       - bearerAuth: []
@@ -53,7 +53,7 @@ routes.get('/:userId', UserSecurityController.show);
  *                 type: boolean
  *     responses:
  *       200:
- *         description: Configurações atualizadas com sucesso
+ *         description: Settings updated successfully
  */
 routes.put('/:userId', UserSecurityController.update);
 
@@ -61,7 +61,7 @@ routes.put('/:userId', UserSecurityController.update);
  * @swagger
  * /security/{userId}/check:
  *   get:
- *     summary: Verifica se o usuário tem configurações de segurança
+ *     summary: Checks if the user has security settings
  *     tags: [Security]
  *     security:
  *       - bearerAuth: []
@@ -73,7 +73,7 @@ routes.put('/:userId', UserSecurityController.update);
  *           type: string
  *     responses:
  *       200:
- *         description: Resultado da verificação
+ *         description: Verification result
  */
 routes.get('/:userId/check', UserSecurityController.checkConfigured);
 

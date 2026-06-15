@@ -8,19 +8,19 @@ const routes = Router();
  * @swagger
  * /user/config:
  *   get:
- *     summary: Obtém a configuração do usuário logado
+ *     summary: Gets the configuration of the logged-in user
  *     tags: [UserConfig]
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Configuração do usuário retornada com sucesso
+ *         description: User configuration returned successfully
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/UserConfig'
  *       401:
- *         description: Não autorizado
+ *         description: Unauthorized
  *       500:
  *         description: Erro interno do servidor
  */
@@ -30,7 +30,7 @@ routes.get('/', authMiddleware, UserConfigController.getConfig);
  * @swagger
  * /user/config:
  *   put:
- *     summary: Atualiza a configuração do usuário logado
+ *     summary: Updates the configuration of the logged-in user
  *     tags: [UserConfig]
  *     security:
  *       - bearerAuth: []
@@ -54,15 +54,15 @@ routes.get('/', authMiddleware, UserConfigController.getConfig);
  *                 enum: ['always_open', 'hover', 'collapsible']
  *     responses:
  *       200:
- *         description: Configuração do usuário atualizada com sucesso
+ *         description: User configuration updated successfully
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/UserConfig'
  *       400:
- *         description: Requisição inválida
+ *         description: Invalid request
  *       401:
- *         description: Não autorizado
+ *         description: Unauthorized
  *       500:
  *         description: Erro interno do servidor
  */

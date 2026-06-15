@@ -12,7 +12,8 @@ import {
   List,
   ListItem,
   ListItemText,
-  ListItemIcon
+  ListItemIcon,
+  ListItemSecondaryAction
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
@@ -56,8 +57,9 @@ interface DashboardData {
   };
   charts: {
     costsByDepartment: Array<{ name: string, total: number }>;
-    monthlyTrends: Array<{ month: string, data_gb: number, voice_min: number, total_spent: number }>;
+    monthlyTrends: Array<{ month: string, data_mb: number, voice_min: number, total_spent: number }>;
     expensiveLines: Array<{ phone: string, total: number }>;
+    topDataLines: Array<{ phone: string, responsible: string, total_mb: number }>;
   };
   opportunities: Array<{ type: string, description: string, impact: number }>;
   errors: Array<{ type: string, description: string, count: number }>;
@@ -139,7 +141,7 @@ const DashboardPage: React.FC = () => {
           <Grid size={{ xs: 12, md: 8 }}>
             <Stack direction="row" spacing={2} justifyContent="flex-end">
               {[
-                { label: 'Dados', value: `${data?.summary.dataUsage.toFixed(1)} GB`, color: '#f1f5f9' },
+                { label: 'Dados', value: `${(data?.summary?.dataUsage ?? 0).toFixed(1)} MB`, color: '#f1f5f9' },
                 { label: 'SMS', value: data?.summary.smsUsage, color: '#f1f5f9' },
               ].map((item, i) => (
                 <Box key={i} sx={{ bgcolor: item.color, px: 3, py: 1.5, borderRadius: 2, textAlign: 'center', minWidth: 120 }}>
@@ -180,7 +182,7 @@ const DashboardPage: React.FC = () => {
         <Grid size={{ xs: 12, md: 4 }}>
           <Card sx={{ height: '100%', borderRadius: 3, boxShadow: 'none', border: '1px solid #e2e8f0' }}>
             <CardContent>
-              <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>Consumo de Dados (GB)</Typography>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>Consumo de Dados (MB)</Typography>
               <Box sx={{ height: 250 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={data?.charts.monthlyTrends} margin={{ left: -20, right: 10 }}>
@@ -188,7 +190,7 @@ const DashboardPage: React.FC = () => {
                     <XAxis dataKey="month" axisLine={false} tickLine={false} style={{ fontSize: '12px' }} />
                     <YAxis axisLine={false} tickLine={false} style={{ fontSize: '12px' }} />
                     <Tooltip cursor={{ fill: '#f8fafc' }} />
-                    <Bar dataKey="data_gb" fill="#3B82F6" radius={[4, 4, 0, 0]} barSize={30} />
+                    <Bar dataKey="data_mb" fill="#3B82F6" radius={[4, 4, 0, 0]} barSize={30} />
                   </BarChart>
                 </ResponsiveContainer>
               </Box>
@@ -218,6 +220,27 @@ const DashboardPage: React.FC = () => {
         <Grid size={{ xs: 12, md: 4 }}>
           <Card sx={{ height: '100%', borderRadius: 3, boxShadow: 'none', border: '1px solid #e2e8f0' }}>
             <CardContent>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>Maior Consumo de Dados (MB)</Typography>
+              <List disablePadding>
+                {data?.charts.topDataLines.map((line, i) => (
+                  <ListItem key={i} divider={i < 4} sx={{ px: 0, py: 1.5 }}>
+                    <ListItemText 
+                      primary={line.phone}
+                      secondary={line.responsible}
+                      primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem' }}
+                      secondaryTypographyProps={{ fontSize: '0.75rem', color: '#64748b' }}
+                    />
+                    <Typography sx={{ fontWeight: 800, color: '#3B82F6' }}>{(line.total_mb ?? 0).toFixed(2)} MB</Typography>
+                  </ListItem>
+                ))}
+              </List>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid size={{ xs: 12, md: 4 }}>
+          <Card sx={{ height: '100%', borderRadius: 3, boxShadow: 'none', border: '1px solid #e2e8f0' }}>
+            <CardContent>
               <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>Comparativo com Contrato</Typography>
               <Box sx={{ overflowX: 'auto' }}>
                 <Box component="table" sx={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -231,11 +254,11 @@ const DashboardPage: React.FC = () => {
                     <Box component="tr">
                       <Box component="td" sx={{ p: 1.5, borderBottom: '1px solid #f1f5f9' }}>
                         <Typography variant="body2" sx={{ color: '#64748b' }}>Franquia de Dados:</Typography>
-                        <Typography variant="body1" sx={{ fontWeight: 700 }}>600 GB</Typography>
+                        <Typography variant="body1" sx={{ fontWeight: 700 }}>600 MB</Typography>
                       </Box>
                       <Box component="td" sx={{ p: 1.5, borderBottom: '1px solid #f1f5f9' }}>
                         <Typography variant="body2" sx={{ color: '#64748b' }}>Consumo:</Typography>
-                        <Typography variant="body1" sx={{ fontWeight: 700, color: '#dc2626' }}>{data?.summary.dataUsage.toFixed(0)} GB</Typography>
+                        <Typography variant="body1" sx={{ fontWeight: 700, color: '#dc2626' }}>{(data?.summary?.dataUsage ?? 0).toFixed(0)} MB</Typography>
                       </Box>
                     </Box>
                     <Box component="tr">

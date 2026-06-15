@@ -1,99 +1,99 @@
 # Nexflow Project
 
-Plataforma SaaS com multi‑tenancy por schema.
+SaaS platform with multi-tenancy by schema.
 
-## Configurações de Banco de Dados
+## Database Configurations
 
 ### PostgreSQL
-*   **Conexão:** `postgresql://nexflow_user:nexflow_password@localhost:5432/nexflow_db`
+*   **Connection:** `postgresql://nexflow_user:nexflow_password@localhost:5432/nexflow_db`
 *   **Host:** `localhost`
-*   **Porta:** `5432`
-*   **Usuário:** `nexflow_user`
-*   **Senha:** `nexflow_password`
+*   **Port:** `5432`
+*   **User:** `nexflow_user`
+*   **Password:** `nexflow_password`
 *   **Database:** `nexflow_db`
 
-### Interface de Gerenciamento (pgAdmin)
+### Management Interface (pgAdmin)
 *   **URL:** `http://localhost:5050`
-*   **Usuário:** `admin@nexflow.com`
-*   **Senha:** `admin_password`
+*   **User:** `admin@nexflow.com`
+*   **Password:** `admin_password`
 
 ### MongoDB
-*   **Conexão:** `mongodb://localhost:27017/nexflow_logs`
+*   **Connection:** `mongodb://localhost:27017/nexflow_logs`
 *   **Host:** `localhost`
-*   **Porta:** `27017`
+*   **Port:** `27017`
 *   **Database:** `nexflow_logs`
-*   **Senha:** (Sem senha configurada no ambiente de debug)
+*   **Password:** (No password configured in the debug environment)
 
-## Logotipo do Cliente (Workspace)
+## Customer Logo (Workspace)
 
-Cada workspace (cliente) pode ter um logotipo personalizado, exibido na barra lateral do sistema.
+Each workspace (customer) can have a custom logo, displayed on the system sidebar.
 
-- **Upload**: Ao criar ou editar um workspace (menu Admin > Workspaces), há um campo "Logo" que aceita imagens via upload.
-- **Armazenamento**: A imagem é convertida para base64 e armazenada diretamente no banco de dados (coluna `logo` da tabela `workspaces`).
-- **Exibição**: O logotipo do workspace ativo é exibido no topo da barra lateral. Se o workspace não tiver logotipo, a imagem padrão (`/logo.jpg`) é usada.
-- **Remoção**: É possível remover o logotipo a qualquer momento na edição do workspace.
+- **Upload**: When creating or editing a workspace (menu Admin > Workspaces), there is a "Logo" field that accepts image uploads.
+- **Storage**: The image is converted to base64 and stored directly in the database (`logo` column of the `workspaces` table).
+- **Display**: The active workspace logo is displayed at the top of the sidebar. If the workspace does not have a logo, the default image (`/logo.jpg`) is used.
+- **Removal**: It is possible to remove the logo at any time when editing the workspace.
 
-## Portas do Sistema
+## System Ports
 *   **Backend:** `3000` (API & Swagger)
 *   **Frontend:** `8080` (Vite Dev Server)
 *   **PostgreSQL:** `5432`
 *   **MongoDB:** `27017`
 *   **pgAdmin:** `5050`
 
-## Estrutura do Projeto
+## Project Structure
 
-- `/backend`: API REST em Node.js com Express e Sequelize.
-- `/frontend`: SPA em React com Vite, TypeScript e Material UI.
-- `/backups`: Diretório onde são salvos os backups diários do banco de dados.
-- `docker-compose.yml`: Orquestração para PostgreSQL, MongoDB e pgAdmin.
+- `/backend`: REST API in Node.js with Express and Sequelize.
+- `/frontend`: SPA in React with Vite, TypeScript and Material UI.
+- `/backups`: Directory where daily database backups are saved.
+- `docker-compose.yml`: Orchestration for PostgreSQL, MongoDB and pgAdmin.
 
-## Como Iniciar o Ambiente Unificado
+## How to Start the Unified Environment
 
-Para iniciar todo o ecossistema (Bancos de Dados via Docker, Backend e Frontend) em um único terminal, utilize o arquivo:
+To start the entire ecosystem (Databases via Docker, Backend and Frontend) in a single terminal, use the file:
 
 ```bash
 .\start_all.bat
 ```
 
-Este script irá:
-1. Subir os containers do PostgreSQL, MongoDB e pgAdmin via Docker Compose.
-2. Instalar as dependências do `backend` e `frontend` (caso não existam).
-3. Iniciar o servidor do Backend em `http://localhost:3000`.
-4. Iniciar o servidor do Frontend em `http://localhost:8080`.
-5. Manter todos os logs no mesmo terminal.
+This script will:
+1. Start PostgreSQL, MongoDB and pgAdmin containers via Docker Compose.
+2. Install `backend` and `frontend` dependencies (if they don't exist).
+3. Start the Backend server at `http://localhost:3000`.
+4. Start the Frontend server at `http://localhost:8080`.
+5. Keep all logs in the same terminal.
 
-## Ferramentas de Relatórios (Novidade)
+## Reporting Tools (New)
 
-Os relatórios do sistema foram atualizados para garantir 100% de visibilidade dos dados:
-- **Phone Lines Report**: Agora mostra **todos** os números de telefone encontrados nas faturas importadas, mesmo aqueles que ainda não foram cadastrados no sistema.
-- **Identificação Automática**: Utiliza o campo `original_user` da fatura como "Nome de Origem" quando não há um responsável associado manualmente.
-- **Centro de Custo Padrão (Matriz)**: Todo novo workspace agora vem com um centro de custo padrão chamado "Matriz".
-- **Auto-associação**: Ao importar faturas, qualquer número de telefone novo é automaticamente cadastrado e associado ao centro de custo "Matriz" do workspace correspondente.
-- **Dashboard Stats**: Estatísticas precisas separadas por operadora (Claro/Vivo) e faturas TXT.
+System reports have been updated to ensure 100% data visibility:
+- **Phone Lines Report**: Now shows **all** phone numbers found in imported invoices, even those that have not yet been registered in the system.
+- **Automatic Identification**: Uses the `original_user` field from the invoice as "Source Name" when there is no manually associated responsible party.
+- **Default Cost Center (Headquarters)**: Every new workspace now comes with a default cost center called "Headquarters".
+- **Auto-association**: When importing invoices, any new phone number is automatically registered and associated with the workspace's "Headquarters" cost center.
+- **Dashboard Stats**: Precise statistics separated by operator (Claro/Vivo) and TXT invoices.
 
-## Ferramentas de Manutenção e Teste
+## Maintenance and Testing Tools
 
-### Testes de API e Banco de Dados
-Localizadas em `backend/tools/`:
+### API and Database Tests
+Located in `backend/tools/`:
 - **Database Check**: `node backend/tools/db-check.js`
-  - Verifica a conexão e compara a quantidade de linhas cadastradas vs. linhas encontradas nas faturas.
+  - Verifies connection and compares the quantity of registered lines vs. lines found in invoices.
 - **API Tester**: `node backend/tools/api-tester.js`
-  - Testa as rotas de login, workspaces e geração de relatórios. (Requer servidor ligado).
+  - Tests login, workspace and report generation routes. (Requires server to be running).
 
-### Backup Automático Diário
-Sistema de backup inteligente baseado em Docker (não requer pg_dump instalado no Windows):
-- **Backup Manual**: Execute `.\run_backup.bat` na raiz do projeto.
-- **Configuração de Tarefa Diária**: 
-  1. Clique com o botão direito em `.\setup_backup.bat`.
-  2. Selecione **"Executar como Administrador"**.
-  3. Uma tarefa chamada "NexflowDailyBackup" será criada no Agendador de Tarefas do Windows para rodar todo dia às 03:00.
-- **Recursos**:
-  - Garante que o container Docker do banco está ligado antes do backup.
-  - Limpeza automática: Mantém apenas os **últimos 7 dias** de backup na pasta `/backups`.
+### Daily Automatic Backup
+Intelligent backup system based on Docker (does not require pg_dump installed on Windows):
+- **Manual Backup**: Run `.\run_backup.bat` in the project root.
+- **Daily Task Setup**: 
+  1. Right-click on `.\setup_backup.bat`.
+  2. Select **"Run as Administrator"**.
+  3. A task called "NexflowDailyBackup" will be created in the Windows Task Scheduler to run every day at 03:00.
+- **Features**:
+  - Ensures the database Docker container is running before backup.
+  - Automatic cleanup: Keeps only the **last 7 days** of backups in the `/backups` folder.
 
-## Seed de Dados (Teleen Consultoria)
+## Data Seed (Teleen Consultoria)
 
-Para popular o banco com dados de teste específicos para a Teleen Consultoria (incluindo importação do Mongo para o Postgres), execute:
+To populate the database with test data specific to Teleen Consultoria (including Mongo to Postgres import), run:
 
 ```bash
 node backend/seed_teleen_full.js

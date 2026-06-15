@@ -73,7 +73,7 @@ class ReportController {
       // Costs by Department (Cost Center)
       const [costsByCC] = await sequelize.query(`
         SELECT 
-          COALESCE(cc.name, 'Não Alocado') as name,
+          COALESCE(cc.name, 'Unallocated') as name,
           SUM(i.charged_value)::float as total
         FROM invoices i
         LEFT JOIN phone_lines pl ON pl.phone_number = i.source_phone AND pl.workspace_id = i.workspace_id
@@ -117,6 +117,31 @@ class ReportController {
         LIMIT 5
       `, { replacements: { workspaceId } });
 
+      // Top Data Consumption Lines (current month)
+      let topDataLines = [];
+      try {
+        const result = await sequelize.query(`
+          SELECT 
+            i.source_phone as phone,
+            COALESCE(coll.name, pl.responsible_name, i.original_user, '') as responsible,
+            SUM(regexp_replace(i.quantity::text, '[^0-9.]', '', 'g')::float) / 1024 as total_gb
+          FROM invoices i
+          JOIN raw_invoices ri ON ri.id = i.raw_invoice_id
+          LEFT JOIN phone_lines pl ON pl.phone_number = i.source_phone AND pl.workspace_id = i.workspace_id
+          LEFT JOIN collaborators coll ON coll.id = pl.collaborator_id
+          WHERE i.workspace_id = :workspaceId
+            AND (i.section ILIKE '%INTERNET (MB)%' OR i.sub_section ILIKE '%INTERNET (MB)%' OR i.description ILIKE '%INTERNET (MB)%')
+            AND ri.due_date = (SELECT MAX(due_date) FROM raw_invoices WHERE workspace_id = :workspaceId)
+          GROUP BY i.source_phone, coll.name, pl.responsible_name, i.original_user
+          ORDER BY total_gb DESC
+          LIMIT 5
+        `, { replacements: { workspaceId } });
+        topDataLines = result[0] || [];
+      } catch (e) {
+        console.error('TopDataLines error:', e);
+        topDataLines = [];
+      }
+
       // Savings Opportunities (Mock logic)
       const [idleLines] = await sequelize.query(`
         SELECT source_phone
@@ -129,8 +154,8 @@ class ReportController {
 
       // Detected Errors (Enhanced Phase 3)
       const auditKeywords = {
-        errors: ['%DUPLICADO%', '%ERRO%', '%MULTA%', '%JUROS%', '%NÃO CONTRATADO%', '%PENALIDADE%', '%COBRANÇA INDEVIDA%', '%VALOR RETIDO%'],
-        excess: ['%EXCEDENTE%', '%ADICIONAL%', '%EXTRA%', '%AVULSO%', '%FORA DO PACOTE%', '%PAGAMENTO POR USO%', '%EXCEDO%']
+        errors: ['%DUPLICATED%', '%ERROR%', '%FINE%', '%INTEREST%', '%NOT CONTRACTED%', '%PENALTY%', '%UNDUE CHARGE%', '%WITHHELD VALUE%'],
+        excess: ['%EXCESS%', '%ADDITIONAL%', '%EXTRA%', '%AVULSO%', '%OUT OF PACKAGE%', '%USAGE PAYMENT%', '%EXCESS%']
       };
 
       const [detectedErrors] = await sequelize.query(`
@@ -176,11 +201,28 @@ class ReportController {
         ? ((currentMonth.total_spent - previousMonth.total_spent) / previousMonth.total_spent) * 100 
         : 0;
 
+      // Calculate correct total data usage for current month using same logic as data-consumption report
+      let total_data_gb = 0;
+      try {
+        const [[{ total_data_gb: result }]] = await sequelize.query(`
+          SELECT COALESCE(SUM(regexp_replace(i.quantity::text, '[^0-9.]', '', 'g')::float) / 1024, 0) as total_data_gb
+          FROM invoices i
+          JOIN raw_invoices ri ON ri.id = i.raw_invoice_id
+          WHERE i.workspace_id = :workspaceId
+            AND (i.section ILIKE '%INTERNET (MB)%' OR i.sub_section ILIKE '%INTERNET (MB)%' OR i.description ILIKE '%INTERNET (MB)%')
+            AND ri.due_date = (SELECT MAX(due_date) FROM raw_invoices WHERE workspace_id = :workspaceId)
+        `, { replacements: { workspaceId } });
+        total_data_gb = result || 0;
+      } catch (e) {
+        console.error('Total data GB error:', e);
+        total_data_gb = 0;
+      }
+
       return res.json({
         summary: {
           totalSpent,
           trend: parseFloat(trend.toFixed(2)),
-          dataUsage: currentMonth.data_gb,
+          dataUsage: parseFloat(total_data_gb || 0),
           voiceUsage: currentMonth.voice_min,
           smsUsage: currentMonth.sms_count,
         },
@@ -204,10 +246,11 @@ class ReportController {
           costsByDepartment: costsByCC,
           monthlyTrends: monthlyTrends.reverse(), // Chronological
           expensiveLines,
+          topDataLines: topDataLines.map(l => ({ phone: l.phone, responsible: l.responsible, total_gb: parseFloat(l.total_gb || 0) })),
         },
         opportunities: [
-          { type: 'idle_lines', description: 'Linhas com baixo uso detectadas', impact: idleLines.length * 50 },
-          { type: 'plan_optimization', description: 'Migração de plano sugerida', impact: totalSpent * 0.05 }
+          { type: 'idle_lines', description: 'Low usage lines detected', impact: idleLines.length * 50 },
+          { type: 'plan_optimization', description: 'Suggested plan migration', impact: totalSpent * 0.05 }
         ],
         errors: errorList.map(e => ({
           type: 'billing_error',
@@ -683,7 +726,7 @@ class ReportController {
        const whereSql = `
   WHERE i.workspace_id = :workspaceId
     ${dueDate ? "AND ri.due_date = :dueDate" : ""}
-    AND (i.section ILIKE '%INTERNET (MB)%' OR i.description ILIKE '%INTERNET (MB)%')
+    AND (i.section ILIKE '%INTERNET (MB)%' OR i.sub_section ILIKE '%INTERNET (MB)%' OR i.description ILIKE '%INTERNET (MB)%')
     ${like ? "AND (i.source_phone ILIKE :like OR coll.name ILIKE :like OR pl.responsible_name ILIKE :like OR cc.code ILIKE :like OR cc.name ILIKE :like)" : ""}
 `;
 
@@ -703,29 +746,29 @@ class ReportController {
     COALESCE(coll.name, pl.responsible_name, i.original_user, '') AS responsible_name,
     cc.code AS cc_code,
     COALESCE(cc.name, 'Unallocated') AS cc_name,
-    SUM(regexp_replace(i.quantity::text, '[^0-9.]', '', 'g')::float) * 1024 AS total_data_mb,
-    SUM(i.charged_value)::float AS total_cost
+    SUM(regexp_replace(i.quantity::text, '[^0-9.]', '', 'g')::float) / 1024 AS total_data_gb
   ${fromSql}
-  ORDER BY total_data_mb DESC
+  ORDER BY total_data_gb DESC
   LIMIT :limit OFFSET :offset
 `, { replacements: { workspaceId, dueDate, like, limit: PAGE_SIZE, offset } });
 
-        const [[{ count, grand_total_mb, grand_total_cost }]] = await sequelize.query(`
+        const [[{ count, grand_total_gb }]] = await sequelize.query(`
           SELECT
             COUNT(*)::int AS count,
-            COALESCE(SUM(t.total_mb), 0) AS grand_total_mb,
-            COALESCE(SUM(t.total_cost), 0) AS grand_total_cost
-          FROM (SELECT SUM(regexp_replace(i.quantity::text, '[^0-9.]', '', 'g')::float) * 1024 AS total_mb, SUM(i.charged_value) AS total_cost ${fromSql}) t
+            COALESCE(SUM(t.total_gb), 0) AS grand_total_gb
+          FROM (SELECT SUM(regexp_replace(i.quantity::text, '[^0-9.]', '', 'g')::float) / 1024 AS total_gb ${fromSql}) t
         `, { replacements: { workspaceId, dueDate, like } });
 
        return res.json({
          items: rows.map(r => ({
-           responsavel: r.responsible_name || '',
-           numeroTelefone: r.phone_number || '',
-           consumo: parseFloat(r.total_data_mb || 0)
+           responsibleName: r.responsible_name || '',
+           phoneNumber: r.phone_number || '',
+           totalDataGb: parseFloat(r.total_data_gb || 0),
+           costCenterCode: r.cc_code || '',
+           costCenterName: r.cc_name || 'Unallocated'
          })),
          total: count,
-         grandTotalConsumo: parseFloat(grand_total_mb || 0),
+         grandTotalGb: parseFloat(grand_total_gb || 0),
          hasMore: offset + rows.length < count,
        });
     } catch (error) {
@@ -784,6 +827,22 @@ class ReportController {
     } catch (error) {
       console.error('ReferenceMonths Error:', error);
       return res.status(500).json({ error: 'Error fetching reference months' });
+    }
+  }
+
+  async exportGenericCSV(req, res) {
+    try {
+      const { workspaceId, type, dueDate, search } = req.query;
+      if (!workspaceId || !type) {
+        return res.status(400).json({ error: 'Missing required parameters' });
+      }
+
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename=report_${type}.csv`);
+      res.status(200).send('Data;Value\nReportData;Placeholder');
+    } catch (error) {
+      console.error('CSV Export Error:', error);
+      res.status(500).json({ error: 'Error generating CSV' });
     }
   }
 }

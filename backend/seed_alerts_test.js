@@ -5,53 +5,53 @@ const Workspace = require('./src/models/Workspace');
 
 async function seedAlerts() {
   try {
-    console.log('🚀 Iniciando inserção de dados para teste de alertas...');
+    console.log('🚀 Starting data insertion for alerts test...');
     
-    // 1. Localizar o workspace da Teleen
+    // 1. Locate Teleen workspace
     const ws = await Workspace.findOne({ where: { schema_name: 'teleen_consultoria' } });
     if (!ws) {
-      console.error('❌ Workspace Teleen não encontrado. Rode o seeder principal primeiro.');
+      console.error('❌ Teleen workspace not found. Run the main seeder first.');
       return;
     }
 
-    // 2. Criar uma "fatura mestre" de teste
+    // 2. Create a test "master invoice"
     const [rawInvoice] = await RawInvoice.findOrCreate({
       where: { workspace_id: ws.id, hash: 'test_alerts_v1' },
       defaults: {
         operator: 'claro',
-        processing_status: 'processado',
-        content: { info: 'Teste de Auditoria' },
+        processing_status: 'processed',
+        content: { info: 'Audit Test' },
         due_date: '2025-05-10'
       }
     });
 
     const today = new Date().toISOString().split('T')[0];
 
-    // 3. Inserir itens que disparam a auditoria
+    // 3. Insert items that trigger audit
     const testItems = [
       {
-        description: 'EXCEDENTE DE DADOS 5GB',
+        description: 'DATA SURPLUS 5GB',
         charged_value: 85.00,
-        section: 'DADOS',
-        sub_section: 'EXCEDENTE'
+        section: 'DATA',
+        sub_section: 'SURPLUS'
       },
       {
-        description: 'FORA DO PACOTE - ROAMING INTERNACIONAL',
+        description: 'OUT OF PACKAGE - INTERNATIONAL ROAMING',
         charged_value: 120.50,
-        section: 'DADOS',
-        sub_section: 'INTERNACIONAL'
+        section: 'DATA',
+        sub_section: 'INTERNATIONAL'
       },
       {
-        description: 'MULTA POR ATRASO - REF 03/2025',
+        description: 'LATE FEE - REF 03/2025',
         charged_value: 12.45,
-        section: 'ENCARGOS',
-        sub_section: 'MULTAS'
+        section: 'CHARGES',
+        sub_section: 'FINES'
       },
       {
-        description: 'SERVIÇO NÃO CONTRATADO - TV DIGITAL',
+        description: 'NON-CONTRACTED SERVICE - DIGITAL TV',
         charged_value: 49.90,
-        section: 'OUTROS',
-        sub_section: 'ERROS'
+        section: 'OTHERS',
+        sub_section: 'ERRORS'
       }
     ];
 
@@ -71,10 +71,10 @@ async function seedAlerts() {
       });
     }
 
-    console.log('✅ Dados de teste inseridos com sucesso!');
-    console.log('📊 Itens de Excedente: R$ 205.50');
-    console.log('⚠️ Itens de Erro/Multa: R$ 62.35');
-    console.log('\nAtualize o Dashboard em http://localhost:8085/ para ver os alertas.');
+    console.log('✅ Test data inserted successfully!');
+    console.log('📊 Surplus Items: R$ 205.50');
+    console.log('⚠️ Error/Fine Items: R$ 62.35');
+    console.log('\nRefresh the Dashboard at http://localhost:8085/ to see the alerts.');
 
   } catch (error) {
     console.error('❌ Erro ao inserir dados:', error);

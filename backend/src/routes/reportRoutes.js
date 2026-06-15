@@ -86,5 +86,13 @@ routes.get('/due-dates', ReportController.getDueDates);
  */
 routes.get('/reference-months', ReportController.getReferenceMonths);
 
+/**
+ * @swagger
+ * /reports/export-csv:
+ *   get:
+ *     summary: Export report as CSV
+ */
+routes.get('/export-csv', ReportController.exportGenericCSV);
+
 module.exports = routes;
 

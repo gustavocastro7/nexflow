@@ -28,7 +28,7 @@ class InvoiceController {
       const { workspaceId } = req.query;
 
       if (!workspaceId) {
-        return res.status(400).json({ error: 'Workspace ID é obrigatório' });
+        return res.status(400).json({ error: 'Workspace ID is required' });
       }
 
       const rawInvoice = await RawInvoice.findOne({
@@ -36,7 +36,7 @@ class InvoiceController {
       });
 
       if (!rawInvoice) {
-        return res.status(404).json({ error: 'Fatura não encontrada' });
+        return res.status(404).json({ error: 'Invoice not found' });
       }
 
       const operator = rawInvoice.operator;
@@ -60,17 +60,17 @@ class InvoiceController {
         payload: { operator, due_date: dueDate }
       });
 
-      return res.json({ message: 'Fatura e itens removidos com sucesso' });
+      return res.json({ message: 'Invoice and items removed successfully' });
     } catch (error) {
       console.error(error);
-      return res.status(500).json({ error: 'Erro ao remover fatura' });
+      return res.status(500).json({ error: 'Error removing invoice' });
     }
   }
 
   async listRawInvoices(req, res) {
     try {
       const { workspaceId, dueDate } = req.query;
-      if (!workspaceId) return res.status(400).json({ error: 'Workspace ID é obrigatório' });
+      if (!workspaceId) return res.status(400).json({ error: 'Workspace ID is required' });
 
       const where = { workspace_id: workspaceId };
       if (dueDate === 'NO_DATE') {
@@ -88,7 +88,7 @@ class InvoiceController {
       return res.json(raws);
     } catch (error) {
       console.error(error);
-      return res.status(500).json({ error: 'Erro ao listar faturas importadas' });
+      return res.status(500).json({ error: 'Error listing imported invoices' });
     }
   }
 
@@ -118,7 +118,7 @@ class InvoiceController {
         defaults: {
           code: 'MATRIZ',
           name: 'Matriz',
-          description: 'Centro de Custo Padrão',
+          description: 'Default Cost Center',
           workspace_id: workspaceId
         }
       });
@@ -130,43 +130,43 @@ class InvoiceController {
       phone_number: phoneNumber,
       cost_center_id: targetCostCenterId,
       workspace_id: workspaceId,
-      responsible_name: 'Novo Número (Auto)'
+      responsible_name: 'New Number (Auto)'
     });
   }
 
   _validateDate(dateStr) {
-    if (!dateStr || typeof dateStr !== 'string') return 'Data vazia ou inválida';
+    if (!dateStr || typeof dateStr !== 'string') return 'Empty or invalid date';
     const parts = dateStr.split('/');
-    if (parts.length !== 3) return 'Formato de data inválido (esperado dd/mm/aaaa)';
+    if (parts.length !== 3) return 'Invalid date format (expected dd/mm/yyyy)';
     const [d, m, y] = parts.map(Number);
-    if (!d || !m || !y || d < 1 || d > 31 || m < 1 || m > 12) return 'Data inválida';
+    if (!d || !m || !y || d < 1 || d > 31 || m < 1 || m > 12) return 'Invalid date';
     return null;
   }
 
   _validatePhone(phone) {
-    if (!phone || phone.trim() === '') return 'Telefone de origem vazio';
+    if (!phone || phone.trim() === '') return 'Empty source phone';
     return null;
   }
 
   _validateNumber(val, label) {
-    if (val === undefined || val === null || val === '') return `${label} vazio`;
+    if (val === undefined || val === null || val === '') return `${label} is empty`;
     const num = typeof val === 'string' ? parseFloat(val.replace(',', '.').replace(/\./g, '')) : val;
-    if (isNaN(num)) return `${label} não é um número válido`;
+    if (isNaN(num)) return `${label} is not a valid number`;
     return null;
   }
 
   _validateClaroTXTLine(parts, lineIndex) {
     const errors = [];
     if (parts.length < 10) {
-      errors.push(`Linha ${lineIndex}: poucos campos (${parts.length}, esperado >= 10)`);
+      errors.push(`Line ${lineIndex}: too few fields (${parts.length}, expected >= 10)`);
       return errors;
     }
     const phoneErr = this._validatePhone(parts[0]);
-    if (phoneErr) errors.push(`Linha ${lineIndex}: ${phoneErr}`);
+    if (phoneErr) errors.push(`Line ${lineIndex}: ${phoneErr}`);
     const dateErr = parts[2] ? this._validateDate(parts[2]) : null;
-    if (dateErr) errors.push(`Linha ${lineIndex}: ${dateErr}`);
-    const valErr = this._validateNumber(parts[8], 'Valor total');
-    if (valErr) errors.push(`Linha ${lineIndex}: ${valErr}`);
+    if (dateErr) errors.push(`Line ${lineIndex}: ${dateErr}`);
+    const valErr = this._validateNumber(parts[8], 'Total value');
+    if (valErr) errors.push(`Line ${lineIndex}: ${valErr}`);
     return errors;
   }
 
@@ -174,15 +174,15 @@ class InvoiceController {
     const errors = [];
     if (!line.startsWith('30')) return errors;
     if (line.length < 107) {
-      errors.push(`Linha ${lineIndex}: linha muito curta (${line.length} caracteres, esperado >= 107)`);
+      errors.push(`Line ${lineIndex}: line too short (${line.length} characters, expected >= 107)`);
       return errors;
     }
     const phone = line.substring(2, 27).trim();
     const phoneErr = this._validatePhone(phone);
-    if (phoneErr) errors.push(`Linha ${lineIndex}: ${phoneErr}`);
+    if (phoneErr) errors.push(`Line ${lineIndex}: ${phoneErr}`);
     const valStr = line.substring(93, 106);
     if (valStr.trim() === '' || isNaN(parseFloat(valStr))) {
-      errors.push(`Linha ${lineIndex}: Valor total inválido`);
+      errors.push(`Line ${lineIndex}: Invalid total value`);
     }
     return errors;
   }
@@ -190,14 +190,14 @@ class InvoiceController {
   _validateVivoLine(parts, lineIndex) {
     const errors = [];
     if (parts.length < 7) {
-      errors.push(`Linha ${lineIndex}: poucos campos (${parts.length}, esperado >= 7)`);
+      errors.push(`Line ${lineIndex}: too few fields (${parts.length}, expected >= 7)`);
       return errors;
     }
     const phoneErr = this._validatePhone(parts[2]);
-    if (phoneErr) errors.push(`Linha ${lineIndex}: ${phoneErr}`);
+    if (phoneErr) errors.push(`Line ${lineIndex}: ${phoneErr}`);
     if (parts[0] && parts[0].includes('/')) {
       const dateErr = this._validateDate(parts[0]);
-      if (dateErr) errors.push(`Linha ${lineIndex}: ${dateErr}`);
+      if (dateErr) errors.push(`Line ${lineIndex}: ${dateErr}`);
     }
     return errors;
   }
@@ -360,37 +360,37 @@ class InvoiceController {
     
     let cleaned = content;
 
-    const mapping = [
-      { pattern: /Per\uFFFDo/g, replacement: 'Periodo' },
-      { pattern: /Refer\uFFFDncia/g, replacement: 'Referencia' },
-      { pattern: /N\uFFFD Cliente/g, replacement: 'No. Cliente' },
-      { pattern: /N\uFFFD/g, replacement: 'No.' },
-      { pattern: /Identifica\uFFFD\uFFFDo/g, replacement: 'Identificacao' },
-      { pattern: /d\uFFFDbito/g, replacement: 'debito' },
-      { pattern: /autom\uFFFDtico/g, replacement: 'automatico' },
-      { pattern: /Se\uFFFD\uFFFDo/g, replacement: 'Secao' },
-      { pattern: /Dura\uFFFD\uFFFDo/g, replacement: 'Duracao' },
-      { pattern: /Matr\uFFFDcula/g, replacement: 'Matricula' },
-      { pattern: /Descri\uFFFD\uFFFDo/g, replacement: 'Descricao' },
-      { pattern: /C\uFFFDdigo/g, replacement: 'Codigo' },
-      { pattern: /B\uFFFDnus/g, replacement: 'Bonus' },
-      { pattern: /Sinaliza\uFFFD\uFFFDo/g, replacement: 'Sinalizacao' },
-      { pattern: /N\uFFFDmero/g, replacement: 'Numero' },
-      { pattern: /Sub-Se\uFFFD\uFFFDo/g, replacement: 'Sub-Secao' },
-      { pattern: /Navega\uFFFD\uFFFDo/g, replacement: 'Navegacao' },
-      { pattern: /Padr\uFFFDo/g, replacement: 'Padrao' },
-      { pattern: /P\uFFFDs/g, replacement: 'Pos' },
-      { pattern: /Servi\uFFFDos/g, replacement: 'Servicos' },
-      { pattern: /Opera\uFFFD\uFFFDo/g, replacement: 'Operacao' },
-      { pattern: /Promo\uFFFD\uFFFDo/g, replacement: 'Promocao' }
+      const mapping = [
+      { pattern: /Periodo/g, replacement: 'Period' },
+      { pattern: /Referencia/g, replacement: 'Reference' },
+      { pattern: /No. Cliente/g, replacement: 'No. Customer' },
+      { pattern: /No./g, replacement: 'No.' },
+      { pattern: /Identificacao/g, replacement: 'Identification' },
+      { pattern: /debito/g, replacement: 'debit' },
+      { pattern: /automatico/g, replacement: 'automatic' },
+      { pattern: /Secao/g, replacement: 'Section' },
+      { pattern: /Duracao/g, replacement: 'Duration' },
+      { pattern: /Matricula/g, replacement: 'Registration' },
+      { pattern: /Descricao/g, replacement: 'Description' },
+      { pattern: /Codigo/g, replacement: 'Code' },
+      { pattern: /Bonus/g, replacement: 'Bonus' },
+      { pattern: /Sinalizacao/g, replacement: 'Signaling' },
+      { pattern: /Numero/g, replacement: 'Number' },
+      { pattern: /Sub-Secao/g, replacement: 'Sub-Section' },
+      { pattern: /Navegacao/g, replacement: 'Navigation' },
+      { pattern: /Padrao/g, replacement: 'Default' },
+      { pattern: /Pos/g, replacement: 'Post' },
+      { pattern: /Servicos/g, replacement: 'Services' },
+      { pattern: /Operacao/g, replacement: 'Operation' },
+      { pattern: /Promocao/g, replacement: 'Promotion' }
     ];
 
     mapping.forEach(item => {
       cleaned = cleaned.replace(item.pattern, item.replacement);
     });
 
-    // Final pass for any stray replacement characters that might have different patterns
-    cleaned = cleaned.replace(/\uFFFD/g, '');
+      // Final pass for any stray replacement characters that might have different patterns
+      cleaned = cleaned.replace(/[\uFFFD]/g, '');
 
     return cleaned;
   }
@@ -430,7 +430,7 @@ class InvoiceController {
       // Validate costCenterId if provided
       if (costCenterId) {
         const cc = await CostCenter.findOne({ where: { id: costCenterId, workspace_id: workspaceId } });
-        if (!cc) return res.status(400).json({ error: 'Centro de custo não encontrado neste workspace' });
+        if (!cc) return res.status(400).json({ error: 'Cost center not found in this workspace' });
       }
 
       const hash = crypto.createHash('md5').update(content).digest('hex');
@@ -442,7 +442,7 @@ class InvoiceController {
       const { items, invalidItems, processedPhones } = this._parseAndValidateClaro(content, workspaceId);
 
       if (items.length === 0) {
-        return res.status(400).json({ error: 'Nenhum registro válido encontrado para importar' });
+        return res.status(400).json({ error: 'No valid records found for import' });
       }
 
       const raw = await RawInvoice.create({
@@ -514,7 +514,7 @@ class InvoiceController {
 
       if (costCenterId) {
         const cc = await CostCenter.findOne({ where: { id: costCenterId, workspace_id: workspaceId } });
-        if (!cc) return res.status(400).json({ error: 'Centro de custo não encontrado neste workspace' });
+        if (!cc) return res.status(400).json({ error: 'Cost center not found in this workspace' });
       }
 
       const hash = crypto.createHash('md5').update(content).digest('hex');
@@ -526,7 +526,7 @@ class InvoiceController {
       const { items, invalidItems, processedPhones } = this._parseAndValidateVivo(content, workspaceId);
 
       if (items.length === 0) {
-        return res.status(400).json({ error: 'Nenhum registro válido encontrado para importar' });
+        return res.status(400).json({ error: 'No valid records found for import' });
       }
 
       const raw = await RawInvoice.create({
@@ -613,7 +613,7 @@ class InvoiceController {
 
       if (costCenterId) {
         const cc = await CostCenter.findOne({ where: { id: costCenterId, workspace_id: workspaceId } });
-        if (!cc) return res.status(400).json({ error: 'Centro de custo não encontrado neste workspace' });
+        if (!cc) return res.status(400).json({ error: 'Cost center not found in this workspace' });
       }
 
       const hash = crypto.createHash('md5').update(content).digest('hex');
@@ -624,14 +624,14 @@ class InvoiceController {
       const lines = content.split('\n').map(l => l.trim());
       const headerInfo = {};
       lines.forEach(line => {
-        if (line.includes('Data de Vencimento:')) {
-           const match = line.match(/Data de Vencimento:\s*([\d/]+)/);
+        if (line.includes('Due Date:')) {
+           const match = line.match(/Due Date:\s*([\d/]+)/);
            if (match) headerInfo.data_vencimento = match[1];
-           const valMatch = line.match(/Valor:\s*R\$\s*([\d.,]+)/);
+           const valMatch = line.match(/Value:\s*R\$\s*([\d.,]+)/);
            if (valMatch) headerInfo.valor_total = valMatch[1];
         }
-        if (line.includes('Cliente:')) {
-           const parts = line.split('Cliente:');
+        if (line.includes('Customer:')) {
+           const parts = line.split('Customer:');
            if (parts[1]) headerInfo.cliente = parts[1].trim();
         }
       });
@@ -645,7 +645,7 @@ class InvoiceController {
       const { items, invalidItems, processedPhones } = this._parseAndValidateClaroTXT(content, workspaceId);
 
       if (items.length === 0) {
-        return res.status(400).json({ error: 'Nenhum registro válido encontrado para importar' });
+        return res.status(400).json({ error: 'No valid records found for import' });
       }
 
       const raw = await RawInvoice.create({
@@ -695,7 +695,7 @@ class InvoiceController {
   async index(req, res) {
     try {
       const { workspaceId, operator, dueDate, page, limit, raw_invoice_id } = req.query;
-      if (!workspaceId) return res.status(400).json({ error: 'Workspace ID é obrigatório' });
+      if (!workspaceId) return res.status(400).json({ error: 'Workspace ID is required' });
 
       const where = { workspace_id: workspaceId };
       if (operator) where.operator = operator;

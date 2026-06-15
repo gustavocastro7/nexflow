@@ -57,7 +57,7 @@ echo.
 echo ==========================================
 echo DOCKER SYSTEMS RUNNING
 echo Backend:  http://localhost:3100
-echo Frontend: http://localhost:8087
+echo Frontend: http://localhost:8085
 echo ==========================================
 echo.
 echo Containers are running in detached mode.

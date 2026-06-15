@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import {
   Box, Typography, Paper, Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, IconButton, Alert, Stack, FormControl, Select,
@@ -50,8 +52,7 @@ interface DataConsumptionRow {
   responsibleName: string;
   costCenterCode: string;
   costCenterName: string;
-  totalDataGb: number;
-  totalCost: number;
+  totalDataMb: number;
 }
 
 interface LineDetailRow {
@@ -86,11 +87,11 @@ const REPORT_ENDPOINTS: Record<ReportType, string> = {
 };
 
 const REPORT_LABELS: Record<ReportType, string> = {
-  0: 'Linhas Telefônicas',
-  1: 'Consumo por Centro de Custo',
-  2: 'Consumo por Responsável',
-  3: 'Por Linha',
-  4: 'Consumo de Dados',
+  0: 'Phone Lines',
+  1: 'Consumption by Cost Center',
+  2: 'Consumption by Responsible',
+  3: 'By Line',
+  4: 'Data Consumption',
 };
 
 const fmtMoney = (v: number) =>
@@ -106,10 +107,11 @@ const RelatoriosPage: React.FC = () => {
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [dueDate, setDueDate] = useState('');
+  const [sortModel, setSortModel] = useState<{ field: string; sort: 'asc' | 'desc' } | null>(null);
+  const [detailSortModel, setDetailSortModel] = useState<{ field: string; sort: 'asc' | 'desc' } | null>(null);
   const [dueDates, setDueDates] = useState<string[]>([]);
   const [grandTotal, setGrandTotal] = useState(0);
-  const [grandTotalGb, setGrandTotalGb] = useState(0);
-  const [grandTotalCost, setGrandTotalCost] = useState(0);
+  const [grandTotalMb, setGrandTotalMb] = useState(0);
 
   // New states for master-detail (By Line report)
   const [selectedLine, setSelectedLine] = useState<ConsumptionRespRow | null>(null);
@@ -177,7 +179,6 @@ const RelatoriosPage: React.FC = () => {
       setPage(pageNum);
       if (data.grandTotal !== undefined) setGrandTotal(data.grandTotal);
       if (data.grandTotalGb !== undefined) setGrandTotalGb(data.grandTotalGb);
-      if (data.grandTotalCost !== undefined) setGrandTotalCost(data.grandTotalCost);
 
       // Auto-select first line in By Line report
       if (tab === 3 && reset && newItems.length > 0) {
@@ -232,17 +233,23 @@ const RelatoriosPage: React.FC = () => {
     }
   }, [tab, selectedLine, fetchDetails]);
 
+  useEffect(() => {
+    setDetailSortModel(null);
+  }, [innerTab]);
+
   const refresh = useCallback(() => {
     setRows([]);
     setPage(0);
     setHasMore(true);
     setGrandTotal(0);
     setGrandTotalGb(0);
-    setGrandTotalCost(0);
     fetchPage(0, true);
   }, [fetchPage]);
 
-  useEffect(() => { refresh(); }, [tab, dueDate, refresh]);
+  useEffect(() => { 
+    setSortModel(null);
+    refresh(); 
+  }, [tab, dueDate, refresh]);
 
   // Debounced search
   useEffect(() => {
@@ -257,6 +264,58 @@ const RelatoriosPage: React.FC = () => {
   const loadMoreDetails = () => {
     if (!loadingDetails && hasMoreDetails) fetchDetails(detailsPage + 1, false);
   };
+
+  const handleSort = (field: string) => {
+    setSortModel(prev => ({
+      field,
+      sort: prev?.field === field && prev.sort === 'asc' ? 'desc' : 'asc'
+    }));
+  };
+
+  const handleDetailSort = (field: string) => {
+    setDetailSortModel(prev => ({
+      field,
+      sort: prev?.field === field && prev.sort === 'asc' ? 'desc' : 'asc'
+    }));
+  };
+
+  const getSortField = (index: number): string => {
+    if (tab === 0) return ['costCenterCode', 'costCenterName', 'phoneNumber', 'responsibleName', 'responsibleId'][index];
+    if (tab === 1) return ['costCenterCode', 'costCenterName', 'dueDate', 'total'][index];
+    if (tab === 2) return ['responsibleName', 'responsibleId', 'phoneNumber', 'costCenterCode', 'costCenterName', 'total'][index];
+    if (tab === 4) return ['phoneNumber', 'responsibleName', 'costCenterCode', 'costCenterName', 'totalDataMb'][index];
+    return ['item_date', 'item_time', 'description', 'destination_phone', 'duration', 'section', 'sub_section', 'charged_value'][index];
+  };
+
+  const sortedRows = useMemo(() => {
+    if (!sortModel) return rows;
+    const { field, sort } = sortModel;
+    return [...rows].sort((a, b) => {
+      const aVal = a[field];
+      const bVal = b[field];
+      if (aVal === null || aVal === undefined) return 1;
+      if (bVal === null || bVal === undefined) return -1;
+      const cmp = aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
+      return sort === 'asc' ? cmp : -cmp;
+    });
+  }, [rows, sortModel]);
+
+  const getDetailSortField = (index: number): string => {
+    return ['item_date', 'item_time', 'description', 'destination_phone', 'duration', 'section', 'sub_section', 'charged_value'][index];
+  };
+
+  const sortedDetails = useMemo(() => {
+    if (!detailSortModel) return details;
+    const { field, sort } = detailSortModel;
+    return [...details].sort((a, b) => {
+      const aVal = a[field];
+      const bVal = b[field];
+      if (aVal === null || aVal === undefined) return 1;
+      if (bVal === null || bVal === undefined) return -1;
+      const cmp = aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
+      return sort === 'asc' ? cmp : -cmp;
+    });
+  }, [details, detailSortModel]);
 
   // Group details by sub-section for dynamic tabs
   const subSectionData = useMemo(() => {
@@ -286,31 +345,41 @@ const RelatoriosPage: React.FC = () => {
   const exportCSV = () => {
     let headers: string[];
     let mapper: (item: any) => (string | number)[];
+    let dataToExport: any[];
 
     if (tab === 0) {
       headers = ['Cod CC', 'Nome CC', 'Telefone', 'Responsável', 'ID'];
       mapper = (row: PhoneLineRow) => [row.costCenterCode, row.costCenterName, row.phoneNumber, row.responsibleName, row.responsibleId];
+      dataToExport = sortedRows;
     } else if (tab === 1) {
       headers = ['Cod CC', 'Nome CC', 'Vencimento', 'Total (R$)'];
       mapper = (row: ConsumptionCCRow) => [row.costCenterCode, row.costCenterName, row.dueDate, row.total];
+      dataToExport = sortedRows;
     } else if (tab === 2) {
       headers = ['Responsável', 'ID', 'Telefone', 'Cod CC', 'Nome CC', 'Total (R$)'];
       mapper = (row: ConsumptionRespRow) => [row.responsibleName, row.responsibleId, row.phoneNumber, row.costCenterCode, row.costCenterName, row.total];
+      dataToExport = sortedRows;
     } else if (tab === 4) {
-      headers = ['Telefone', 'Responsável', 'Cód. CC', 'Nome CC', 'Dados (GB)', 'Custo (R$)'];
-      mapper = (row: DataConsumptionRow) => [row.phoneNumber, row.responsibleName, row.costCenterCode, row.costCenterName, row.totalDataGb, row.totalCost];
+      headers = ['Telefone', 'Responsável', 'Cód. CC', 'Nome CC', 'Dados (MB)'];
+      mapper = (row: DataConsumptionRow) => [row.phoneNumber, row.responsibleName, row.costCenterCode, row.costCenterName, row.totalDataMb];
+      dataToExport = sortedRows;
+    } else if (tab === 3) {
+      headers = ['Data', 'Hora', 'Descrição', 'Destino', 'Duração', 'Seção', 'Subsessão', 'Valor (R$)'];
+      mapper = (row: LineDetailRow) => [row.item_date, row.item_time, row.description, row.destination_phone, row.duration, row.section, row.sub_section, row.charged_value];
+      dataToExport = details;
     } else {
       headers = ['Data', 'Hora', 'Descrição', 'Destino', 'Duração', 'Seção', 'Subsessão', 'Valor (R$)'];
       mapper = (row: LineDetailRow) => [row.item_date, row.item_time, row.description, row.destination_phone, row.duration, row.section, row.sub_section, row.charged_value];
+      dataToExport = sortedRows;
     }
 
     const lines = [
       headers.join(';'),
-      ...rows.map(row => mapper(row).map(val => typeof val === 'number' ? val.toFixed(2).replace('.', ',') : `"${val}"`).join(';')),
+      ...dataToExport.map(row => mapper(row).map(val => typeof val === 'number' ? val.toFixed(2).replace('.', ',') : `"${val}"`).join(';')),
     ];
     if (tab === 2) lines.push(`"TOTAL";;;;;"${grandTotal.toFixed(2).replace('.', ',')}"`);
-    if (tab === 3 && selectedLine) lines.push(`"TOTAL DA LINHA";;;;;;;"${detailsTotal.toFixed(2).replace('.', ',')}"`);
-    if (tab === 4) lines.push(`"TOTAL GERAL";;;;;"${grandTotalGb.toFixed(2).replace('.', ',')}";;"${grandTotalCost.toFixed(2).replace('.', ',')}"`);
+    if (tab === 3 && selectedLine) lines.push(`"LINE TOTAL";;;;;;;"${detailsTotal.toFixed(2).replace('.', ',')}"`);
+    if (tab === 4) lines.push(`"GRAND TOTAL";;;;"${grandTotalMb.toFixed(2).replace('.', ',')}"`);
 
     const blob = new Blob(['\ufeff' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
     const a = document.createElement('a');
@@ -324,38 +393,78 @@ const RelatoriosPage: React.FC = () => {
   }
 
   const renderHead = () => {
+    const isSorted = (index: number) => sortModel?.field === getSortField(index);
+    const sortIcon = (index: number) => {
+      if (!isSorted(index)) return null;
+      return sortModel?.sort === 'asc' ? <ArrowUpwardIcon fontSize="small" /> : <ArrowDownwardIcon fontSize="small" />;
+    };
+
+    const createHeaderCell = (label: string, index: number, align?: 'right') => (
+      <TableCell
+        key={label}
+        align={align}
+        sx={{ cursor: 'pointer', userSelect: 'none', fontWeight: 700, whiteSpace: 'nowrap' }}
+        onClick={() => handleSort(getSortField(index))}
+      >
+        <Stack direction="row" spacing={0.5} alignItems="center">
+          {label}
+          {sortIcon(index)}
+        </Stack>
+      </TableCell>
+    );
+
     if (tab === 0) return (
       <TableRow>
-        <TableCell>Cód. CC</TableCell><TableCell>Nome CC</TableCell>
-        <TableCell>Telefone</TableCell><TableCell>Responsável</TableCell><TableCell>ID</TableCell>
+        {['CC Code', 'CC Name', 'Phone Number', 'Responsible', 'ID'].map((label, i) => createHeaderCell(label, i))}
       </TableRow>
     );
     if (tab === 1) return (
       <TableRow>
-        <TableCell>Cód. CC</TableCell><TableCell>Nome CC</TableCell>
-        <TableCell>Vencimento</TableCell><TableCell align="right">Total</TableCell>
+        {['CC Code', 'CC Name', 'Due Date', 'Total'].map((label, i) => createHeaderCell(label, i, i === 3 ? 'right' : undefined))}
       </TableRow>
     );
     if (tab === 2) return (
       <TableRow>
-        <TableCell>Responsável</TableCell><TableCell>ID</TableCell><TableCell>Telefone</TableCell>
-        <TableCell>Cód. CC</TableCell><TableCell>Nome CC</TableCell><TableCell align="right">Total</TableCell>
+        {['Responsible', 'ID', 'Phone Number', 'CC Code', 'CC Name', 'Total'].map((label, i) => createHeaderCell(label, i, i === 5 ? 'right' : undefined))}
       </TableRow>
     );
     if (tab === 4) return (
       <TableRow>
-        <TableCell>Telefone</TableCell><TableCell>Responsável</TableCell>
-        <TableCell>Cód. CC</TableCell><TableCell>Nome CC</TableCell>
-        <TableCell align="right">Dados (GB)</TableCell><TableCell align="right">Custo Total</TableCell>
+        {['Phone Number', 'Responsible', 'CC Code', 'CC Name', 'Data (MB)'].map((label, i) => createHeaderCell(label, i, i === 4 ? 'right' : undefined))}
       </TableRow>
     );
     // Detail view for By Line
     return (
       <TableRow>
-        <TableCell>Data</TableCell><TableCell>Hora</TableCell>
-        <TableCell>Descrição</TableCell><TableCell>Destino</TableCell>
-        <TableCell>Duração/Qtde</TableCell><TableCell>Seção</TableCell>
-        <TableCell>Subsessão</TableCell><TableCell align="right">Total</TableCell>
+        {['Data', 'Time', 'Description', 'Destination', 'Duration/Qty', 'Section', 'Sub-section', 'Total'].map((label, i) => createHeaderCell(label, i, i === 7 ? 'right' : undefined))}
+      </TableRow>
+    );
+  };
+
+  const renderDetailHead = () => {
+    const isSorted = (index: number) => detailSortModel?.field === getDetailSortField(index);
+    const sortIcon = (index: number) => {
+      if (!isSorted(index)) return null;
+      return detailSortModel?.sort === 'asc' ? <ArrowUpwardIcon fontSize="small" /> : <ArrowDownwardIcon fontSize="small" />;
+    };
+
+    const createHeaderCell = (label: string, index: number, align?: 'right') => (
+      <TableCell
+        key={label}
+        align={align}
+        sx={{ cursor: 'pointer', userSelect: 'none', fontWeight: 700, whiteSpace: 'nowrap' }}
+        onClick={() => handleDetailSort(getDetailSortField(index))}
+      >
+        <Stack direction="row" spacing={0.5} alignItems="center">
+          {label}
+          {sortIcon(index)}
+        </Stack>
+      </TableCell>
+    );
+
+    return (
+      <TableRow>
+        {['Data', 'Time', 'Description', 'Destination', 'Duration/Qty', 'Section', 'Sub-section', 'Total'].map((label, i) => createHeaderCell(label, i, i === 7 ? 'right' : undefined))}
       </TableRow>
     );
   };
@@ -405,8 +514,7 @@ const RelatoriosPage: React.FC = () => {
           <TableCell>{d.responsibleName}</TableCell>
           <TableCell sx={{ fontWeight: 700 }}>{d.costCenterCode}</TableCell>
           <TableCell>{d.costCenterName}</TableCell>
-            <TableCell align="right" sx={{ fontWeight: 700 }}>{((d.totalDataGb || 0)).toFixed(2)}</TableCell>
-          <TableCell align="right" sx={{ fontWeight: 700, color: theme.palette.primary.main }}>{fmtMoney(d.totalCost)}</TableCell>
+          <TableCell align="right" sx={{ fontWeight: 700 }}>{((d.totalDataMb || 0)).toFixed(2)}</TableCell>
         </TableRow>
       );
     }
@@ -425,35 +533,35 @@ const RelatoriosPage: React.FC = () => {
           onChange={(_, v) => setTab(v)}
           sx={{ minHeight: 36, '& .MuiTab-root': { minHeight: 36, py: 0.5, fontSize: '0.8rem', fontWeight: 700 } }}
         >
-          <Tab label="Linhas Telefônicas" />
-          <Tab label="Por Centro de Custo" />
-          <Tab label="Por Responsável" />
-          <Tab label="Por Linha" />
-          <Tab label="Consumo de Dados" />
+          <Tab label="Phone Lines" />
+          <Tab label="By Cost Center" />
+          <Tab label="By Responsible" />
+          <Tab label="By Line" />
+          <Tab label="Data Consumption" />
         </Tabs>
 
         <Box sx={{ flex: 1 }} />
 
         {(tab === 1 || tab === 2 || tab === 3 || tab === 4) && (
-          <FormControl size="small" sx={{ minWidth: 160 }}>
-            <Select
-              value={dueDate}
-              onChange={e => setDueDate(e.target.value)}
-              displayEmpty
-            >
-              <MenuItem value="" disabled>Vencimento</MenuItem>
-              {dueDates.map(d => (
-                <MenuItem key={d} value={d}>
-                  {new Date(d + 'T12:00:00Z').toLocaleDateString('pt-BR')}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+              <FormControl size="small" sx={{ minWidth: 160 }}>
+                <Select
+                  value={dueDate}
+                  onChange={e => setDueDate(e.target.value)}
+                  displayEmpty
+                >
+                  <MenuItem value="" disabled>Due Date</MenuItem>
+                  {dueDates.map(d => (
+                    <MenuItem key={d} value={d}>
+                      {new Date(d + 'T12:00:00Z').toLocaleDateString('en-US')}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
         )}
 
         <TextField
           size="small"
-          placeholder="Buscar por Cód. CC, nome, responsável, telefone, seção ou subsessão…"
+          placeholder="Search by CC code, name, responsible, phone, section or sub-section…"
           value={search}
           onChange={e => setSearch(e.target.value)}
           sx={{ width: 320 }}
@@ -484,7 +592,7 @@ const RelatoriosPage: React.FC = () => {
           {/* Master List: Phones and Responsibles */}
           <Paper sx={{ width: 300, display: 'flex', flexDirection: 'column', overflow: 'hidden', border: `1px solid ${alpha(theme.palette.divider, 0.1)}` }}>
             <Box sx={{ p: 1.5, bgcolor: alpha(theme.palette.primary.main, 0.05), borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}` }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>Linhas / Responsáveis</Typography>
+              <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>Lines / Responsible</Typography>
             </Box>
             <Box ref={containerRef} sx={{ flex: 1, overflowY: 'auto' }}>
               <List disablePadding>
@@ -540,8 +648,8 @@ const RelatoriosPage: React.FC = () => {
                     scrollButtons="auto"
                     sx={{ minHeight: 40, '& .MuiTab-root': { minHeight: 40, py: 0, fontSize: '0.75rem', fontWeight: 700 } }}
                   >
-                    <Tab label="Todos os Dados" />
-                    <Tab label="Resumo" />
+                    <Tab label="All Data" />
+                    <Tab label="Summary" />
                     {subSectionData.list.map((ss, idx) => (
                       <Tab key={ss} label={ss} />
                     ))}
@@ -572,9 +680,9 @@ const RelatoriosPage: React.FC = () => {
                     </Table>
                   ) : (
                     <Table stickyHeader size="small">
-                      <TableHead>{renderHead()}</TableHead>
+                      <TableHead>{renderDetailHead()}</TableHead>
                       <TableBody>
-                        {(innerTab === 0 ? details : subSectionData.groups[subSectionData.list[innerTab - 2]] || []).map((d) => (
+                        {(innerTab === 0 ? sortedDetails : subSectionData.groups[subSectionData.list[innerTab - 2]] || []).map((d) => (
                           <TableRow key={d.id} hover>
                             <TableCell sx={{ fontSize: '0.75rem' }}>{d.item_date}</TableCell>
                             <TableCell sx={{ fontSize: '0.75rem' }}>{d.item_time}</TableCell>
@@ -616,13 +724,13 @@ const RelatoriosPage: React.FC = () => {
             <Table stickyHeader size="small">
               <TableHead>{renderHead()}</TableHead>
               <TableBody>
-                {rows.length === 0 && !loading ? (
+                {sortedRows.length === 0 && !loading ? (
                   <TableRow>
                     <TableCell colSpan={6} align="center" sx={{ py: 8, color: 'text.disabled' }}>
                       Nenhum dado encontrado.
                     </TableCell>
                   </TableRow>
-                ) : rows.map(renderRow)}
+                ) : sortedRows.map(renderRow)}
 
                 <TableRow>
                   <TableCell colSpan={6} sx={{ p: 0, border: 0 }}>
@@ -635,9 +743,9 @@ const RelatoriosPage: React.FC = () => {
                   </TableCell>
                 </TableRow>
 
-    {tab === 2 && rows.length > 0 && !hasMore && (
+                {tab === 2 && rows.length > 0 && !hasMore && (
       <TableRow sx={{ bgcolor: alpha(theme.palette.primary.main, 0.08) }}>
-        <TableCell colSpan={5} sx={{ fontWeight: 900 }}>TOTAL DE GASTOS</TableCell>
+        <TableCell colSpan={5} sx={{ fontWeight: 900 }}>TOTAL EXPENDITURE</TableCell>
         <TableCell align="right" sx={{ fontWeight: 900, color: theme.palette.primary.main, fontSize: '1rem' }}>
           {fmtMoney(grandTotal)}
         </TableCell>
@@ -645,12 +753,9 @@ const RelatoriosPage: React.FC = () => {
     )}
     {tab === 4 && rows.length > 0 && !hasMore && (
       <TableRow sx={{ bgcolor: alpha(theme.palette.primary.main, 0.08) }}>
-        <TableCell colSpan={4} sx={{ fontWeight: 900 }}>TOTAL GERAL</TableCell>
+        <TableCell colSpan={4} sx={{ fontWeight: 900 }}>GRAND TOTAL</TableCell>
         <TableCell align="right" sx={{ fontWeight: 900, color: theme.palette.primary.main, fontSize: '1rem' }}>
-          {grandTotalGb.toFixed(2)} GB
-        </TableCell>
-        <TableCell align="right" sx={{ fontWeight: 900, color: theme.palette.primary.main, fontSize: '1rem' }}>
-          {fmtMoney(grandTotalCost)}
+          {grandTotalMb.toFixed(2)} MB
         </TableCell>
       </TableRow>
     )}

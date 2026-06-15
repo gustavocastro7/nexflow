@@ -32,7 +32,7 @@ class MockSeeder {
         defaults: {
           code: 'MATRIZ',
           name: 'Matriz',
-          description: 'Centro de Custo Padrão',
+          description: 'Default Cost Center',
           workspace_id: nexflowMatriz.id
         }
       });
@@ -52,7 +52,7 @@ class MockSeeder {
         defaults: {
           code: 'MATRIZ',
           name: 'Matriz',
-          description: 'Centro de Custo Padrão',
+          description: 'Default Cost Center',
           workspace_id: teleen.id
         }
       });
@@ -102,7 +102,7 @@ class MockSeeder {
               { number: '11900001111', respName: 'Ana Souza', respId: 'EMP-001' },
               { number: '11900002222', respName: 'Ana Souza', respId: 'EMP-001' },
             ] },
-            { code: 'CC-002', name: 'TI / Operações', phones: [
+            { code: 'CC-002', name: 'IT / Operations', phones: [
               { number: '11900003333', respName: 'Bruno Lima', respId: 'EMP-002' },
               { number: '11900004444', respName: 'Carla Dias', respId: 'EMP-003' },
             ] },
@@ -116,12 +116,11 @@ class MockSeeder {
           ],
           users: [],
           claroInvoices: [
-            { source_phone: '11900001111', item_date: '2025-02-10', item_time: '10:00:00', description: 'SERVIÇO BASE', total_value: 150.50, charged_value: 150.50 },
-            { source_phone: '11900003333', item_date: '2025-02-12', item_time: '11:00:00', description: 'DADOS MÓVEIS', total_value: 89.90, charged_value: 89.90 },
-            { source_phone: '11900005555', item_date: '2025-02-15', item_time: '09:00:00', description: 'SERVIÇO BASE', total_value: 210.00, charged_value: 210.00 },
-            { source_phone: '11900001111', item_date: '2025-03-01', item_time: '08:30:00', description: 'SERVIÇO BASE', total_value: 120.00, charged_value: 120.00 },
-            { source_phone: '11900003333', item_date: '2025-03-02', item_time: '14:00:00', description: 'INTERNET 5G', total_value: 95.00, charged_value: 95.00 },
-            { source_phone: '11999999999', item_date: '2025-03-03', item_time: '15:00:00', description: 'LIGAÇÃO LOCAL (NÃO ALOCADO)', total_value: 25.00, charged_value: 25.00 }
+            { source_phone: '11900001111', item_date: '2025-02-10', item_time: '10:00:00', description: 'BASIC SERVICE', total_value: 150.50, charged_value: 150.50 },
+            { source_phone: '11900003333', item_date: '2025-02-12', item_time: '11:00:00', description: 'MOBILE DATA', total_value: 89.90, charged_value: 89.90 },
+            { source_phone: '11900005555', item_date: '2025-02-15', item_time: '09:00:00', description: 'BASIC SERVICE', total_value: 210.00, charged_value: 210.00 },
+            { source_phone: '11900001111', item_date: '2025-03-01', item_time: '08:30:00', description: 'BASIC SERVICE', total_value: 120.00, charged_value: 120.00 },
+            { source_phone: '11999999999', item_date: '2025-03-03', item_time: '15:00:00', description: 'LOCAL CALL (NOT ALLOCATED)', total_value: 25.00, charged_value: 25.00 }
           ],
           vivoInvoices: [
             { item_date: '2025-02-05', item_time: '14:00:00', source_phone: '11900002222', destination_phone: '11988887777', duration: '00:05:00', description: 'BASE', charged_value: 12.00, total_value: 12.00 },

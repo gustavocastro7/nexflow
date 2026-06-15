@@ -131,7 +131,7 @@ class WorkspaceController {
 
       let workspaces = associations.map(a => a.workspace).filter(Boolean);
 
-      // Se não houver associações, tenta buscar pelo default_workspace_id do usuário
+      // If there are no associations, try to search by user's default_workspace_id
       if (workspaces.length === 0) {
         const user = await User.findByPk(userId);
         if (user && user.default_workspace_id) {
@@ -175,8 +175,8 @@ class WorkspaceController {
       const { userId } = req.query;
       const targetUserId = userId || req.userId;
       
-      // Se não for jedi, não precisamos verificar múltiplas associações aqui
-      // pois eles sempre devem cair no seu workspace padrão ou único associado.
+      // If not jedi, we don't need to check multiple associations here
+      // because they should always fall into their default or only associated workspace.
       if (req.userProfile !== 'jedi') { 
         return res.json({ multiple: false, count: 1 });
       }
@@ -211,7 +211,7 @@ class WorkspaceController {
     try {
       const { userId, workspaceId } = req.body;
       
-      // Jedi pode entrar em qualquer workspace sem associação prévia necessária no banco
+      // Jedi can enter any workspace without prior association required in the DB
       if (req.userProfile === 'jedi') {
         const workspace = await Workspace.findByPk(workspaceId);
         if (!workspace) return res.status(404).json({ error: 'Workspace not found' });

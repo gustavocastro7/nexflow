@@ -1,0 +1,60 @@
+// Database Schema (DBML)
+
+// --- Tables ---
+
+Table workspaces {
+  id uuid [pk]
+  name varchar(255)
+  schema_name varchar(100)
+  logo text // Base64
+}
+
+Table raw_invoices {
+  id uuid [pk]
+  workspace_id uuid [ref: > workspaces.id]
+  operator varchar(20) // claro, vivo, claro_txt
+  content jsonb
+  hash varchar(64) // MD5 for dedup
+  due_date date
+  processing_status varchar(20) // pending, processed, error
+}
+
+Table invoices {
+  id uuid [pk]
+  workspace_id uuid [ref: > workspaces.id]
+  raw_invoice_id uuid [ref: > raw_invoices.id]
+  operator varchar(20)
+  source_phone varchar(25)
+  item_date date
+  item_time time
+  description varchar(255)
+  total_value decimal(12,2)
+  charged_value decimal(12,2)
+  section varchar(50) // VOICE, DATA, SMS
+  sub_section varchar(50)
+}
+
+Table collaborators {
+  id uuid [pk]
+  workspace_id uuid [ref: > workspaces.id]
+  name varchar(150)
+  external_id varchar(50) // CPF
+  email varchar(150)
+  department varchar(100)
+}
+
+Table cost_centers {
+  id uuid [pk]
+  workspace_id uuid [ref: > workspaces.id]
+  code varchar(50)
+  name varchar(255)
+}
+
+Table phone_lines {
+  id uuid [pk]
+  workspace_id uuid [ref: > workspaces.id]
+  phone_number varchar(25)
+  responsible_name varchar(150)
+  collaborator_id uuid [ref: > collaborators.id]
+  cost_center_id uuid [ref: > cost_centers.id]
+}

@@ -33,7 +33,7 @@ routes.post('/', RoleController.store);
  * @swagger
  * /roles/assign:
  *   post:
- *     summary: Atribui um papel a um usuário
+ *     summary: Assigns a role to a user
  *     tags: [Roles]
  *     security:
  *       - bearerAuth: []
@@ -50,7 +50,7 @@ routes.post('/', RoleController.store);
  *                 type: string
  *     responses:
  *       200:
- *         description: Papel atribuído com sucesso
+ *         description: Role assigned successfully
  */
 routes.post('/assign', RoleController.assign);
 
@@ -58,7 +58,7 @@ routes.post('/assign', RoleController.assign);
  * @swagger
  * /roles/check:
  *   get:
- *     summary: Verifica se um usuário tem um papel
+ *     summary: Checks if a user has a role
  *     tags: [Roles]
  *     security:
  *       - bearerAuth: []
@@ -75,7 +75,7 @@ routes.post('/assign', RoleController.assign);
  *           type: string
  *     responses:
  *       200:
- *         description: Resultado da verificação
+ *         description: Verification result
  */
 routes.get('/check', RoleController.check);
 

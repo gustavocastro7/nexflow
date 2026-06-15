@@ -10,7 +10,7 @@ routes.use(authMiddleware);
  * @swagger
  * /users:
  *   get:
- *     summary: Lista usuários de um workspace
+ *     summary: Lists users in a workspace
  *     tags: [Users]
  *     security:
  *       - bearerAuth: []
@@ -26,7 +26,7 @@ routes.use(authMiddleware);
  *           type: boolean
  *     responses:
  *       200:
- *         description: Lista de usuários
+ *         description: List of users
  */
 routes.get('/', UserController.index);
 
@@ -34,7 +34,7 @@ routes.get('/', UserController.index);
  * @swagger
  * /users:
  *   post:
- *     summary: Cria um novo usuário e associa ao workspace
+ *     summary: Creates a new user and associates with the workspace
  *     tags: [Users]
  *     security:
  *       - bearerAuth: []
@@ -57,7 +57,7 @@ routes.get('/', UserController.index);
  *                 type: string
  *     responses:
  *       201:
- *         description: Usuário criado
+ *         description: User created
  */
 routes.post('/', UserController.store);
 
@@ -65,7 +65,7 @@ routes.post('/', UserController.store);
  * @swagger
  * /users/{id}:
  *   get:
- *     summary: Busca um usuário pelo ID
+ *     summary: Retrieves a user by ID
  *     tags: [Users]
  *     security:
  *       - bearerAuth: []
@@ -77,7 +77,7 @@ routes.post('/', UserController.store);
  *           type: string
  *     responses:
  *       200:
- *         description: Dados do usuário
+ *         description: User data
  */
 routes.get('/:id', UserController.show);
 
@@ -85,7 +85,7 @@ routes.get('/:id', UserController.show);
  * @swagger
  * /users/{id}:
  *   put:
- *     summary: Atualiza o profile do usuário
+ *     summary: Updates user profile
  *     tags: [Users]
  *     security:
  *       - bearerAuth: []
@@ -114,7 +114,7 @@ routes.get('/:id', UserController.show);
  *                 type: boolean
  *     responses:
  *       200:
- *         description: Usuário atualizado com sucesso
+ *         description: User updated successfully
  */
 routes.put('/:id', UserController.update);
 
@@ -122,7 +122,7 @@ routes.put('/:id', UserController.update);
  * @swagger
  * /users/{id}:
  *   delete:
- *     summary: Desativa um usuário (Soft delete)
+ *     summary: Deactivates a user (Soft delete)
  *     tags: [Users]
  *     security:
  *       - bearerAuth: []
@@ -134,7 +134,7 @@ routes.put('/:id', UserController.update);
  *           type: string
  *     responses:
  *       200:
- *         description: Usuário desativado com sucesso
+ *         description: User deactivated successfully
  */
 routes.delete('/:id', UserController.delete);
 
@@ -142,7 +142,7 @@ routes.delete('/:id', UserController.delete);
  * @swagger
  * /users/{id}/change-password:
  *   put:
- *     summary: Altera a senha do usuário
+ *     summary: Changes user password
  *     tags: [Users]
  *     security:
  *       - bearerAuth: []
@@ -173,7 +173,7 @@ routes.put('/:id/change-password', UserController.changePassword);
  * @swagger
  * /users/{id}/config:
  *   put:
- *     summary: Atualiza as configurações do usuário (tema, idioma, etc)
+ *     summary: Updates user configuration (theme, language, etc)
  *     tags: [Users]
  *     security:
  *       - bearerAuth: []
@@ -197,7 +197,7 @@ routes.put('/:id/change-password', UserController.changePassword);
  *                 type: string
  *     responses:
  *       200:
- *         description: Configurações atualizadas
+ *         description: Configuration updated
  */
 routes.put('/:id/config', UserController.updateConfig);
 

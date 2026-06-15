@@ -152,10 +152,10 @@ class CollaboratorController {
 
   _parseCSV(content) {
     const lines = content.split('\n').filter(l => l.trim().length > 0);
-    if (lines.length < 2) return { rows: [], columnMap: null, error: 'CSV deve ter cabeçalho e pelo menos uma linha de dados' };
+    if (lines.length < 2) return { rows: [], columnMap: null, error: 'CSV must have a header and at least one line of data' };
 
     const delimiter = this._detectDelimiter(lines[0]);
-    const headers = lines[0].split(delimiter).map(h => h.trim().toLowerCase().replace(/[^a-zà-ÿ0-9_ ]/g, ''));
+    const headers = lines[0].split(delimiter).map(h => h.trim().toLowerCase().replace(/[^a-z0-9_ ]/g, ''));
 
     const columnMap = {};
     const colNames = { 'nr': 'phone', 'numero': 'phone', 'telefone': 'phone', 'phone': 'phone', 
@@ -184,8 +184,8 @@ class CollaboratorController {
 
   _validateRow(row, index) {
     const errors = [];
-    if (!row.cpf || row.cpf.trim() === '') errors.push('CPF vazio');
-    if (!row.name || row.name.trim() === '') errors.push('Nome vazio');
+    if (!row.cpf || row.cpf.trim() === '') errors.push('Empty CPF');
+    if (!row.name || row.name.trim() === '') errors.push('Empty name');
     return errors;
   }
 
@@ -199,7 +199,7 @@ class CollaboratorController {
       if (error) return res.status(400).json({ error });
 
       if (!columnMap.name || !columnMap.cpf) {
-        return res.status(400).json({ error: 'CSV deve conter colunas de nome e CPF' });
+        return res.status(400).json({ error: 'CSV must contain name and CPF columns' });
       }
 
       const invalidRows = [];
@@ -259,7 +259,7 @@ class CollaboratorController {
       const { rows, error } = this._parseCSV(content);
       if (error) return res.status(400).json({ error });
 
-      if (!rows.length) return res.status(400).json({ error: 'Nenhuma linha válida encontrada' });
+      if (!rows.length) return res.status(400).json({ error: 'No valid rows found' });
 
       const stats = {
         collaboratorsCreated: 0,
@@ -356,7 +356,7 @@ class CollaboratorController {
       });
 
       return res.status(201).json({
-        message: `${stats.collaboratorsCreated + stats.collaboratorsUpdated} colaboradores processados (${stats.collaboratorsCreated} criados, ${stats.collaboratorsUpdated} atualizados), ${stats.phoneLinesCreated + stats.phoneLinesUpdated} linhas telefônicas, ${stats.costCentersCreated} centros de custo criados`,
+        message: `${stats.collaboratorsCreated + stats.collaboratorsUpdated} collaborators processed (${stats.collaboratorsCreated} created, ${stats.collaboratorsUpdated} updated), ${stats.phoneLinesCreated + stats.phoneLinesUpdated} phone lines, ${stats.costCentersCreated} cost centers created`,
         ...stats,
       });
     } catch (error) {

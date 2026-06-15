@@ -37,6 +37,22 @@ services:
       - postgres
     restart: unless-stopped
 
+  frontend:
+    image: node:22-alpine
+    container_name: nexflow-frontend-debug
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_PROXY_TARGET=http://backend:3100
+    ports:
+      - "8085:8085"
+    command: >
+      sh -c "npm install && npm run dev -- --host"
+    depends_on:
+      - backend
+    restart: unless-stopped
 
 volumes:
   postgres_debug_data:

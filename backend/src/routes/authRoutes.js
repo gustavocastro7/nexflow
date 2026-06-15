@@ -7,7 +7,7 @@ const routes = Router();
  * @swagger
  * /auth/login:
  *   post:
- *     summary: Realiza o login do usuário
+ *     summary: Performs user login
  *     tags: [Auth]
  *     requestBody:
  *       required: true
@@ -24,13 +24,13 @@ const routes = Router();
  *       200:
  *         description: Login realizado com sucesso
  *       401:
- *         description: Credenciais inválidas
+ *         description: Invalid credentials
  */
 /**
  * @swagger
  * /auth/register:
  *   post:
- *     summary: Realiza o registro de um novo usuário
+ *     summary: Performs registration of a new user
  *     tags: [Auth]
  *     requestBody:
  *       required: true
@@ -47,7 +47,7 @@ const routes = Router();
  *                 type: string
  *     responses:
  *       201:
- *         description: Usuário registrado com sucesso
+ *         description: User registered successfully
  */
 routes.post('/register', AuthController.register);
 
@@ -55,7 +55,7 @@ routes.post('/register', AuthController.register);
  * @swagger
  * /auth/check-user:
  *   get:
- *     summary: Verifica se um usuário existe pelo email
+ *     summary: Checks if a user exists by email
  *     tags: [Auth]
  *     parameters:
  *       - in: query
@@ -65,7 +65,7 @@ routes.post('/register', AuthController.register);
  *           type: string
  *     responses:
  *       200:
- *         description: Resultado da verificação
+ *         description: Verification result
  */
 routes.get('/check-user', AuthController.checkUserExists);
 
@@ -75,7 +75,7 @@ routes.post('/login', AuthController.login);
  * @swagger
  * /auth/logout:
  *   post:
- *     summary: Realiza o logout do usuário
+ *     summary: Performs user logout
  *     tags: [Auth]
  *     security:
  *       - bearerAuth: []
