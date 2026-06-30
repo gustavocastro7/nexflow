@@ -178,16 +178,16 @@ const RelatoriosPage: React.FC = () => {
       setHasMore(data.hasMore);
       setPage(pageNum);
       if (data.grandTotal !== undefined) setGrandTotal(data.grandTotal);
-      if (data.grandTotalGb !== undefined) setGrandTotalGb(data.grandTotalGb);
+      if (data.grandTotalGb !== undefined) setGrandTotalMb(data.grandTotalGb);
 
       // Auto-select first line in By Line report
-      if (tab === 3 && reset && newItems.length > 0) {
-        setSelectedLine(newItems[0]);
-      } else if (tab === 3 && reset && newItems.length === 0) {
-        setSelectedLine(newItems[0]);
-      } else if (tab === 3 && reset && newItems.length === 0) {
-        setSelectedLine(null);
-        setDetails([]);
+      if (tab === 3 && reset) {
+        if (newItems.length > 0) {
+          setSelectedLine(newItems[0]);
+        } else {
+          setSelectedLine(null);
+          setDetails([]);
+        }
       }
     } catch (err) {
       console.error('Report fetch error', err);
@@ -242,7 +242,7 @@ const RelatoriosPage: React.FC = () => {
     setPage(0);
     setHasMore(true);
     setGrandTotal(0);
-    setGrandTotalGb(0);
+    setGrandTotalMb(0);
     fetchPage(0, true);
   }, [fetchPage]);
 
