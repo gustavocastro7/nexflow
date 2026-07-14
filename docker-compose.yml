@@ -1,58 +1,17 @@
 services:
-  postgres:
-    image: postgres:15-alpine
-    container_name: nexflow-postgres-debug
+  mysql:
+    image: mysql:8.0
+    container_name: nexflow-mysql-debug
     environment:
-      POSTGRES_USER: nexflow_user
-      POSTGRES_PASSWORD: nexflow_password
-      POSTGRES_DB: nexflow_db
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: nexflow_db
+      MYSQL_USER: nexflow_user
+      MYSQL_PASSWORD: nexflow_password
     ports:
-      - "5432:5432"
+      - "3306:3306"
     volumes:
-      - postgres_debug_data:/var/lib/postgresql/data
-    restart: unless-stopped
-
-  backend:
-    image: node:22-alpine
-    container_name: nexflow-backend-debug
-    working_dir: /app
-    volumes:
-      - ./backend:/app
-      - /app/node_modules
-    environment:
-      - NODE_ENV=development
-      - PORT=3100
-      - DB_HOST=postgres
-      - DB_NAME=nexflow_db
-      - DB_USER=nexflow_user
-      - DB_PASS=nexflow_password
-      - JWT_SECRET=your_jwt_secret_key
-      - ADMIN_EMAIL=gustavocastro73@gmail.com
-      - ADMIN_PASSWORD=castro
-    ports:
-      - "3100:3100"
-    command: >
-      sh -c "npm install && npm run dev"
-    depends_on:
-      - postgres
-    restart: unless-stopped
-
-  frontend:
-    image: node:22-alpine
-    container_name: nexflow-frontend-debug
-    working_dir: /app
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    environment:
-      - VITE_PROXY_TARGET=http://backend:3100
-    ports:
-      - "8085:8085"
-    command: >
-      sh -c "npm install && npm run dev -- --host"
-    depends_on:
-      - backend
+      - mysql_debug_data:/var/lib/mysql
     restart: unless-stopped
 
 volumes:
-  postgres_debug_data:
+  mysql_debug_data:

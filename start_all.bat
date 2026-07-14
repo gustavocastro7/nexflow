@@ -1,31 +1,23 @@
 @echo off
-setlocal enabledelayedexpansion
-
 set "SCRIPT_DIR=%~dp0"
 set "COMPOSE_FILE=%SCRIPT_DIR%docker-compose.yml"
 
 echo ==========================================
-echo  Nexflow - Start All Services
+echo  Nexflow - Start Database
 echo ==========================================
 
 echo.
-echo [1/1] Starting Docker services...
+echo Starting MySQL...
 docker compose -f "%COMPOSE_FILE%" up -d
-
-if %errorlevel% neq 0 (
-    echo [ERROR] Failed to start services.
+if errorlevel 1 (
+    echo [ERROR] Failed to start.
     pause
     exit /b 1
 )
 
 echo.
 echo ==========================================
-echo  ALL SERVICES RUNNING
-echo  Backend:  http://localhost:3100
-echo  Frontend: http://localhost:8085
+echo  MySQL Running on localhost:3306
+echo  Run 'npm run dev' to start Next.js
 echo ==========================================
 echo.
-echo  Use _ctrl.bat for logs, stop, and more.
-echo.
-
-popd
