@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
+export const maxDuration = 60;
+import { verifyToken } from '@/lib/utils/jwt';
 
 function getAuthUser(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
   if (!authHeader) throw new Error('Token not provided');
   const [, token] = authHeader.split(' ');
-  return jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret_key') as { id: string; email: string; profile: string };
+  return verifyToken(token) as { id: string; email: string; profile: string };
 }
 
 function cleanContent(content: string) {

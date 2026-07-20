@@ -8,6 +8,7 @@ import {
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import InfiniteScroll from '../InfiniteScroll';
 import type { Invoice } from '../../types';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 interface InvoiceListProps {
   invoices: Invoice[];
@@ -47,6 +48,7 @@ const InvoiceList = memo<InvoiceListProps>(({
   invoices, loading, hasMore, loadMore, selectedId, onSelect, isInitialLoading = false,
 }) => {
   const theme = useTheme();
+  const { t } = useLanguage();
   const containerRef = useRef<HTMLDivElement>(null);
   const [rootEl, setRootEl] = useState<Element | null>(null);
 
@@ -76,12 +78,12 @@ const InvoiceList = memo<InvoiceListProps>(({
         <Table stickyHeader size="small">
           <TableHead>
             <TableRow>
-              <TableCell sx={{ width: '120px' }}>Operadora</TableCell>
-              <TableCell sx={{ width: '140px' }}>Origem</TableCell>
-              <TableCell sx={{ width: '120px' }}>Data</TableCell>
-              <TableCell>Descrição</TableCell>
-              <TableCell sx={{ width: '150px' }}>Sub-Seção</TableCell>
-              <TableCell align="right" sx={{ width: '120px' }}>Valor</TableCell>
+              <TableCell sx={{ width: '120px' }}>{t('invoices.operatorCol')}</TableCell>
+              <TableCell sx={{ width: '140px' }}>{t('invoices.originCol')}</TableCell>
+              <TableCell sx={{ width: '120px' }}>{t('invoices.dateCol')}</TableCell>
+              <TableCell>{t('common.description')}</TableCell>
+              <TableCell sx={{ width: '150px' }}>{t('invoices.subSectionCol')}</TableCell>
+              <TableCell align="right" sx={{ width: '120px' }}>{t('invoices.valueCol')}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -92,7 +94,7 @@ const InvoiceList = memo<InvoiceListProps>(({
                 <TableCell colSpan={6} align="center" sx={{ py: 10 }}>
                   <Stack spacing={2} sx={{ alignItems: 'center', opacity: 0.5 }}>
                     <ReceiptLongIcon sx={{ fontSize: 48 }} />
-                    <Typography variant="body1">Nenhum registro encontrado.</Typography>
+                    <Typography variant="body1">{t('common.noResults')}</Typography>
                   </Stack>
                 </TableCell>
               </TableRow>

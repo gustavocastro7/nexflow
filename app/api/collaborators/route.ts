@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
-import { Op } from 'sequelize';
+import { connectDB } from '@/lib/config/database';
+import { verifyToken } from '@/lib/utils/jwt';
 import Collaborator from '@/lib/models/Collaborator';
 import { logOperation } from '@/lib/utils/auditLogger';
 
@@ -8,22 +8,21 @@ function getAuthUser(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
   if (!authHeader) throw new Error('Token not provided');
   const [, token] = authHeader.split(' ');
-  return jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret_key') as { id: string; email: string; profile: string };
+  return verifyToken(token) as { id: string; email: string; profile: string };
 }
 
 export async function GET(request: NextRequest) {
   try {
+    await connectDB();
     getAuthUser(request);
     const workspaceId = request.nextUrl.searchParams.get('workspaceId');
     const search = request.nextUrl.searchParams.get('search');
     if (!workspaceId) return NextResponse.json({ error: 'Workspace ID is required' }, { status: 400 });
 
     const where: Record<string, any> = { workspace_id: workspaceId };
-    if (search) where.name = { [Op.iLike]: `%${search}%` };
+    if (search) where.name = { $regex: search, $options: 'i' };
 
-    const collaborators: any = await Collaborator.findAll({
-      where, order: [['name', 'ASC']]
-    });
+    const collaborators: any = await Collaborator.find(where).sort({ name: 1 });
     return NextResponse.json(collaborators);
   } catch (error: any) {
     if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
@@ -35,6 +34,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    await connectDB();
     const decoded = getAuthUser(request);
     const { name, external_id, email, department, workspace_id } = await request.json();
     if (!name || !workspace_id) {

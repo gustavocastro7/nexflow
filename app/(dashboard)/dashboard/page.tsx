@@ -10,7 +10,8 @@ import GetAppIcon from '@mui/icons-material/GetApp';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell
 } from 'recharts';
-import { apiGet } from '../../lib/api/client';
+import { apiGet } from '@/lib/api/client';
+import { useLanguage } from '@/app/i18n/LanguageContext';
 
 const COLORS = ['#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#6366F1'];
 
@@ -33,6 +34,7 @@ const formatCurrency = (val: number) =>
   val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 export default function DashboardPage() {
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [activeWorkspace, setActiveWorkspace] = useState<Workspace | null>(null);
   const [data, setData] = useState<DashboardData | null>(null);
@@ -62,7 +64,7 @@ export default function DashboardPage() {
   if (!activeWorkspace) {
     return (
       <Box sx={{ p: 4, textAlign: 'center' }}>
-        <Typography>Selecione um workspace para continuar.</Typography>
+        <Typography>{t('dashboard.selectWorkspace')}</Typography>
       </Box>
     );
   }
@@ -71,7 +73,7 @@ export default function DashboardPage() {
     <Container maxWidth={false} sx={{ py: 3, minHeight: '100vh' }}>
       <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Typography variant="h5" sx={{ fontWeight: 800, color: '#1e293b' }}>
-          Visão Geral da Fatura
+          {t('dashboard.title')}
         </Typography>
       </Box>
 
@@ -80,7 +82,7 @@ export default function DashboardPage() {
           <Box sx={{ flex: { xs: '1 1 100%', md: '0 0 33.33%' } }}>
             <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
               <Box>
-                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>Valor Total:</Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>{t('dashboard.totalValue')}</Typography>
                 <Box sx={{ display: 'flex', gap: 1, alignItems: 'baseline' }}>
                   <Typography variant="h3" sx={{ fontWeight: 900, color: '#1e293b' }}>
                     {loading ? <Skeleton width={150} /> : formatCurrency(data?.summary.totalSpent || 0)}
@@ -88,20 +90,20 @@ export default function DashboardPage() {
                   <ArrowDropDownIcon sx={{ color: '#dc2626', fontSize: 32 }} />
                 </Box>
                 <Typography variant="caption" sx={{ color: '#dc2626', fontWeight: 700 }}>
-                  {data?.summary.trend}% em relação ao mês anterior
+                  {t('dashboard.trendVsLastMonth', { trend: data?.summary.trend ?? 0 })}
                 </Typography>
               </Box>
             </Box>
           </Box>
           <Box sx={{ flex: { xs: '1 1 100%', md: '0 0 66.66%' }, display: 'flex', gap: 2, justifyContent: { md: 'flex-end' } }}>
             <Box sx={{ bgcolor: '#f1f5f9', px: 3, py: 1.5, borderRadius: 2, textAlign: 'center', minWidth: 120 }}>
-              <Typography variant="caption" sx={{ display: 'block', color: '#64748b', fontWeight: 600 }}>Dados:</Typography>
+              <Typography variant="caption" sx={{ display: 'block', color: '#64748b', fontWeight: 600 }}>{t('dashboard.data')}</Typography>
               <Typography variant="h6" sx={{ fontWeight: 800, color: '#1e293b' }}>
                 {loading ? <Skeleton /> : `${(data?.summary?.dataUsage ?? 0).toFixed(1)} MB`}
               </Typography>
             </Box>
             <Box sx={{ bgcolor: '#f1f5f9', px: 3, py: 1.5, borderRadius: 2, textAlign: 'center', minWidth: 120 }}>
-              <Typography variant="caption" sx={{ display: 'block', color: '#64748b', fontWeight: 600 }}>Voz:</Typography>
+              <Typography variant="caption" sx={{ display: 'block', color: '#64748b', fontWeight: 600 }}>{t('dashboard.voice')}</Typography>
               <Typography variant="h6" sx={{ fontWeight: 800, color: '#1e293b' }}>
                 {loading ? <Skeleton /> : `${(data?.summary?.voiceUsage ?? 0).toFixed(1)} min`}
               </Typography>
@@ -114,7 +116,7 @@ export default function DashboardPage() {
         <Box sx={{ flex: { xs: '1 1 100%', md: '0 0 calc(33.33% - 16px)' }, minWidth: 0 }}>
           <Card sx={{ height: '100%', borderRadius: 3, boxShadow: 'none', border: '1px solid #e2e8f0' }}>
             <CardContent>
-              <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>Custos por Departamento</Typography>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>{t('dashboard.costsByDepartment')}</Typography>
               <Box sx={{ height: 250 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart layout="vertical" data={data?.charts.costsByDepartment} margin={{ left: 10, right: 60, top: 10, bottom: 10 }}>
@@ -137,7 +139,7 @@ export default function DashboardPage() {
         <Box sx={{ flex: { xs: '1 1 100%', md: '0 0 calc(33.33% - 16px)' }, minWidth: 0 }}>
           <Card sx={{ height: '100%', borderRadius: 3, boxShadow: 'none', border: '1px solid #e2e8f0' }}>
             <CardContent>
-              <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>Consumo de Dados (MB)</Typography>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>{t('dashboard.dataConsumption')}</Typography>
               <Box sx={{ height: 250 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={data?.charts.monthlyTrends} margin={{ left: -20, right: 10 }}>
@@ -156,7 +158,7 @@ export default function DashboardPage() {
         <Box sx={{ flex: { xs: '1 1 100%', md: '0 0 calc(33.33% - 16px)' }, minWidth: 0 }}>
           <Card sx={{ height: '100%', borderRadius: 3, boxShadow: 'none', border: '1px solid #e2e8f0' }}>
             <CardContent>
-              <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>Linhas Mais Caras</Typography>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>{t('dashboard.mostExpensiveLines')}</Typography>
               <List disablePadding>
                 {data?.charts.expensiveLines?.map((line, i) => (
                   <ListItem key={i} divider={i < (data?.charts.expensiveLines?.length ?? 0) - 1} sx={{ px: 0, py: 1.5 }}>
@@ -172,7 +174,7 @@ export default function DashboardPage() {
         <Box sx={{ flex: { xs: '1 1 100%', md: '0 0 calc(33.33% - 16px)' }, minWidth: 0 }}>
           <Card sx={{ height: '100%', borderRadius: 3, boxShadow: 'none', border: '1px solid #e2e8f0' }}>
             <CardContent>
-              <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>Maior Consumo de Dados (MB)</Typography>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>{t('dashboard.topDataConsumption')}</Typography>
               <List disablePadding>
                 {data?.charts.topDataLines?.map((line, i) => (
                   <ListItem key={i} divider={i < (data?.charts.topDataLines?.length ?? 0) - 1} sx={{ px: 0, py: 1.5 }}>
@@ -190,7 +192,7 @@ export default function DashboardPage() {
       <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end' }}>
         <Button variant="outlined" startIcon={<GetAppIcon />}
           sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 700, py: 1, px: 3 }}>
-          Exportar Relatório
+          {t('dashboard.exportReport')}
         </Button>
       </Box>
     </Container>

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
+import { connectDB } from '@/lib/config/database';
+import { verifyToken } from '@/lib/utils/jwt';
 import UserWorkspace from '@/lib/models/UserWorkspace';
 import OperationLog from '@/lib/models/OperationLog';
 
@@ -7,11 +8,12 @@ function getAuthUser(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
   if (!authHeader) throw new Error('Token not provided');
   const [, token] = authHeader.split(' ');
-  return jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret_key') as { id: string; email: string; profile: string };
+  return verifyToken(token) as { id: string; email: string; profile: string };
 }
 
 export async function GET(request: NextRequest) {
   try {
+    await connectDB();
     const decoded = getAuthUser(request);
     const userId = request.nextUrl.searchParams.get('userId') || decoded.id;
     const targetUserId = userId;
@@ -20,7 +22,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ multiple: false, count: 1 });
     }
 
-    const associations: any[] = await UserWorkspace.findAll({ where: { user_id: targetUserId } });
+    const associations: any[] = await UserWorkspace.find({ user_id: targetUserId });
     if (associations.length > 1) {
       await OperationLog.create({
         user_id: targetUserId, workspace_id: 'SYSTEM',

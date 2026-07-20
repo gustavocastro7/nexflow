@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
+import { connectDB } from '@/lib/config/database';
+import { verifyToken } from '@/lib/utils/jwt';
 import Collaborator from '@/lib/models/Collaborator';
 import { logOperation } from '@/lib/utils/auditLogger';
 
@@ -7,14 +8,15 @@ function getAuthUser(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
   if (!authHeader) throw new Error('Token not provided');
   const [, token] = authHeader.split(' ');
-  return jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret_key') as { id: string; email: string; profile: string };
+  return verifyToken(token) as { id: string; email: string; profile: string };
 }
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    await connectDB();
     getAuthUser(request);
     const { id } = await params;
-    const collaborator: any = await Collaborator.findByPk(id);
+    const collaborator: any = await Collaborator.findById(id);
     if (!collaborator) return NextResponse.json({ error: 'Collaborator not found' }, { status: 404 });
     return NextResponse.json(collaborator);
   } catch (error: any) {
@@ -27,14 +29,16 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    await connectDB();
     const decoded = getAuthUser(request);
     const { id } = await params;
     const { name, external_id, email, department } = await request.json();
 
-    const collaborator: any = await Collaborator.findByPk(id);
+    const collaborator: any = await Collaborator.findById(id);
     if (!collaborator) return NextResponse.json({ error: 'Collaborator not found' }, { status: 404 });
 
-    await collaborator.update({ name, external_id, email, department });
+    Object.assign(collaborator, { name, external_id, email, department });
+    await collaborator.save();
 
     await logOperation({
       user_id: decoded.id, workspace_id: collaborator.workspace_id,
@@ -54,16 +58,17 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    await connectDB();
     const decoded = getAuthUser(request);
     const { id } = await params;
-    const collaborator: any = await Collaborator.findByPk(id);
+    const collaborator: any = await Collaborator.findById(id);
     if (!collaborator) return NextResponse.json({ error: 'Collaborator not found' }, { status: 404 });
 
     const workspace_id = collaborator.workspace_id;
     const collaborator_id = collaborator.id;
     const collaborator_name = collaborator.name;
 
-    await collaborator.destroy();
+    await collaborator.deleteOne();
 
     await logOperation({
       user_id: decoded.id, workspace_id,

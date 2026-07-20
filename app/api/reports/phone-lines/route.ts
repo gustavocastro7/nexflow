@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
-import { getSequelize } from '@/lib/config/database';
+import { connectDB } from '@/lib/config/database';
+import { verifyToken } from '@/lib/utils/jwt';
+import { escapeRegex } from '@/lib/utils/db';
+import Invoice from '@/lib/models/Invoice';
+import PhoneLine from '@/lib/models/PhoneLine';
+import Collaborator from '@/lib/models/Collaborator';
+import CostCenter from '@/lib/models/CostCenter';
 
 const PAGE_SIZE = 50;
 
@@ -8,11 +13,12 @@ function getAuthUser(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
   if (!authHeader) throw new Error('Token not provided');
   const [, token] = authHeader.split(' ');
-  return jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret_key') as { id: string; email: string; profile: string };
+  return verifyToken(token) as { id: string; email: string; profile: string };
 }
 
 export async function GET(request: NextRequest) {
   try {
+    await connectDB();
     getAuthUser(request);
     const { searchParams } = request.nextUrl;
     const workspaceId = searchParams.get('workspaceId');
@@ -21,35 +27,78 @@ export async function GET(request: NextRequest) {
 
     if (!workspaceId) return NextResponse.json({ error: 'Workspace ID is required' }, { status: 400 });
 
-    const sequelize = getSequelize();
     const offset = page * PAGE_SIZE;
-    const searchPattern = search ? `%${search}%` : null;
 
-    const baseSql = `
-      FROM (SELECT DISTINCT source_phone, workspace_id FROM invoices WHERE workspace_id = :workspaceId AND source_phone IS NOT NULL AND source_phone != ''
-        UNION SELECT DISTINCT phone_number as source_phone, workspace_id FROM phone_lines WHERE workspace_id = :workspaceId) AS unique_phones
-      LEFT JOIN phone_lines pl ON pl.phone_number = unique_phones.source_phone AND pl.workspace_id = unique_phones.workspace_id
-      LEFT JOIN collaborators coll ON coll.id = pl.collaborator_id
-      LEFT JOIN cost_centers cc ON cc.id = pl.cost_center_id
-      WHERE 1=1 ${searchPattern ? `AND (unique_phones.source_phone LIKE :search OR coll.name LIKE :search OR pl.responsible_name LIKE :search OR cc.name LIKE :search OR cc.code LIKE :search)` : ''}
-    `;
+    const [invoicePhones, phoneLinePhones] = await Promise.all([
+      Invoice.distinct('source_phone', { workspace_id: workspaceId, source_phone: { $nin: [null, ''] } }),
+      PhoneLine.distinct('phone_number', { workspace_id: workspaceId }),
+    ]);
+    const uniquePhones = [...new Set([...invoicePhones, ...phoneLinePhones])];
 
-    const [rows] = await sequelize.query(`
-      SELECT unique_phones.source_phone AS "phoneNumber", pl.id AS id,
-        COALESCE(coll.name, pl.responsible_name, (SELECT original_user FROM invoices inv WHERE inv.source_phone = unique_phones.source_phone AND inv.workspace_id = unique_phones.workspace_id AND inv.original_user IS NOT NULL AND inv.original_user != '' LIMIT 1)) AS "responsibleName",
-        COALESCE(coll.external_id, pl.responsible_id) AS "responsibleId", coll.id AS "collaboratorId",
-        cc.code AS "costCenterCode", COALESCE(cc.name, 'Unallocated') AS "costCenterName"
-      ${baseSql} ORDER BY ISNULL(cc.code), cc.code ASC, unique_phones.source_phone ASC LIMIT :limit OFFSET :offset
-    `, { replacements: { workspaceId, search: searchPattern, limit: PAGE_SIZE, offset } });
+    const phoneLines: any[] = await PhoneLine.find({ workspace_id: workspaceId, phone_number: { $in: uniquePhones } }).lean();
+    const plByPhone = new Map(phoneLines.map((p) => [p.phone_number, p]));
 
-    const [[{ count }]] = await sequelize.query(`SELECT COUNT(*) AS count ${baseSql}`, { replacements: { workspaceId, search: searchPattern } });
+    const collaboratorIds = [...new Set(phoneLines.map((p) => p.collaborator_id).filter(Boolean))];
+    const costCenterIds = [...new Set(phoneLines.map((p) => p.cost_center_id).filter(Boolean))];
+    const [collaborators, costCenters] = await Promise.all([
+      Collaborator.find({ _id: { $in: collaboratorIds } }).select('name external_id').lean(),
+      CostCenter.find({ _id: { $in: costCenterIds } }).select('name code').lean(),
+    ]);
+    const collabMap = new Map(collaborators.map((c: any) => [c._id, c]));
+    const ccMap = new Map(costCenters.map((c: any) => [c._id, c]));
 
-    const items = (rows as any[]).map(r => ({
-      id: r.id || `temp-${r.phoneNumber}`, costCenterCode: r.costCenterCode || '', costCenterName: r.costCenterName,
-      phoneNumber: r.phoneNumber, responsibleName: r.responsibleName || '', responsibleId: r.responsibleId || '',
-    }));
+    const needsFallback = uniquePhones.filter((phone) => {
+      const pl: any = plByPhone.get(phone);
+      const coll: any = pl?.collaborator_id ? collabMap.get(pl.collaborator_id) : null;
+      return !coll?.name && !pl?.responsible_name;
+    });
 
-    return NextResponse.json({ items, total: count, hasMore: offset + rows.length < count });
+    const fallbackMap = new Map<string, string>();
+    if (needsFallback.length > 0) {
+      const fallbackRows: any[] = await Invoice.find({
+        workspace_id: workspaceId, source_phone: { $in: needsFallback }, original_user: { $nin: [null, ''] }
+      }).select('source_phone original_user').lean();
+      for (const row of fallbackRows) {
+        if (!fallbackMap.has(row.source_phone)) fallbackMap.set(row.source_phone, row.original_user);
+      }
+    }
+
+    let items = uniquePhones.map((phone) => {
+      const pl: any = plByPhone.get(phone);
+      const coll: any = pl?.collaborator_id ? collabMap.get(pl.collaborator_id) : null;
+      const cc: any = pl?.cost_center_id ? ccMap.get(pl.cost_center_id) : null;
+      const responsibleName = coll?.name || pl?.responsible_name || fallbackMap.get(phone) || '';
+      const responsibleId = coll?.external_id || pl?.responsible_id || '';
+      return {
+        id: pl?._id || `temp-${phone}`,
+        costCenterCode: cc?.code || '',
+        costCenterName: cc?.name || 'Unallocated',
+        phoneNumber: phone,
+        responsibleName,
+        responsibleId,
+        collaboratorId: pl?.collaborator_id || null,
+      };
+    });
+
+    if (search) {
+      const regex = new RegExp(escapeRegex(search), 'i');
+      items = items.filter((it) =>
+        regex.test(it.phoneNumber) || regex.test(it.responsibleName) || regex.test(it.costCenterName) || regex.test(it.costCenterCode)
+      );
+    }
+
+    items.sort((a, b) => {
+      const aHas = a.costCenterCode ? 0 : 1;
+      const bHas = b.costCenterCode ? 0 : 1;
+      if (aHas !== bHas) return aHas - bHas;
+      if (a.costCenterCode !== b.costCenterCode) return a.costCenterCode < b.costCenterCode ? -1 : 1;
+      return a.phoneNumber < b.phoneNumber ? -1 : a.phoneNumber > b.phoneNumber ? 1 : 0;
+    });
+
+    const total = items.length;
+    const paged = items.slice(offset, offset + PAGE_SIZE);
+
+    return NextResponse.json({ items: paged, total, hasMore: offset + paged.length < total });
   } catch (error: any) {
     if (error.message === 'Token not provided' || error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

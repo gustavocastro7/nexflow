@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
-import { getSequelize } from '@/lib/config/database';
+import { connectDB } from '@/lib/config/database';
+import { verifyToken } from '@/lib/utils/jwt';
+import { escapeRegex } from '@/lib/utils/db';
+import Invoice from '@/lib/models/Invoice';
 import { logOperation } from '@/lib/utils/auditLogger';
 
 const PAGE_SIZE = 50;
@@ -9,11 +11,12 @@ function getAuthUser(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
   if (!authHeader) throw new Error('Token not provided');
   const [, token] = authHeader.split(' ');
-  return jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret_key') as { id: string; email: string; profile: string };
+  return verifyToken(token) as { id: string; email: string; profile: string };
 }
 
 export async function GET(request: NextRequest) {
   try {
+    await connectDB();
     const decoded = getAuthUser(request);
     const { searchParams } = request.nextUrl;
     const workspaceId = searchParams.get('workspaceId');
@@ -31,27 +34,66 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const sequelize = getSequelize();
     const offset = page * PAGE_SIZE;
-    const like = search ? `%${search}%` : null;
 
-    const whereSql = `WHERE i.workspace_id = :workspaceId AND ri.due_date = :dueDate ${like ? "AND (cc.code LIKE :like OR cc.name LIKE :like OR coll.name LIKE :like OR pl.responsible_name LIKE :like OR i.source_phone LIKE :like OR i.original_user LIKE :like)" : ""}`;
-    const fromSql = `FROM invoices i JOIN raw_invoices ri ON ri.id = i.raw_invoice_id LEFT JOIN phone_lines pl ON pl.phone_number = i.source_phone AND pl.workspace_id = i.workspace_id LEFT JOIN collaborators coll ON coll.id = pl.collaborator_id LEFT JOIN cost_centers cc ON cc.id = pl.cost_center_id ${whereSql} GROUP BY i.source_phone, coll.name, pl.responsible_name, i.original_user, coll.external_id, pl.responsible_id, cc.code, cc.name`;
+    const pipeline: any[] = [
+      { $match: { workspace_id: workspaceId } },
+      { $lookup: { from: 'rawinvoices', localField: 'raw_invoice_id', foreignField: '_id', as: 'raw' } },
+      { $unwind: '$raw' },
+      { $match: { 'raw.due_date': dueDate } },
+      { $lookup: {
+          from: 'phonelines',
+          let: { phone: '$source_phone', ws: '$workspace_id' },
+          pipeline: [{ $match: { $expr: { $and: [{ $eq: ['$phone_number', '$$phone'] }, { $eq: ['$workspace_id', '$$ws'] }] } } }],
+          as: 'pl'
+        } },
+      { $unwind: { path: '$pl', preserveNullAndEmptyArrays: true } },
+      { $lookup: { from: 'collaborators', localField: 'pl.collaborator_id', foreignField: '_id', as: 'coll' } },
+      { $unwind: { path: '$coll', preserveNullAndEmptyArrays: true } },
+      { $lookup: { from: 'costcenters', localField: 'pl.cost_center_id', foreignField: '_id', as: 'cc' } },
+      { $unwind: { path: '$cc', preserveNullAndEmptyArrays: true } },
+    ];
 
-    const [rows] = await sequelize.query(`
-      SELECT i.source_phone AS phone_number, COALESCE(coll.name, pl.responsible_name, i.original_user, '') AS responsible_name,
-        COALESCE(coll.external_id, pl.responsible_id) AS responsible_id, cc.code AS cc_code, COALESCE(cc.name, 'Unallocated') AS cc_name, SUM(i.charged_value) AS total
-      ${fromSql} ORDER BY responsible_name ASC, i.source_phone ASC LIMIT :limit OFFSET :offset
-    `, { replacements: { workspaceId, dueDate, like, limit: PAGE_SIZE, offset } });
+    if (search) {
+      const regex = new RegExp(escapeRegex(search), 'i');
+      pipeline.push({ $match: { $or: [
+        { 'cc.code': regex }, { 'cc.name': regex }, { 'coll.name': regex },
+        { 'pl.responsible_name': regex }, { source_phone: regex }, { original_user: regex },
+      ] } });
+    }
 
-    const [[{ count, grand_total }]] = await sequelize.query(`SELECT COUNT(*) AS count, COALESCE(SUM(t.total), 0) AS grand_total FROM (SELECT SUM(i.charged_value) AS total ${fromSql}) t`, { replacements: { workspaceId, dueDate, like } });
+    pipeline.push(
+      { $addFields: {
+          resolvedResponsibleName: { $ifNull: ['$coll.name', { $ifNull: ['$pl.responsible_name', { $ifNull: ['$original_user', ''] }] }] },
+          resolvedResponsibleId: { $ifNull: ['$coll.external_id', '$pl.responsible_id'] },
+        } },
+      { $group: {
+          _id: { phone: '$source_phone', responsible_name: '$resolvedResponsibleName', responsible_id: '$resolvedResponsibleId', cc_code: '$cc.code', cc_name: '$cc.name' },
+          total: { $sum: '$charged_value' },
+        } },
+      { $sort: { '_id.responsible_name': 1, '_id.phone': 1 } },
+      { $facet: {
+          data: [{ $skip: offset }, { $limit: PAGE_SIZE }],
+          totalCount: [{ $count: 'count' }],
+          grandTotal: [{ $group: { _id: null, total: { $sum: '$total' } } }],
+        } },
+    );
 
-    const items = (rows as any[]).map(r => ({
-      responsibleName: r.responsible_name || '', responsibleId: r.responsible_id || '',
-      phoneNumber: r.phone_number, costCenterCode: r.cc_code || '', costCenterName: r.cc_name, total: parseFloat(r.total || 0),
+    const [result] = await Invoice.aggregate(pipeline);
+    const rows = result?.data || [];
+    const count = result?.totalCount?.[0]?.count || 0;
+    const grandTotal = result?.grandTotal?.[0]?.total || 0;
+
+    const items = rows.map((r: any) => ({
+      responsibleName: r._id.responsible_name || '',
+      responsibleId: r._id.responsible_id || '',
+      phoneNumber: r._id.phone,
+      costCenterCode: r._id.cc_code || '',
+      costCenterName: r._id.cc_name || 'Unallocated',
+      total: r.total || 0,
     }));
 
-    return NextResponse.json({ items, total: count, grandTotal: parseFloat(grand_total || 0), hasMore: offset + rows.length < count });
+    return NextResponse.json({ items, total: count, grandTotal, hasMore: offset + rows.length < count });
   } catch (error: any) {
     if (error.message === 'Token not provided' || error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

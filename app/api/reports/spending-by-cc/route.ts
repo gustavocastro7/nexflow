@@ -1,18 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
-import { getSequelize } from '@/lib/config/database';
+import { connectDB } from '@/lib/config/database';
+import { verifyToken } from '@/lib/utils/jwt';
 import Workspace from '@/lib/models/Workspace';
+import Invoice from '@/lib/models/Invoice';
+import PhoneLine from '@/lib/models/PhoneLine';
+import CostCenter from '@/lib/models/CostCenter';
 import { logOperation } from '@/lib/utils/auditLogger';
 
 function getAuthUser(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
   if (!authHeader) throw new Error('Token not provided');
   const [, token] = authHeader.split(' ');
-  return jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret_key') as { id: string; email: string; profile: string };
+  return verifyToken(token) as { id: string; email: string; profile: string };
 }
 
 export async function GET(request: NextRequest) {
   try {
+    await connectDB();
     const decoded = getAuthUser(request);
     const { searchParams } = request.nextUrl;
     const workspaceId = searchParams.get('workspaceId');
@@ -30,42 +34,48 @@ export async function GET(request: NextRequest) {
       payload: { mes, ano, centroCustoId, telefone }
     });
 
-    const sequelize = getSequelize();
-    const workspace: any = await Workspace.findByPk(workspaceId);
+    const workspace: any = await Workspace.findById(workspaceId);
     const startDay = workspace?.billing_cycle_start_day || 1;
 
-    const replacements: Record<string, any> = { workspaceId };
-    let whereSql = 'WHERE i.workspace_id = :workspaceId';
+    const filter: Record<string, any> = { workspace_id: workspaceId };
 
     if (mes && ano) {
+      let startDate: string, endDate: string;
       if (startDay === 1) {
-        whereSql += ' AND i.item_date BETWEEN :startDate AND :endDate';
-        replacements.startDate = `${ano}-${mes.padStart(2, '0')}-01`;
-        replacements.endDate = new Date(parseInt(ano), parseInt(mes), 0).toISOString().split('T')[0];
+        startDate = `${ano}-${mes.padStart(2, '0')}-01`;
+        endDate = new Date(parseInt(ano), parseInt(mes), 0).toISOString().split('T')[0];
       } else {
-        const startDate = new Date(parseInt(ano), parseInt(mes) - 1, startDay);
-        const endDate = new Date(parseInt(ano), parseInt(mes), startDay - 1);
-        whereSql += ' AND i.item_date BETWEEN :startDate AND :endDate';
-        replacements.startDate = startDate.toISOString().split('T')[0];
-        replacements.endDate = endDate.toISOString().split('T')[0];
+        const sd = new Date(parseInt(ano), parseInt(mes) - 1, startDay);
+        const ed = new Date(parseInt(ano), parseInt(mes), startDay - 1);
+        startDate = sd.toISOString().split('T')[0];
+        endDate = ed.toISOString().split('T')[0];
       }
+      filter.item_date = { $gte: startDate, $lte: endDate };
     } else if (ano) {
-      whereSql += ' AND i.item_date BETWEEN :anoStart AND :anoEnd';
-      replacements.anoStart = `${ano}-01-01`;
-      replacements.anoEnd = `${ano}-12-31`;
+      filter.item_date = { $gte: `${ano}-01-01`, $lte: `${ano}-12-31` };
     }
 
-    if (telefone) { whereSql += ' AND i.source_phone = :telefone'; replacements.telefone = telefone; }
+    if (telefone) filter.source_phone = telefone;
 
-    const [allInvoices]: any[] = await sequelize.query(`
-      SELECT i.id, i.operator, i.source_phone, i.item_date, i.item_time, i.description, i.charged_value,
-        cc.id AS cc_id, cc.name AS cc_name
-      FROM invoices i LEFT JOIN phone_lines pl ON pl.phone_number = i.source_phone AND pl.workspace_id = i.workspace_id
-      LEFT JOIN cost_centers cc ON cc.id = pl.cost_center_id ${whereSql}
-    `, { replacements });
+    const allInvoices: any[] = await Invoice.find(filter)
+      .select('operator source_phone item_date item_time description charged_value')
+      .lean();
+
+    const phones = [...new Set(allInvoices.map((i) => i.source_phone).filter(Boolean))];
+    const phoneLines: any[] = await PhoneLine.find({ workspace_id: workspaceId, phone_number: { $in: phones } })
+      .select('phone_number cost_center_id').lean();
+    const ccIds = [...new Set(phoneLines.map((p) => p.cost_center_id).filter(Boolean))];
+    const costCenters: any[] = await CostCenter.find({ _id: { $in: ccIds } }).select('name').lean();
+    const ccNameMap = new Map(costCenters.map((c) => [c._id, c.name]));
+    const phoneToCC = new Map(phoneLines.map((p) => [p.phone_number, p.cost_center_id ? { id: p.cost_center_id, name: ccNameMap.get(p.cost_center_id) } : null]));
+
+    const enriched = allInvoices.map((f) => {
+      const cc = phoneToCC.get(f.source_phone) || null;
+      return { ...f, cc_id: cc?.id, cc_name: cc?.name };
+    });
 
     const summaryMap = new Map();
-    allInvoices.forEach((f: any) => {
+    enriched.forEach((f: any) => {
       const ccId = f.cc_id || 'unallocated';
       if (!summaryMap.has(ccId)) summaryMap.set(ccId, { id: ccId, name: f.cc_name || 'Unallocated', total: 0, phones: new Set() });
       const s = summaryMap.get(ccId);
@@ -77,7 +87,7 @@ export async function GET(request: NextRequest) {
     if (centroCustoId) summary = summary.filter((s: any) => s.id === centroCustoId);
 
     const detailsMap = new Map();
-    allInvoices.forEach((f: any) => {
+    enriched.forEach((f: any) => {
       const phone = f.source_phone || 'Unknown';
       if (!detailsMap.has(phone)) detailsMap.set(phone, { phone, costCenter: f.cc_name || 'Unallocated', total: 0, recordCount: 0 });
       const d = detailsMap.get(phone);
@@ -86,8 +96,8 @@ export async function GET(request: NextRequest) {
     });
     const details = Array.from(detailsMap.values());
 
-    const general = allInvoices.map((f: any) => ({
-      id: f.id, operator: f.operator, phone: f.source_phone, date: f.item_date, time: f.item_time,
+    const general = enriched.map((f: any) => ({
+      id: f._id, operator: f.operator, phone: f.source_phone, date: f.item_date, time: f.item_time,
       service: f.description, value: parseFloat(f.charged_value || 0), costCenter: f.cc_name || 'Unallocated',
     })).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
 

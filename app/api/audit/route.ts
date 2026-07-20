@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
-import { Op } from 'sequelize';
+import { connectDB } from '@/lib/config/database';
+import { verifyToken } from '@/lib/utils/jwt';
 import OperationLog from '@/lib/models/OperationLog';
 import User from '@/lib/models/User';
 
@@ -8,11 +8,12 @@ function getAuthUser(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
   if (!authHeader) throw new Error('Token not provided');
   const [, token] = authHeader.split(' ');
-  return jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret_key') as { id: string; email: string; profile: string };
+  return verifyToken(token) as { id: string; email: string; profile: string };
 }
 
 export async function GET(request: NextRequest) {
   try {
+    await connectDB();
     const decoded = getAuthUser(request);
     if (decoded.profile !== 'jedi') {
       return NextResponse.json({ error: 'Access denied. Jedi profile required.' }, { status: 403 });
@@ -29,23 +30,31 @@ export async function GET(request: NextRequest) {
     const endDate = searchParams.get('endDate');
 
     const offset = (page - 1) * limit;
-    const where: Record<string, any> = {};
+    const filter: Record<string, any> = {};
 
-    if (action) where.action = action;
-    if (entity) where.entity = entity;
-    if (user_id) where.user_id = user_id;
-    if (workspace_id) where.workspace_id = workspace_id;
+    if (action) filter.action = action;
+    if (entity) filter.entity = entity;
+    if (user_id) filter.user_id = user_id;
+    if (workspace_id) filter.workspace_id = workspace_id;
     if (startDate || endDate) {
-      where.created_at = {};
-      if (startDate) where.created_at[Op.gte] = new Date(startDate);
-      if (endDate) where.created_at[Op.lte] = new Date(endDate);
+      filter.created_at = {};
+      if (startDate) filter.created_at.$gte = new Date(startDate);
+      if (endDate) filter.created_at.$lte = new Date(endDate);
     }
 
-    const { count, rows: logs }: { count: number; rows: any[] } = await (OperationLog as any).findAndCountAll({
-      where,
-      limit, offset,
-      order: [['created_at', 'DESC']],
-      include: [{ model: User, as: 'user', attributes: ['name', 'email'] }]
+    const [count, logsRaw] = await Promise.all([
+      OperationLog.countDocuments(filter),
+      OperationLog.find(filter).sort({ created_at: -1 }).skip(offset).limit(limit),
+    ]);
+
+    const userIds = [...new Set(logsRaw.map((l: any) => l.user_id).filter(Boolean))];
+    const users = await User.find({ _id: { $in: userIds } }).select('name email');
+    const userMap = new Map(users.map((u: any) => [u.id, { name: u.name, email: u.email }]));
+
+    const logs = logsRaw.map((l: any) => {
+      const obj = l.toObject();
+      obj.user = l.user_id ? userMap.get(l.user_id) || null : null;
+      return obj;
     });
 
     return NextResponse.json({

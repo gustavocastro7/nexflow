@@ -5,6 +5,7 @@ import { ThemeProvider, CssBaseline } from '@mui/material';
 import { Snackbar, Alert } from '@mui/material';
 import type { AlertColor } from '@mui/material';
 import { getTheme } from './theme/theme';
+import { LanguageProvider } from './i18n/LanguageContext';
 
 export const ColorModeContext = createContext({ toggleColorMode: () => {} });
 
@@ -78,11 +79,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
   const theme = useMemo(() => getTheme(mode), [mode]);
 
   return (
-    <ColorModeContext.Provider value={colorMode}>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <NotificationProvider>{children}</NotificationProvider>
-      </ThemeProvider>
-    </ColorModeContext.Provider>
+    <LanguageProvider>
+      <ColorModeContext.Provider value={colorMode}>
+        <ThemeProvider theme={theme}>
+          <CssBaseline />
+          <NotificationProvider>{children}</NotificationProvider>
+        </ThemeProvider>
+      </ColorModeContext.Provider>
+    </LanguageProvider>
   );
 }

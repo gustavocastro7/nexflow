@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
-import { Op } from 'sequelize';
+import { connectDB } from '@/lib/config/database';
+import { verifyToken } from '@/lib/utils/jwt';
 import Invoice from '@/lib/models/Invoice';
 import RawInvoice from '@/lib/models/RawInvoice';
 
@@ -8,11 +8,12 @@ function getAuthUser(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
   if (!authHeader) throw new Error('Token not provided');
   const [, token] = authHeader.split(' ');
-  return jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret_key') as { id: string; email: string; profile: string };
+  return verifyToken(token) as { id: string; email: string; profile: string };
 }
 
 export async function GET(request: NextRequest) {
   try {
+    await connectDB();
     getAuthUser(request);
     const { searchParams } = request.nextUrl;
     const workspaceId = searchParams.get('workspaceId');
@@ -24,32 +25,35 @@ export async function GET(request: NextRequest) {
 
     if (!workspaceId) return NextResponse.json({ error: 'Workspace ID is required' }, { status: 400 });
 
-    const where: Record<string, any> = { workspace_id: workspaceId };
-    if (operator) where.operator = operator;
-    if (raw_invoice_id) where.raw_invoice_id = raw_invoice_id;
+    const filter: Record<string, any> = { workspace_id: workspaceId };
+    if (operator) filter.operator = operator;
 
-    const include: any[] = [];
-    if (dueDate === 'NO_DATE') {
-      include.push({ model: RawInvoice, as: 'header', attributes: [], where: { due_date: { [Op.is]: null } }, required: true });
+    if (raw_invoice_id) {
+      filter.raw_invoice_id = raw_invoice_id;
     } else if (dueDate) {
-      include.push({ model: RawInvoice, as: 'header', attributes: [], where: { due_date: dueDate }, required: true });
+      const dueDateFilter = dueDate === 'NO_DATE'
+        ? { workspace_id: workspaceId, due_date: null }
+        : { workspace_id: workspaceId, due_date: dueDate };
+      const rawIds = (await RawInvoice.find(dueDateFilter).select('_id')).map((r: any) => r.id);
+      filter.raw_invoice_id = { $in: rawIds };
     }
 
-    const order = [['item_date', 'DESC'], ['item_time', 'DESC'], ['id', 'ASC']];
+    const sort = { item_date: -1 as const, item_time: -1 as const, _id: 1 as const };
 
     if (page !== null || limit !== null) {
       const pageNum = Math.max(1, parseInt(page || '1', 10));
       const pageSize = Math.min(200, Math.max(1, parseInt(limit || '50', 10)));
       const offset = (pageNum - 1) * pageSize;
 
-      const { rows, count }: { rows: any[]; count: number } = await (Invoice as any).findAndCountAll({
-        where, include, order, limit: pageSize, offset
-      });
+      const [rows, count] = await Promise.all([
+        Invoice.find(filter).sort(sort).skip(offset).limit(pageSize),
+        Invoice.countDocuments(filter),
+      ]);
 
       return NextResponse.json({ data: rows, page: pageNum, limit: pageSize, total: count, hasMore: offset + rows.length < count });
     }
 
-    const invoices: any = await Invoice.findAll({ where, include, order });
+    const invoices: any = await Invoice.find(filter).sort(sort);
     return NextResponse.json(invoices);
   } catch (error: any) {
     if (error.message === 'Token not provided' || error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {

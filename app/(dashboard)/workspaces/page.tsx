@@ -4,12 +4,14 @@ import { useState, useEffect, useCallback } from 'react';
 import { Box, Typography, Paper, Container, Alert, CircularProgress, List, ListItem, ListItemButton, ListItemText, ListItemIcon, Divider, alpha, useTheme } from '@mui/material';
 import BusinessIcon from '@mui/icons-material/Business';
 import { useRouter } from 'next/navigation';
-import { apiGet, apiPut } from '../../lib/api/client';
-import type { Workspace, User } from '../types';
+import { apiGet, apiPut } from '@/lib/api/client';
+import type { Workspace, User } from '@/app/types';
+import { useLanguage } from '@/app/i18n/LanguageContext';
 
 export default function WorkspaceSelectionPage() {
   const theme = useTheme();
   const router = useRouter();
+  const { t } = useLanguage();
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -19,7 +21,7 @@ export default function WorkspaceSelectionPage() {
 
   const fetchWorkspaces = useCallback(async () => {
     if (!user?.id) {
-      setError('Usuário não identificado');
+      setError(t('workspaceSelection.userNotIdentified'));
       setLoading(false);
       return;
     }
@@ -39,11 +41,11 @@ export default function WorkspaceSelectionPage() {
       }
     } catch (err: any) {
       console.error('Fetch workspaces error:', err);
-      setError('Erro ao carregar workspaces');
+      setError(t('workspaceSelection.loadError'));
     } finally {
       setLoading(false);
     }
-  }, [user?.id, router]);
+  }, [user?.id, router, t]);
 
   useEffect(() => { fetchWorkspaces(); }, [fetchWorkspaces]);
 
@@ -65,10 +67,10 @@ export default function WorkspaceSelectionPage() {
               <Typography variant="h4" sx={{ color: 'white', fontWeight: 900 }}>T</Typography>
             </Box>
             <Typography variant="h4" gutterBottom sx={{ fontWeight: 800 }}>
-              Welcome, {user?.name?.split(' ')[0]}
+              {t('workspaceSelection.welcome', { name: user?.name?.split(' ')[0] || '' })}
             </Typography>
             <Typography variant="body1" color="textSecondary">
-              Select the environment you want to access today.
+              {t('workspaceSelection.selectEnvironment')}
             </Typography>
           </Box>
 
@@ -81,8 +83,8 @@ export default function WorkspaceSelectionPage() {
               {error && <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>{error}</Alert>}
               {workspaces.length === 0 ? (
                 <Box sx={{ py: 3 }}>
-                  <Typography variant="body1" color="textSecondary" sx={{ mb: 3 }}>Você não está associado a nenhum workspace ativo.</Typography>
-                  <Alert severity="warning" sx={{ borderRadius: 2 }}>Contate seu administrador para solicitar acesso.</Alert>
+                  <Typography variant="body1" color="textSecondary" sx={{ mb: 3 }}>{t('workspaceSelection.noWorkspacesAssociated')}</Typography>
+                  <Alert severity="warning" sx={{ borderRadius: 2 }}>{t('workspaceSelection.contactAdmin')}</Alert>
                 </Box>
               ) : (
                 <List sx={{ pt: 0 }}>

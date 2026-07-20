@@ -1,19 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
+import { connectDB } from '@/lib/config/database';
+import { verifyToken } from '@/lib/utils/jwt';
 import Workspace from '@/lib/models/Workspace';
 
 function getAuthUser(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
   if (!authHeader) throw new Error('Token not provided');
   const [, token] = authHeader.split(' ');
-  return jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret_key') as { id: string; email: string; profile: string };
+  return verifyToken(token) as { id: string; email: string; profile: string };
 }
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    await connectDB();
     getAuthUser(request);
     const { id } = await params;
-    const workspace: any = await Workspace.findByPk(id);
+    const workspace: any = await Workspace.findById(id);
     if (!workspace) return NextResponse.json({ error: 'Workspace not found' }, { status: 404 });
     return NextResponse.json(workspace);
   } catch (error: any) {
@@ -26,6 +28,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    await connectDB();
     const decoded = getAuthUser(request);
     if (decoded.profile !== 'jedi') {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
@@ -34,16 +37,15 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const { id } = await params;
     const { name, status, billing_cycle_start_day, logo } = await request.json();
 
-    const workspace: any = await Workspace.findByPk(id);
+    const workspace: any = await Workspace.findById(id);
     if (!workspace) return NextResponse.json({ error: 'Workspace not found' }, { status: 404 });
 
-    const updateData: Record<string, any> = {};
-    if (name !== undefined) updateData.name = name;
-    if (status !== undefined) updateData.status = status;
-    if (billing_cycle_start_day !== undefined) updateData.billing_cycle_start_day = billing_cycle_start_day;
-    if (logo !== undefined) updateData.logo = logo;
+    if (name !== undefined) workspace.name = name;
+    if (status !== undefined) workspace.status = status;
+    if (billing_cycle_start_day !== undefined) workspace.billing_cycle_start_day = billing_cycle_start_day;
+    if (logo !== undefined) workspace.logo = logo;
 
-    await workspace.update(updateData);
+    await workspace.save();
     return NextResponse.json(workspace);
   } catch (error: any) {
     if (error.message === 'Token not provided' || error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
@@ -55,16 +57,17 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    await connectDB();
     const decoded = getAuthUser(request);
     if (decoded.profile !== 'jedi') {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
     const { id } = await params;
-    const workspace: any = await Workspace.findByPk(id);
+    const workspace: any = await Workspace.findById(id);
     if (!workspace) return NextResponse.json({ error: 'Workspace not found' }, { status: 404 });
 
-    await workspace.destroy();
+    await workspace.deleteOne();
     return NextResponse.json({ message: 'Workspace deleted successfully' });
   } catch (error: any) {
     if (error.message === 'Token not provided' || error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {

@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
+export const maxDuration = 60;
+import { connectDB } from '@/lib/config/database';
+import { verifyToken } from '@/lib/utils/jwt';
+import { findOrCreate } from '@/lib/utils/db';
 import CostCenter from '@/lib/models/CostCenter';
 import Collaborator from '@/lib/models/Collaborator';
 import PhoneLine from '@/lib/models/PhoneLine';
@@ -9,7 +12,7 @@ function getAuthUser(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
   if (!authHeader) throw new Error('Token not provided');
   const [, token] = authHeader.split(' ');
-  return jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret_key') as { id: string; email: string; profile: string };
+  return verifyToken(token) as { id: string; email: string; profile: string };
 }
 
 function detectDelimiter(firstLine: string) {
@@ -61,6 +64,7 @@ function validateRow(row: { phone: string; name: string; cpf: string; costCenter
 
 export async function POST(request: NextRequest) {
   try {
+    await connectDB();
     const decoded = getAuthUser(request);
     const { content, workspaceId } = await request.json();
     if (!workspaceId) return NextResponse.json({ error: 'Workspace ID is required' }, { status: 400 });
@@ -91,10 +95,10 @@ export async function POST(request: NextRequest) {
           if (stats.costCenterCache[ccName]) {
             costCenterId = stats.costCenterCache[ccName];
           } else {
-            const [cc, created]: [any, boolean] = await CostCenter.findOrCreate({
-              where: { name: ccName, workspace_id: workspaceId },
-              defaults: { name: ccName, code: ccName.toUpperCase().replace(/[^A-Z0-9]/g, '_').substring(0, 50), workspace_id: workspaceId }
-            });
+            const [cc, created]: [any, boolean] = await findOrCreate(CostCenter,
+              { name: ccName, workspace_id: workspaceId },
+              { code: ccName.toUpperCase().replace(/[^A-Z0-9]/g, '_').substring(0, 50) }
+            );
             costCenterId = cc.id;
             stats.costCenterCache[ccName] = cc.id;
             if (created) { stats.costCentersCreated++; stats.costCentersCreatedNames.push(ccName); }
@@ -106,25 +110,26 @@ export async function POST(request: NextRequest) {
         if (stats.collaboratorCache[row.cpf]) {
           collaboratorId = stats.collaboratorCache[row.cpf];
         } else {
-          const [collab, collabCreated]: [any, boolean] = await Collaborator.findOrCreate({
-            where: { external_id: row.cpf, workspace_id: workspaceId },
-            defaults: { name: row.name, external_id: row.cpf, workspace_id: workspaceId }
-          });
-          if (!collabCreated) { await collab.update({ name: row.name }); stats.collaboratorsUpdated++; }
+          const [collab, collabCreated]: [any, boolean] = await findOrCreate(Collaborator,
+            { external_id: row.cpf, workspace_id: workspaceId },
+            { name: row.name }
+          );
+          if (!collabCreated) { collab.name = row.name; await collab.save(); stats.collaboratorsUpdated++; }
           else stats.collaboratorsCreated++;
           collaboratorId = collab.id;
           stats.collaboratorCache[row.cpf] = collab.id;
         }
 
         if (row.phone) {
-          const [pl, plCreated]: [any, boolean] = await PhoneLine.findOrCreate({
-            where: { phone_number: row.phone, workspace_id: workspaceId },
-            defaults: { phone_number: row.phone, responsible_name: row.name, collaborator_id: collaboratorId, cost_center_id: costCenterId, workspace_id: workspaceId }
-          });
+          const [pl, plCreated]: [any, boolean] = await findOrCreate(PhoneLine,
+            { phone_number: row.phone, workspace_id: workspaceId },
+            { responsible_name: row.name, collaborator_id: collaboratorId, cost_center_id: costCenterId }
+          );
           if (!plCreated) {
-            const updates: Record<string, any> = { responsible_name: row.name, collaborator_id: collaboratorId };
-            if (costCenterId) updates.cost_center_id = costCenterId;
-            await pl.update(updates);
+            pl.responsible_name = row.name;
+            pl.collaborator_id = collaboratorId;
+            if (costCenterId) pl.cost_center_id = costCenterId;
+            await pl.save();
             stats.phoneLinesUpdated++;
           } else stats.phoneLinesCreated++;
         }

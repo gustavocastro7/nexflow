@@ -1,16 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
+import { connectDB } from '@/lib/config/database';
+import { verifyToken } from '@/lib/utils/jwt';
 import UserConfig from '@/lib/models/UserConfig';
 
 function getAuthUser(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
   if (!authHeader) throw new Error('Token not provided');
   const [, token] = authHeader.split(' ');
-  return jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret_key') as { id: string; email: string; profile: string };
+  return verifyToken(token) as { id: string; email: string; profile: string };
 }
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    await connectDB();
     const decoded = getAuthUser(request);
     const { id } = await params;
 
@@ -20,11 +22,12 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     const { last_workspace_id, theme_mode, language } = await request.json();
 
-    let config: any = await UserConfig.findOne({ where: { user_id: id } });
+    let config: any = await UserConfig.findOne({ user_id: id });
     if (!config) {
       config = await UserConfig.create({ user_id: id, last_workspace_id, theme_mode, language });
     } else {
-      await config.update({ last_workspace_id, theme_mode, language });
+      Object.assign(config, { last_workspace_id, theme_mode, language });
+      await config.save();
     }
 
     return NextResponse.json(config);

@@ -10,12 +10,12 @@ echo ==================================================
 echo   Nexflow Control Panel
 echo ==================================================
 echo.
-echo  [1] Up       - Start MySQL
-echo  [2] Down     - Stop MySQL
-echo  [3] Restart  - Rebuild and restart MySQL
-echo  [4] Logs     - Follow MySQL logs
+echo  [1] Up       - Build ^& start app container
+echo  [2] Down     - Stop app container
+echo  [3] Restart  - Rebuild and restart app container
+echo  [4] Logs     - Follow app logs
 echo  [5] Status   - Show container status
-echo  [6] Seed     - Seed database
+echo  [6] Seed     - Seed database (MongoDB Atlas)
 echo  [7] Dev      - Start Next.js dev server
 echo  [8] Exit
 echo.
@@ -36,29 +36,29 @@ goto MENU
 
 :UP
 echo.
-echo Starting MySQL...
-docker compose -f "%COMPOSE_FILE%" up -d
+echo Building and starting app container...
+docker compose -f "%COMPOSE_FILE%" up -d --build
 if %errorlevel% neq 0 (
     echo [ERROR] Failed to start.
     pause
     goto MENU
 )
-echo MySQL running on localhost:3306
+echo App running on localhost:3002
 pause
 goto MENU
 
 :DOWN
 echo.
-echo Stopping MySQL...
+echo Stopping app container...
 docker compose -f "%COMPOSE_FILE%" down
 pause
 goto MENU
 
 :RESTART
 echo.
-echo Restarting MySQL...
+echo Restarting app container...
 docker compose -f "%COMPOSE_FILE%" down
-docker compose -f "%COMPOSE_FILE%" up -d
+docker compose -f "%COMPOSE_FILE%" up -d --build
 echo Done.
 pause
 goto MENU

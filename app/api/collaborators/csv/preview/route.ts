@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
-import { Op } from 'sequelize';
+export const maxDuration = 60;
+import { connectDB } from '@/lib/config/database';
+import { verifyToken } from '@/lib/utils/jwt';
 import CostCenter from '@/lib/models/CostCenter';
 import Collaborator from '@/lib/models/Collaborator';
 
@@ -8,7 +9,7 @@ function getAuthUser(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
   if (!authHeader) throw new Error('Token not provided');
   const [, token] = authHeader.split(' ');
-  return jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret_key') as { id: string; email: string; profile: string };
+  return verifyToken(token) as { id: string; email: string; profile: string };
 }
 
 function detectDelimiter(firstLine: string) {
@@ -60,6 +61,7 @@ function validateRow(row: { phone: string; name: string; cpf: string; costCenter
 
 export async function POST(request: NextRequest) {
   try {
+    await connectDB();
     getAuthUser(request);
     const { content, workspaceId } = await request.json();
     if (!workspaceId) return NextResponse.json({ error: 'Workspace ID is required' }, { status: 400 });
@@ -82,16 +84,15 @@ export async function POST(request: NextRequest) {
     });
 
     const costCenterNames = [...new Set(validRows.map(r => r.costCenter).filter(Boolean))];
-    const existingCCs: any[] = costCenterNames.length > 0 ? await CostCenter.findAll({
-      where: { name: { [Op.in]: costCenterNames }, workspace_id: workspaceId }
+    const existingCCs: any[] = costCenterNames.length > 0 ? await CostCenter.find({
+      name: { $in: costCenterNames }, workspace_id: workspaceId
     }) : [];
     const existingCCNames = new Set(existingCCs.map(cc => cc.name));
     const costCentersToCreate = costCenterNames.filter(n => !existingCCNames.has(n));
 
-    const existingCpf: any[] = await Collaborator.findAll({
-      where: { external_id: { [Op.in]: validRows.map(r => r.cpf) }, workspace_id: workspaceId },
-      attributes: ['external_id']
-    });
+    const existingCpf: any[] = await Collaborator.find({
+      external_id: { $in: validRows.map(r => r.cpf) }, workspace_id: workspaceId
+    }).select('external_id');
     const existingCpfs = new Set(existingCpf.map(c => c.external_id));
     const toCreate = validRows.filter(r => !existingCpfs.has(r.cpf)).length;
     const toUpdate = validRows.length - toCreate;

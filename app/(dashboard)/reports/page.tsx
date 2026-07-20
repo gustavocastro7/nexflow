@@ -11,9 +11,10 @@ import {
 import RefreshIcon from '@mui/icons-material/Refresh';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import SearchIcon from '@mui/icons-material/Search';
-import { apiGet } from '../../lib/api/client';
-import InfiniteScroll from '../components/InfiniteScroll';
-import type { Workspace, PhoneLineRow, ConsumptionCCRow, ConsumptionRespRow, DataConsumptionRow, LineDetailRow, PageResponse } from '../types';
+import { apiGet } from '@/lib/api/client';
+import InfiniteScroll from '@/app/components/InfiniteScroll';
+import type { Workspace, PhoneLineRow, ConsumptionCCRow, ConsumptionRespRow, DataConsumptionRow, LineDetailRow, PageResponse } from '@/app/types';
+import { useLanguage } from '@/app/i18n/LanguageContext';
 
 type ReportType = 0 | 1 | 2 | 3 | 4;
 
@@ -23,15 +24,16 @@ const REPORT_ENDPOINTS: Record<ReportType, string> = {
   4: '/reports/data-consumption',
 };
 
-const REPORT_LABELS: Record<ReportType, string> = {
-  0: 'Phone Lines', 1: 'Consumption by Cost Center', 2: 'Consumption by Responsible',
-  3: 'By Line', 4: 'Data Consumption',
+const REPORT_SLUGS: Record<ReportType, string> = {
+  0: 'phone_lines', 1: 'consumption_by_cost_center', 2: 'consumption_by_responsible',
+  3: 'by_line', 4: 'data_consumption',
 };
 
 const fmtMoney = (v: number) => `R$ ${(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
 
 export default function ReportsPage() {
   const theme = useTheme();
+  const { t } = useLanguage();
   const [tab, setTab] = useState<ReportType>(0);
   const [rows, setRows] = useState<any[]>([]);
   const [page, setPage] = useState(0);
@@ -57,6 +59,11 @@ export default function ReportsPage() {
   const detailContainerRef = useRef<HTMLDivElement>(null);
   const [rootEl, setRootEl] = useState<Element | null>(null);
   const [detailRootEl, setDetailRootEl] = useState<Element | null>(null);
+
+  const REPORT_LABELS: Record<ReportType, string> = {
+    0: t('reports.tabPhoneLines'), 1: t('reports.tabByCostCenter'), 2: t('reports.tabByResponsible'),
+    3: t('reports.tabByLine'), 4: t('reports.tabDataConsumption'),
+  };
 
   const getActiveWorkspace = (): Workspace | null => { try { const d = sessionStorage.getItem('activeWorkspace'); return d ? JSON.parse(d) : null; } catch { return null; } };
   const ws = getActiveWorkspace();
@@ -87,9 +94,9 @@ export default function ReportsPage() {
       if (data.grandTotal !== undefined) setGrandTotal(data.grandTotal);
       if ((data as any).grandTotalGb !== undefined) setGrandTotalMb((data as any).grandTotalGb);
       if (tab === 3 && reset) { setSelectedLine(newItems.length > 0 ? newItems[0] : null); if (newItems.length === 0) setDetails([]); }
-    } catch (err) { console.error('Report fetch error', err); setError('Error loading report data.'); }
+    } catch (err) { console.error('Report fetch error', err); setError(t('reports.loadError')); }
     finally { setLoading(false); }
-  }, [ws?.id, tab, search, dueDate]);
+  }, [ws?.id, tab, search, dueDate, t]);
 
   const fetchDetails = useCallback(async (pageNum: number, reset: boolean) => {
     if (!ws?.id || !selectedLine || !dueDate) return;
@@ -169,25 +176,26 @@ export default function ReportsPage() {
     let headers: string[];
     let mapper: (item: any) => (string | number)[];
     let dataToExport: any[];
-    if (tab === 0) { headers = ['Cod CC', 'Nome CC', 'Telefone', 'Responsável', 'ID']; mapper = (row: PhoneLineRow) => [row.costCenterCode, row.costCenterName, row.phoneNumber, row.responsibleName, row.responsibleId]; dataToExport = sortedRows; }
-    else if (tab === 1) { headers = ['Cod CC', 'Nome CC', 'Vencimento', 'Total (R$)']; mapper = (row: ConsumptionCCRow) => [row.costCenterCode, row.costCenterName, row.dueDate, row.total]; dataToExport = sortedRows; }
-    else if (tab === 2) { headers = ['Responsável', 'ID', 'Telefone', 'Cod CC', 'Nome CC', 'Total (R$)']; mapper = (row: ConsumptionRespRow) => [row.responsibleName, row.responsibleId, row.phoneNumber, row.costCenterCode, row.costCenterName, row.total]; dataToExport = sortedRows; }
-    else if (tab === 4) { headers = ['Telefone', 'Responsável', 'Cód. CC', 'Nome CC', 'Dados (MB)']; mapper = (row: DataConsumptionRow) => [row.phoneNumber, row.responsibleName, row.costCenterCode, row.costCenterName, row.totalDataMb]; dataToExport = sortedRows; }
-    else { headers = ['Data', 'Hora', 'Descrição', 'Destino', 'Duração', 'Seção', 'Subsessão', 'Valor (R$)']; mapper = (row: LineDetailRow) => [row.item_date, row.item_time, row.description, row.destination_phone, row.duration, row.section, row.sub_section, row.charged_value]; dataToExport = details; }
+    if (tab === 0) { headers = [t('reports.ccCode'), t('reports.ccName'), t('reports.phoneNumberCol'), t('reports.responsibleCol'), t('reports.idCol')]; mapper = (row: PhoneLineRow) => [row.costCenterCode, row.costCenterName, row.phoneNumber, row.responsibleName, row.responsibleId]; dataToExport = sortedRows; }
+    else if (tab === 1) { headers = [t('reports.ccCode'), t('reports.ccName'), t('reports.dueDateCol'), t('common.total')]; mapper = (row: ConsumptionCCRow) => [row.costCenterCode, row.costCenterName, row.dueDate, row.total]; dataToExport = sortedRows; }
+    else if (tab === 2) { headers = [t('reports.responsibleCol'), t('reports.idCol'), t('reports.phoneNumberCol'), t('reports.ccCode'), t('reports.ccName'), t('common.total')]; mapper = (row: ConsumptionRespRow) => [row.responsibleName, row.responsibleId, row.phoneNumber, row.costCenterCode, row.costCenterName, row.total]; dataToExport = sortedRows; }
+    else if (tab === 4) { headers = [t('reports.phoneNumberCol'), t('reports.responsibleCol'), t('reports.ccCode'), t('reports.ccName'), t('reports.dataMbCol')]; mapper = (row: DataConsumptionRow) => [row.phoneNumber, row.responsibleName, row.costCenterCode, row.costCenterName, row.totalDataMb]; dataToExport = sortedRows; }
+    else { headers = [t('reports.dateCol'), t('reports.timeCol'), t('common.description'), t('reports.destinationCol'), t('reports.durationQtyCol'), t('reports.sectionCol'), t('reports.subSectionCol'), t('common.total')]; mapper = (row: LineDetailRow) => [row.item_date, row.item_time, row.description, row.destination_phone, row.duration, row.section, row.sub_section, row.charged_value]; dataToExport = details; }
 
     const lines = [headers.join(';'), ...dataToExport.map(row => mapper(row).map(val => typeof val === 'number' ? val.toFixed(2).replace('.', ',') : `"${val}"`).join(';'))];
     if (tab === 2) lines.push(`"TOTAL";;;;;"${grandTotal.toFixed(2).replace('.', ',')}"`);
     if (tab === 3 && selectedLine) lines.push(`"LINE TOTAL";;;;;;;"${detailsTotal.toFixed(2).replace('.', ',')}"`);
     if (tab === 4) lines.push(`"GRAND TOTAL";;;;"${grandTotalMb.toFixed(2).replace('.', ',')}"`);
 
-    const blob = new Blob(['\ufeff' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const bom = String.fromCharCode(0xFEFF);
+    const blob = new Blob([bom + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `report_${REPORT_LABELS[tab].replace(/ /g, '_')}_${ws?.name}.csv`;
+    a.download = `report_${REPORT_SLUGS[tab]}_${ws?.name}.csv`;
     a.click();
   };
 
-  if (!ws) return <Box sx={{ p: 4 }}><Alert severity="warning">Selecione um workspace para visualizar os relatórios.</Alert></Box>;
+  if (!ws) return <Box sx={{ p: 4 }}><Alert severity="warning">{t('reports.selectWorkspaceWarning')}</Alert></Box>;
 
   const renderSortIcon = (isSorted: boolean, asc: boolean | null) => {
     if (!isSorted) return null;
@@ -206,11 +214,11 @@ export default function ReportsPage() {
   };
 
   const renderHead = () => {
-    if (tab === 0) return <TableRow>{['CC Code', 'CC Name', 'Phone Number', 'Responsible', 'ID'].map((l, i) => headerCell(l, i))}</TableRow>;
-    if (tab === 1) return <TableRow>{['CC Code', 'CC Name', 'Due Date', 'Total'].map((l, i) => headerCell(l, i, false, i === 3 ? 'right' : undefined))}</TableRow>;
-    if (tab === 2) return <TableRow>{['Responsible', 'ID', 'Phone Number', 'CC Code', 'CC Name', 'Total'].map((l, i) => headerCell(l, i, false, i === 5 ? 'right' : undefined))}</TableRow>;
-    if (tab === 4) return <TableRow>{['Phone Number', 'Responsible', 'CC Code', 'CC Name', 'Data (MB)'].map((l, i) => headerCell(l, i, false, i === 4 ? 'right' : undefined))}</TableRow>;
-    return <TableRow>{['Data', 'Time', 'Description', 'Destination', 'Duration/Qty', 'Section', 'Sub-section', 'Total'].map((l, i) => headerCell(l, i, true, i === 7 ? 'right' : undefined))}</TableRow>;
+    if (tab === 0) return <TableRow>{[t('reports.ccCode'), t('reports.ccName'), t('reports.phoneNumberCol'), t('reports.responsibleCol'), t('reports.idCol')].map((l, i) => headerCell(l, i))}</TableRow>;
+    if (tab === 1) return <TableRow>{[t('reports.ccCode'), t('reports.ccName'), t('reports.dueDateCol'), t('common.total')].map((l, i) => headerCell(l, i, false, i === 3 ? 'right' : undefined))}</TableRow>;
+    if (tab === 2) return <TableRow>{[t('reports.responsibleCol'), t('reports.idCol'), t('reports.phoneNumberCol'), t('reports.ccCode'), t('reports.ccName'), t('common.total')].map((l, i) => headerCell(l, i, false, i === 5 ? 'right' : undefined))}</TableRow>;
+    if (tab === 4) return <TableRow>{[t('reports.phoneNumberCol'), t('reports.responsibleCol'), t('reports.ccCode'), t('reports.ccName'), t('reports.dataMbCol')].map((l, i) => headerCell(l, i, false, i === 4 ? 'right' : undefined))}</TableRow>;
+    return <TableRow>{[t('reports.dateCol'), t('reports.timeCol'), t('common.description'), t('reports.destinationCol'), t('reports.durationQtyCol'), t('reports.sectionCol'), t('reports.subSectionCol'), t('common.total')].map((l, i) => headerCell(l, i, true, i === 7 ? 'right' : undefined))}</TableRow>;
   };
 
   const renderRow = (r: any, i: number) => {
@@ -224,21 +232,21 @@ export default function ReportsPage() {
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', p: 2, gap: 1.5 }}>
         <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
-        <Typography variant="h6" sx={{ fontWeight: 800, mr: 1 }}>Relatórios</Typography>
+        <Typography variant="h6" sx={{ fontWeight: 800, mr: 1 }}>{t('reports.title')}</Typography>
         <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ minHeight: 36, '& .MuiTab-root': { minHeight: 36, py: 0.5, fontSize: '0.8rem', fontWeight: 700 } }}>
-          <Tab label="Phone Lines" /><Tab label="By Cost Center" /><Tab label="By Responsible" /><Tab label="By Line" /><Tab label="Data Consumption" />
+          <Tab label={t('reports.tabPhoneLines')} /><Tab label={t('reports.tabByCostCenter')} /><Tab label={t('reports.tabByResponsible')} /><Tab label={t('reports.tabByLine')} /><Tab label={t('reports.tabDataConsumption')} />
         </Tabs>
         <Box sx={{ flex: 1 }} />
         {(tab === 1 || tab === 2 || tab === 3 || tab === 4) && (
           <FormControl size="small" sx={{ minWidth: 160 }}>
             <Select value={dueDate} onChange={e => setDueDate(e.target.value)} displayEmpty>
-              <MenuItem value="" disabled>Due Date</MenuItem>
+              <MenuItem value="" disabled>{t('reports.dueDatePlaceholder')}</MenuItem>
               {dueDates.map(d => (<MenuItem key={d} value={d}>{new Date(d + 'T12:00:00Z').toLocaleDateString('en-US')}</MenuItem>))}
             </Select>
           </FormControl>
         )}
-        <TextField size="small" placeholder="Search by CC code, name, responsible, phone, section or sub-section…" value={search} onChange={e => setSearch(e.target.value)} sx={{ width: 320 }} slotProps={{ input: { startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> } }} />
-        <Tooltip title="Atualizar"><IconButton onClick={refresh} size="small" color="primary"><RefreshIcon /></IconButton></Tooltip>
+        <TextField size="small" placeholder={t('reports.searchPlaceholder')} value={search} onChange={e => setSearch(e.target.value)} sx={{ width: 320 }} slotProps={{ input: { startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> } }} />
+        <Tooltip title={t('reports.refresh')}><IconButton onClick={refresh} size="small" color="primary"><RefreshIcon /></IconButton></Tooltip>
         <Button size="small" variant="outlined" startIcon={<FileDownloadIcon />} onClick={exportCSV} disabled={tab === 3 ? details.length === 0 : rows.length === 0}>CSV</Button>
       </Stack>
 
@@ -247,7 +255,7 @@ export default function ReportsPage() {
       {tab === 3 ? (
         <Box sx={{ flex: 1, display: 'flex', gap: 2, overflow: 'hidden' }}>
           <Paper sx={{ width: 300, display: 'flex', flexDirection: 'column', overflow: 'hidden', border: `1px solid ${alpha(theme.palette.divider, 0.1)}` }}>
-            <Box sx={{ p: 1.5, bgcolor: alpha(theme.palette.primary.main, 0.05), borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}` }}><Typography variant="subtitle2" sx={{ fontWeight: 800 }}>Lines / Responsible</Typography></Box>
+            <Box sx={{ p: 1.5, bgcolor: alpha(theme.palette.primary.main, 0.05), borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}` }}><Typography variant="subtitle2" sx={{ fontWeight: 800 }}>{t('reports.linesResponsible')}</Typography></Box>
             <Box ref={containerRef} sx={{ flex: 1, overflowY: 'auto' }}>
               <List disablePadding>
                 {rows.map((row: ConsumptionRespRow) => (
@@ -270,21 +278,21 @@ export default function ReportsPage() {
               <>
                 <Box sx={{ p: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}` }}>
                   <Box><Typography variant="subtitle1" sx={{ fontWeight: 900 }}>{selectedLine.phoneNumber}</Typography><Typography variant="caption">{selectedLine.responsibleName} | {selectedLine.costCenterName}</Typography></Box>
-                  <Box sx={{ textAlign: 'right' }}><Typography variant="caption" sx={{ display: 'block' }}>Gasto Total da Linha</Typography><Typography variant="h6" sx={{ color: theme.palette.primary.main, fontWeight: 900 }}>{fmtMoney(detailsTotal)}</Typography></Box>
+                  <Box sx={{ textAlign: 'right' }}><Typography variant="caption" sx={{ display: 'block' }}>{t('reports.totalLineSpend')}</Typography><Typography variant="h6" sx={{ color: theme.palette.primary.main, fontWeight: 900 }}>{fmtMoney(detailsTotal)}</Typography></Box>
                 </Box>
                 <Box sx={{ px: 1, borderBottom: `1px solid ${alpha(theme.palette.divider, 0.05)}`, bgcolor: alpha(theme.palette.background.paper, 0.5) }}>
                   <Tabs value={innerTab} onChange={(_, v) => setInnerTab(v)} variant="scrollable" scrollButtons="auto" sx={{ minHeight: 40, '& .MuiTab-root': { minHeight: 40, py: 0, fontSize: '0.75rem', fontWeight: 700 } }}>
-                    <Tab label="All Data" /><Tab label="Summary" />
+                    <Tab label={t('reports.allData')} /><Tab label={t('reports.summary')} />
                     {subSectionData.list.map((ss) => (<Tab key={ss} label={ss} />))}
                   </Tabs>
                 </Box>
                 <TableContainer ref={detailContainerRef} sx={{ flex: 1, overflow: 'auto' }}>
                   {innerTab === 1 ? (
                     <Table stickyHeader size="small">
-                      <TableHead><TableRow><TableCell>Subsessão</TableCell><TableCell align="right">Total</TableCell></TableRow></TableHead>
+                      <TableHead><TableRow><TableCell>{t('reports.subSectionCol')}</TableCell><TableCell align="right">{t('common.total')}</TableCell></TableRow></TableHead>
                       <TableBody>
                         {subSectionData.summary.map((s) => (<TableRow key={s.name} hover><TableCell sx={{ fontWeight: 700 }}>{s.name}</TableCell><TableCell align="right" sx={{ fontWeight: 800, color: theme.palette.primary.main }}>{fmtMoney(s.total)}</TableCell></TableRow>))}
-                        <TableRow sx={{ bgcolor: alpha(theme.palette.primary.main, 0.05) }}><TableCell sx={{ fontWeight: 900 }}>TOTAL GERAL</TableCell><TableCell align="right" sx={{ fontWeight: 900 }}>{fmtMoney(detailsTotal)}</TableCell></TableRow>
+                        <TableRow sx={{ bgcolor: alpha(theme.palette.primary.main, 0.05) }}><TableCell sx={{ fontWeight: 900 }}>{t('reports.grandTotalGeneral')}</TableCell><TableCell align="right" sx={{ fontWeight: 900 }}>{fmtMoney(detailsTotal)}</TableCell></TableRow>
                       </TableBody>
                     </Table>
                   ) : (
@@ -310,7 +318,7 @@ export default function ReportsPage() {
                 </TableContainer>
               </>
             ) : (
-              <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Typography color="text.disabled">Selecione uma linha para ver os detalhes</Typography></Box>
+              <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Typography color="text.disabled">{t('reports.selectLineForDetails')}</Typography></Box>
             )}
           </Paper>
         </Box>
@@ -321,11 +329,11 @@ export default function ReportsPage() {
               <TableHead>{renderHead()}</TableHead>
               <TableBody>
                 {sortedRows.length === 0 && !loading ? (
-                  <TableRow><TableCell colSpan={6} align="center" sx={{ py: 8, color: 'text.disabled' }}>Nenhum dado encontrado.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={6} align="center" sx={{ py: 8, color: 'text.disabled' }}>{t('reports.noDataFound')}</TableCell></TableRow>
                 ) : sortedRows.map(renderRow)}
                 <TableRow><TableCell colSpan={6} sx={{ p: 0, border: 0 }}><InfiniteScroll loadMore={loadMore} hasMore={hasMore} loading={loading} root={rootEl} /></TableCell></TableRow>
-                {tab === 2 && rows.length > 0 && !hasMore && <TableRow sx={{ bgcolor: alpha(theme.palette.primary.main, 0.08) }}><TableCell colSpan={5} sx={{ fontWeight: 900 }}>TOTAL EXPENDITURE</TableCell><TableCell align="right" sx={{ fontWeight: 900, color: theme.palette.primary.main, fontSize: '1rem' }}>{fmtMoney(grandTotal)}</TableCell></TableRow>}
-                {tab === 4 && rows.length > 0 && !hasMore && <TableRow sx={{ bgcolor: alpha(theme.palette.primary.main, 0.08) }}><TableCell colSpan={4} sx={{ fontWeight: 900 }}>GRAND TOTAL</TableCell><TableCell align="right" sx={{ fontWeight: 900, color: theme.palette.primary.main, fontSize: '1rem' }}>{grandTotalMb.toFixed(2)} MB</TableCell></TableRow>}
+                {tab === 2 && rows.length > 0 && !hasMore && <TableRow sx={{ bgcolor: alpha(theme.palette.primary.main, 0.08) }}><TableCell colSpan={5} sx={{ fontWeight: 900 }}>{t('reports.totalExpenditure')}</TableCell><TableCell align="right" sx={{ fontWeight: 900, color: theme.palette.primary.main, fontSize: '1rem' }}>{fmtMoney(grandTotal)}</TableCell></TableRow>}
+                {tab === 4 && rows.length > 0 && !hasMore && <TableRow sx={{ bgcolor: alpha(theme.palette.primary.main, 0.08) }}><TableCell colSpan={4} sx={{ fontWeight: 900 }}>{t('reports.grandTotalGeneral')}</TableCell><TableCell align="right" sx={{ fontWeight: 900, color: theme.palette.primary.main, fontSize: '1rem' }}>{grandTotalMb.toFixed(2)} MB</TableCell></TableRow>}
               </TableBody>
             </Table>
           </TableContainer>

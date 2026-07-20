@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { connectDB } from '@/lib/config/database';
 import AuthService from '@/lib/services/AuthService';
 import { logOperation } from '@/lib/utils/auditLogger';
 import User from '@/lib/models/User';
 
 export async function POST(request: NextRequest) {
   try {
+    await connectDB();
     const body = await request.json();
     const { email, password } = body || {};
 
@@ -16,7 +18,7 @@ export async function POST(request: NextRequest) {
 
     await logOperation({
       user_id: (user as any).id,
-      workspace_id: (user as any).default_workspace_id || '00000000-0000-0000-0000-000000000000',
+      workspace_id: (user as any).default_workspace_id || null,
       action: 'LOGIN',
       entity: 'User',
       entity_id: (user as any).id,
@@ -40,11 +42,11 @@ export async function POST(request: NextRequest) {
       const body = await request.clone().json();
       const email = body?.email;
       if (email) {
-        const attemptedUser: any = await User.findOne({ where: { email } });
+        const attemptedUser: any = await User.findOne({ email });
         if (attemptedUser) {
           await logOperation({
             user_id: attemptedUser.id,
-            workspace_id: attemptedUser.default_workspace_id || '00000000-0000-0000-0000-000000000000',
+            workspace_id: attemptedUser.default_workspace_id || null,
             action: 'LOGIN_FAILED',
             entity: 'User',
             entity_id: attemptedUser.id,

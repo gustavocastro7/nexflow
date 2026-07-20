@@ -7,11 +7,13 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions, Button, alpha, useTheme
 } from '@mui/material';
 import { History as HistoryIcon, Visibility as VisibilityIcon, Event as EventIcon, Person as PersonIcon, Computer as ComputerIcon, FilterList as FilterIcon } from '@mui/icons-material';
-import { apiGet } from '../../lib/api/client';
-import type { AuditLog } from '../types';
+import { apiGet } from '@/lib/api/client';
+import type { AuditLog } from '@/app/types';
+import { useLanguage } from '@/app/i18n/LanguageContext';
 
 export default function AuditPage() {
   const theme = useTheme();
+  const { t } = useLanguage();
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
@@ -62,20 +64,20 @@ export default function AuditPage() {
     <Box sx={{ p: 2 }}>
       <Box sx={{ mb: 4, display: 'flex', alignItems: 'center', gap: 2 }}>
         <HistoryIcon color="primary" sx={{ fontSize: 32 }} />
-        <Box><Typography variant="h4" sx={{ fontWeight: 800 }}>Auditoria</Typography><Typography variant="body1" color="textSecondary">Registro de operações realizadas no sistema.</Typography></Box>
+        <Box><Typography variant="h4" sx={{ fontWeight: 800 }}>{t('audit.title')}</Typography><Typography variant="body1" color="textSecondary">{t('audit.subtitle')}</Typography></Box>
       </Box>
 
       <Paper sx={{ p: 3, mb: 4, borderRadius: 2 }}>
         <Box sx={{ display: 'flex', flexDirection: 'row', gap: 3, alignItems: 'center', flexWrap: 'wrap' }}>
-          <TextField select label="Ação" value={actionFilter} onChange={(e) => { setActionFilter(e.target.value); setPage(0); }} size="small" sx={{ minWidth: 240 }}>
-            <MenuItem value="">Todas as ações</MenuItem>
+          <TextField select label={t('audit.action')} value={actionFilter} onChange={(e) => { setActionFilter(e.target.value); setPage(0); }} size="small" sx={{ minWidth: 240 }}>
+            <MenuItem value="">{t('audit.allActions')}</MenuItem>
             {actions.map(action => (<MenuItem key={action} value={action}>{action}</MenuItem>))}
           </TextField>
-          <TextField select label="Entidade" value={entityFilter} onChange={(e) => { setEntityFilter(e.target.value); setPage(0); }} size="small" sx={{ minWidth: 240 }}>
-            <MenuItem value="">Todas as entidades</MenuItem>
+          <TextField select label={t('audit.entity')} value={entityFilter} onChange={(e) => { setEntityFilter(e.target.value); setPage(0); }} size="small" sx={{ minWidth: 240 }}>
+            <MenuItem value="">{t('audit.allEntities')}</MenuItem>
             {entities.map(entity => (<MenuItem key={entity} value={entity}>{entity}</MenuItem>))}
           </TextField>
-          <Button variant="outlined" startIcon={<FilterIcon />} onClick={() => { setActionFilter(''); setEntityFilter(''); setPage(0); }} sx={{ height: 40 }}>Limpar Filtros</Button>
+          <Button variant="outlined" startIcon={<FilterIcon />} onClick={() => { setActionFilter(''); setEntityFilter(''); setPage(0); }} sx={{ height: 40 }}>{t('common.clearFilters')}</Button>
         </Box>
       </Paper>
 
@@ -83,16 +85,16 @@ export default function AuditPage() {
         <Table sx={{ minWidth: 650 }} size="small">
           <TableHead sx={{ bgcolor: alpha(theme.palette.primary.main, 0.05) }}>
             <TableRow>
-              <TableCell sx={{ fontWeight: 700 }}>Data/Hora</TableCell><TableCell sx={{ fontWeight: 700 }}>Ação</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>Entidade</TableCell><TableCell sx={{ fontWeight: 700 }}>Usuário</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>IP</TableCell><TableCell align="right" sx={{ fontWeight: 700 }}>Detalhes</TableCell>
+              <TableCell sx={{ fontWeight: 700 }}>{t('audit.dateTime')}</TableCell><TableCell sx={{ fontWeight: 700 }}>{t('audit.action')}</TableCell>
+              <TableCell sx={{ fontWeight: 700 }}>{t('audit.entity')}</TableCell><TableCell sx={{ fontWeight: 700 }}>{t('audit.user')}</TableCell>
+              <TableCell sx={{ fontWeight: 700 }}>{t('audit.ip')}</TableCell><TableCell align="right" sx={{ fontWeight: 700 }}>{t('common.details')}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {loading ? (
               <TableRow><TableCell colSpan={6} align="center" sx={{ py: 5 }}><CircularProgress size={30} /></TableCell></TableRow>
             ) : logs.length === 0 ? (
-              <TableRow><TableCell colSpan={6} align="center" sx={{ py: 5 }}>Nenhum registro de auditoria encontrado.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} align="center" sx={{ py: 5 }}>{t('audit.noRecords')}</TableCell></TableRow>
             ) : logs.map((log) => (
               <TableRow key={log.id} hover>
                 <TableCell><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><EventIcon fontSize="inherit" color="disabled" />{fmtDate(log.created_at || log.createdAt)}</Box></TableCell>
@@ -100,37 +102,37 @@ export default function AuditPage() {
                 <TableCell><Typography variant="body2" sx={{ fontWeight: 600 }}>{log.entity || '-'}</Typography><Typography variant="caption" color="textSecondary">{log.entity_id || ''}</Typography></TableCell>
                 <TableCell><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><PersonIcon fontSize="inherit" color="disabled" /><Typography variant="body2">{log.user ? `${log.user.name} (${log.user.email})` : log.user_id}</Typography></Box></TableCell>
                 <TableCell><Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><ComputerIcon fontSize="inherit" color="disabled" /><Typography variant="body2">{log.ip_address || '-'}</Typography></Box></TableCell>
-                <TableCell align="right"><Tooltip title="Ver detalhes"><IconButton size="small" onClick={() => { setSelectedLog(log); setDetailsOpen(true); }}><VisibilityIcon fontSize="small" /></IconButton></Tooltip></TableCell>
+                <TableCell align="right"><Tooltip title={t('common.viewDetails')}><IconButton size="small" onClick={() => { setSelectedLog(log); setDetailsOpen(true); }}><VisibilityIcon fontSize="small" /></IconButton></Tooltip></TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
-        <TablePagination rowsPerPageOptions={[25, 50, 100]} component="div" count={total} rowsPerPage={rowsPerPage} page={page} onPageChange={(_, p) => setPage(p)} onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0); }} labelRowsPerPage="Linhas por página" />
+        <TablePagination rowsPerPageOptions={[25, 50, 100]} component="div" count={total} rowsPerPage={rowsPerPage} page={page} onPageChange={(_, p) => setPage(p)} onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0); }} labelRowsPerPage={t('common.rowsPerPage')} />
       </TableContainer>
 
       <Dialog open={detailsOpen} onClose={() => setDetailsOpen(false)} maxWidth="md" fullWidth slotProps={{ paper: { sx: { borderRadius: 3 } } }}>
-        <DialogTitle sx={{ fontWeight: 800, display: 'flex', alignItems: 'center', gap: 2 }}><HistoryIcon color="primary" />Detalhes da Operação</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 800, display: 'flex', alignItems: 'center', gap: 2 }}><HistoryIcon color="primary" />{t('audit.operationDetails')}</DialogTitle>
         <DialogContent dividers>
           {selectedLog && (
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
               <Box sx={{ flex: '1 1 45%', minWidth: 280 }}>
-                <Typography variant="caption" color="textSecondary">ID do Log</Typography><Typography variant="body2" sx={{ mb: 2 }}>{selectedLog.id}</Typography>
-                <Typography variant="caption" color="textSecondary">Ação</Typography><Box sx={{ mb: 2 }}><Chip label={selectedLog.action} color={getActionColor(selectedLog.action) as any} size="small" /></Box>
-                <Typography variant="caption" color="textSecondary">Data e Hora</Typography><Typography variant="body2" sx={{ mb: 2 }}>{fmtDate(selectedLog.created_at || selectedLog.createdAt)}</Typography>
+                <Typography variant="caption" color="textSecondary">{t('audit.logId')}</Typography><Typography variant="body2" sx={{ mb: 2 }}>{selectedLog.id}</Typography>
+                <Typography variant="caption" color="textSecondary">{t('audit.action')}</Typography><Box sx={{ mb: 2 }}><Chip label={selectedLog.action} color={getActionColor(selectedLog.action) as any} size="small" /></Box>
+                <Typography variant="caption" color="textSecondary">{t('audit.dateTime')}</Typography><Typography variant="body2" sx={{ mb: 2 }}>{fmtDate(selectedLog.created_at || selectedLog.createdAt)}</Typography>
               </Box>
               <Box sx={{ flex: '1 1 45%', minWidth: 280 }}>
-                <Typography variant="caption" color="textSecondary">Usuário</Typography><Typography variant="body2" sx={{ mb: 2 }}>{selectedLog.user ? `${selectedLog.user.name} (${selectedLog.user.email})` : selectedLog.user_id}</Typography>
-                <Typography variant="caption" color="textSecondary">Entidade Afetada</Typography><Typography variant="body2" sx={{ mb: 2 }}>{selectedLog.entity} ({selectedLog.entity_id || 'N/A'})</Typography>
-                <Typography variant="caption" color="textSecondary">Endereço IP</Typography><Typography variant="body2" sx={{ mb: 2 }}>{selectedLog.ip_address || 'Não registrado'}</Typography>
+                <Typography variant="caption" color="textSecondary">{t('audit.user')}</Typography><Typography variant="body2" sx={{ mb: 2 }}>{selectedLog.user ? `${selectedLog.user.name} (${selectedLog.user.email})` : selectedLog.user_id}</Typography>
+                <Typography variant="caption" color="textSecondary">{t('audit.affectedEntity')}</Typography><Typography variant="body2" sx={{ mb: 2 }}>{selectedLog.entity} ({selectedLog.entity_id || 'N/A'})</Typography>
+                <Typography variant="caption" color="textSecondary">{t('audit.ipAddress')}</Typography><Typography variant="body2" sx={{ mb: 2 }}>{selectedLog.ip_address || t('audit.notRecorded')}</Typography>
               </Box>
               <Box sx={{ width: '100%' }}>
-                <Typography variant="caption" color="textSecondary" sx={{ mb: 1, display: 'block' }}>Dados do Payload</Typography>
+                <Typography variant="caption" color="textSecondary" sx={{ mb: 1, display: 'block' }}>{t('audit.payloadData')}</Typography>
                 <Paper variant="outlined" sx={{ p: 2, bgcolor: alpha(theme.palette.text.primary, 0.02), fontFamily: 'monospace', fontSize: '0.85rem', overflow: 'auto' }}><pre>{JSON.stringify(selectedLog.payload, null, 2)}</pre></Paper>
               </Box>
             </Box>
           )}
         </DialogContent>
-        <DialogActions sx={{ p: 2.5 }}><Button onClick={() => setDetailsOpen(false)} variant="contained">Fechar</Button></DialogActions>
+        <DialogActions sx={{ p: 2.5 }}><Button onClick={() => setDetailsOpen(false)} variant="contained">{t('common.close')}</Button></DialogActions>
       </Dialog>
     </Box>
   );

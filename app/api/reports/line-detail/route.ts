@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
-import { getSequelize } from '@/lib/config/database';
+import { connectDB } from '@/lib/config/database';
+import { verifyToken } from '@/lib/utils/jwt';
+import RawInvoice from '@/lib/models/RawInvoice';
+import Invoice from '@/lib/models/Invoice';
 
 const PAGE_SIZE = 50;
 
@@ -8,11 +10,12 @@ function getAuthUser(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
   if (!authHeader) throw new Error('Token not provided');
   const [, token] = authHeader.split(' ');
-  return jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret_key') as { id: string; email: string; profile: string };
+  return verifyToken(token) as { id: string; email: string; profile: string };
 }
 
 export async function GET(request: NextRequest) {
   try {
+    await connectDB();
     getAuthUser(request);
     const { searchParams } = request.nextUrl;
     const workspaceId = searchParams.get('workspaceId');
@@ -25,24 +28,34 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });
     }
 
-    const sequelize = getSequelize();
     const offset = page * PAGE_SIZE;
-    const like = search ? `%${search}%` : null;
 
-    const whereSql = `WHERE i.workspace_id = :workspaceId AND ri.due_date = :dueDate AND i.source_phone = :phoneNumber ${like ? "AND (i.description LIKE :like OR i.destination_phone LIKE :like OR i.section LIKE :like OR i.sub_section LIKE :like)" : ""}`;
+    const rawIds = (await RawInvoice.find({ workspace_id: workspaceId, due_date: dueDate }).select('_id')).map((r: any) => r.id);
 
-    const [rows] = await sequelize.query(`
-      SELECT i.id, i.item_date, i.item_time, i.description, i.destination_phone, i.duration, i.quantity, i.total_value, i.charged_value, i.section, i.sub_section
-      FROM invoices i JOIN raw_invoices ri ON ri.id = i.raw_invoice_id ${whereSql}
-      ORDER BY i.item_date DESC, i.item_time DESC LIMIT :limit OFFSET :offset
-    `, { replacements: { workspaceId, dueDate, phoneNumber, like, limit: PAGE_SIZE, offset } });
+    const filter: Record<string, any> = {
+      workspace_id: workspaceId,
+      raw_invoice_id: { $in: rawIds },
+      source_phone: phoneNumber,
+    };
+    if (search) {
+      const regex = new RegExp(search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      filter.$or = [
+        { description: regex }, { destination_phone: regex }, { section: regex }, { sub_section: regex },
+      ];
+    }
 
-    const [[{ count, total_charged }]] = await sequelize.query(`
-      SELECT COUNT(*) AS count, SUM(i.charged_value) as total_charged
-      FROM invoices i JOIN raw_invoices ri ON ri.id = i.raw_invoice_id ${whereSql}
-    `, { replacements: { workspaceId, dueDate, phoneNumber, like } });
+    const [rows, count, sumResult] = await Promise.all([
+      Invoice.find(filter)
+        .select('item_date item_time description destination_phone duration quantity total_value charged_value section sub_section')
+        .sort({ item_date: -1, item_time: -1 })
+        .skip(offset).limit(PAGE_SIZE),
+      Invoice.countDocuments(filter),
+      Invoice.aggregate([{ $match: filter }, { $group: { _id: null, total: { $sum: '$charged_value' } } }]),
+    ]);
 
-    return NextResponse.json({ items: rows, total: count, grandTotal: parseFloat(total_charged || 0), hasMore: offset + rows.length < count });
+    const grandTotal = sumResult[0]?.total || 0;
+
+    return NextResponse.json({ items: rows, total: count, grandTotal, hasMore: offset + rows.length < count });
   } catch (error: any) {
     if (error.message === 'Token not provided' || error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

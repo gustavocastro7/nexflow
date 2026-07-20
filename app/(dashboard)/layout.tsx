@@ -22,6 +22,8 @@ import { useTheme } from '@mui/material/styles';
 import { ColorModeContext } from '../providers';
 import { useContext } from 'react';
 import { apiGet, apiPut } from '../../lib/api/client';
+import { useLanguage } from '../i18n/LanguageContext';
+import { SUPPORTED_LANGUAGES, type Language } from '../i18n/dictionaries';
 
 const DRAWER_WIDTH = 260;
 const COLLAPSED_DRAWER_WIDTH = 88;
@@ -41,20 +43,20 @@ interface User {
   profile: string;
 }
 
-const menuItems = (profile?: string) => {
+const menuItems = (profile: string | undefined, t: (key: string) => string) => {
   const items = [
-    { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
-    { text: 'Centros de Custo', icon: <AccountTreeIcon />, path: '/cost-centers' },
-    { text: 'Colaboradores', icon: <PeopleIcon />, path: '/collaborators' },
-    { text: 'Faturas', icon: <ReceiptIcon />, path: '/invoices' },
-    { text: 'Relatórios', icon: <AssessmentIcon />, path: '/reports' },
+    { text: t('sidebar.dashboard'), icon: <DashboardIcon />, path: '/dashboard' },
+    { text: t('sidebar.costCenters'), icon: <AccountTreeIcon />, path: '/cost-centers' },
+    { text: t('sidebar.collaborators'), icon: <PeopleIcon />, path: '/collaborators' },
+    { text: t('sidebar.invoices'), icon: <ReceiptIcon />, path: '/invoices' },
+    { text: t('sidebar.reports'), icon: <AssessmentIcon />, path: '/reports' },
   ];
 
   if (profile === 'admin' || profile === 'jedi') {
-    items.push({ text: 'Usuários', icon: <PeopleIcon />, path: '/users' });
+    items.push({ text: t('sidebar.users'), icon: <PeopleIcon />, path: '/users' });
   }
   if (profile === 'jedi') {
-    items.push({ text: 'Auditoria', icon: <HistoryIcon />, path: '/audit' });
+    items.push({ text: t('sidebar.audit'), icon: <HistoryIcon />, path: '/audit' });
   }
   return items;
 };
@@ -62,6 +64,7 @@ const menuItems = (profile?: string) => {
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const theme = useTheme();
   const colorMode = useContext(ColorModeContext);
+  const { t, setLanguage } = useLanguage();
   const router = useRouter();
   const pathname = usePathname();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -93,6 +96,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       apiGet('/user/config').then((data) => {
         if (data.menu_behavior) setMenuBehavior(data.menu_behavior);
+        if (SUPPORTED_LANGUAGES.includes(data.language)) setLanguage(data.language as Language);
       }).catch(() => {});
 
       apiGet(`/workspaces/user/${parsedUser.id}`).then((data) => {
@@ -159,7 +163,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     );
   }
 
-  const items = menuItems(user?.profile);
+  const items = menuItems(user?.profile, t);
 
   const drawer = (
     <Box
@@ -235,13 +239,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => { setAnchorEl(null); setWsMenuAnchorEl(null); }}
         slotProps={{ paper: { sx: { minWidth: 180, borderRadius: 1 } } }}>
         <MenuItem onClick={() => { setAnchorEl(null); router.push('/profile'); }} sx={{ fontSize: '0.8rem' }}>
-          <ListItemIcon><PersonIcon fontSize="small" /></ListItemIcon> Perfil
+          <ListItemIcon><PersonIcon fontSize="small" /></ListItemIcon> {t('sidebar.profile')}
         </MenuItem>
         {user?.profile === 'jedi' && (
           <>
             <Divider />
             <MenuItem onClick={(e) => { setWsMenuAnchorEl(e.currentTarget); }} sx={{ fontSize: '0.8rem' }}>
-              <ListItemIcon><SwitchAccountIcon fontSize="small" /></ListItemIcon> Set Workspace
+              <ListItemIcon><SwitchAccountIcon fontSize="small" /></ListItemIcon> {t('sidebar.setWorkspace')}
             </MenuItem>
             <Menu anchorEl={wsMenuAnchorEl} open={Boolean(wsMenuAnchorEl)} onClose={() => setWsMenuAnchorEl(null)}>
               {workspaces.map((ws) => (
@@ -256,11 +260,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <Divider />
         <MenuItem onClick={() => { setAnchorEl(null); colorMode.toggleColorMode(); }} sx={{ fontSize: '0.8rem' }}>
           <ListItemIcon>{theme.palette.mode === 'dark' ? <Brightness7Icon fontSize="small" /> : <Brightness4Icon fontSize="small" />}</ListItemIcon>
-          {theme.palette.mode === 'dark' ? 'Modo Claro' : 'Modo Escuro'}
+          {theme.palette.mode === 'dark' ? t('sidebar.lightMode') : t('sidebar.darkMode')}
         </MenuItem>
         <Divider />
         <MenuItem onClick={() => { setAnchorEl(null); handleLogout(); }} sx={{ color: theme.palette.error.main, fontSize: '0.8rem' }}>
-          <ListItemIcon><LogoutIcon fontSize="small" sx={{ color: theme.palette.error.main }} /></ListItemIcon> Sair
+          <ListItemIcon><LogoutIcon fontSize="small" sx={{ color: theme.palette.error.main }} /></ListItemIcon> {t('sidebar.logout')}
         </MenuItem>
       </Menu>
 

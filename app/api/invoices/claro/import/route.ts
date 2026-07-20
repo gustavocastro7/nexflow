@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
+export const maxDuration = 60;
+import { connectDB } from '@/lib/config/database';
+import { verifyToken } from '@/lib/utils/jwt';
+import { findOrCreate } from '@/lib/utils/db';
 import crypto from 'crypto';
 import RawInvoice from '@/lib/models/RawInvoice';
 import Invoice from '@/lib/models/Invoice';
@@ -11,7 +14,7 @@ function getAuthUser(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
   if (!authHeader) throw new Error('Token not provided');
   const [, token] = authHeader.split(' ');
-  return jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret_key') as { id: string; email: string; profile: string };
+  return verifyToken(token) as { id: string; email: string; profile: string };
 }
 
 function validateClaroLine(line: string, lineIndex: number) {
@@ -64,23 +67,23 @@ function cleanContent(content: string) {
   ];
   let cleaned = content;
   mapping.forEach(m => { cleaned = cleaned.replace(m.pattern, m.replacement as any); });
-  cleaned = cleaned.replace(/[\uFFFD]/g, '');
+  cleaned = cleaned.replace(/[�]/g, '');
   return cleaned;
 }
 
 async function ensurePhoneLine(phoneNumber: string, workspaceId: string, costCenterId?: string) {
   if (!phoneNumber) return;
-  const existing: any = await PhoneLine.findOne({ where: { phone_number: phoneNumber, workspace_id: workspaceId } });
+  const existing: any = await PhoneLine.findOne({ phone_number: phoneNumber, workspace_id: workspaceId });
   if (existing) {
-    if (costCenterId && !existing.cost_center_id) await existing.update({ cost_center_id: costCenterId });
+    if (costCenterId && !existing.cost_center_id) { existing.cost_center_id = costCenterId; await existing.save(); }
     return;
   }
   let targetCC = costCenterId;
   if (!targetCC) {
-    const [matriz]: [any, boolean] = await CostCenter.findOrCreate({
-      where: { name: 'Matriz', workspace_id: workspaceId },
-      defaults: { code: 'MATRIZ', name: 'Matriz', description: 'Default Cost Center', workspace_id: workspaceId }
-    });
+    const [matriz]: [any, boolean] = await findOrCreate(CostCenter,
+      { name: 'Matriz', workspace_id: workspaceId },
+      { code: 'MATRIZ', description: 'Default Cost Center' }
+    );
     targetCC = matriz.id;
   }
   await PhoneLine.create({ phone_number: phoneNumber, cost_center_id: targetCC, workspace_id: workspaceId, responsible_name: 'New Number (Auto)' });
@@ -88,18 +91,19 @@ async function ensurePhoneLine(phoneNumber: string, workspaceId: string, costCen
 
 export async function POST(request: NextRequest) {
   try {
+    await connectDB();
     const decoded = getAuthUser(request);
     let { content, workspaceId, costCenterId } = await request.json();
     content = cleanContent(content);
 
     if (!workspaceId) return NextResponse.json({ error: 'Workspace ID is required for import' }, { status: 400 });
     if (costCenterId) {
-      const cc: any = await CostCenter.findOne({ where: { id: costCenterId, workspace_id: workspaceId } });
+      const cc: any = await CostCenter.findOne({ _id: costCenterId, workspace_id: workspaceId });
       if (!cc) return NextResponse.json({ error: 'Cost center not found in this workspace' }, { status: 400 });
     }
 
     const hash = crypto.createHash('md5').update(content).digest('hex');
-    const existing: any = await RawInvoice.findOne({ where: { hash, workspace_id: workspaceId, operator: 'claro' } });
+    const existing: any = await RawInvoice.findOne({ hash, workspace_id: workspaceId, operator: 'claro' });
     if (existing) return NextResponse.json({ error: 'This invoice has already been imported for this workspace.' }, { status: 400 });
 
     const { items, invalidItems, processedPhones } = parseAndValidateClaro(content, workspaceId);
@@ -112,7 +116,7 @@ export async function POST(request: NextRequest) {
     });
 
     for (const phone of processedPhones) await ensurePhoneLine(phone, workspaceId, costCenterId);
-    await Invoice.bulkCreate(items.map(item => ({ ...item, raw_invoice_id: raw.id })));
+    await Invoice.insertMany(items.map(item => ({ ...item, raw_invoice_id: raw.id })));
 
     await logOperation({
       user_id: decoded.id, workspace_id: workspaceId,

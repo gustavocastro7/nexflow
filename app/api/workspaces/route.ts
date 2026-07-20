@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
+import { connectDB } from '@/lib/config/database';
+import { verifyToken } from '@/lib/utils/jwt';
 import Workspace from '@/lib/models/Workspace';
 import CostCenter from '@/lib/models/CostCenter';
 
@@ -7,16 +8,17 @@ function getAuthUser(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
   if (!authHeader) throw new Error('Token not provided');
   const [, token] = authHeader.split(' ');
-  return jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret_key') as { id: string; email: string; profile: string };
+  return verifyToken(token) as { id: string; email: string; profile: string };
 }
 
 export async function GET(request: NextRequest) {
   try {
+    await connectDB();
     const decoded = getAuthUser(request);
     if (decoded.profile !== 'jedi') {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
-    const workspaces: any = await Workspace.findAll();
+    const workspaces: any = await Workspace.find();
     return NextResponse.json(workspaces);
   } catch (error: any) {
     if (error.message === 'Token not provided' || error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
@@ -28,6 +30,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    await connectDB();
     const decoded = getAuthUser(request);
     if (decoded.profile !== 'jedi') {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });

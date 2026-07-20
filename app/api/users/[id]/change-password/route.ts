@@ -1,16 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
+import { connectDB } from '@/lib/config/database';
+import { verifyToken } from '@/lib/utils/jwt';
 import User from '@/lib/models/User';
 
 function getAuthUser(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
   if (!authHeader) throw new Error('Token not provided');
   const [, token] = authHeader.split(' ');
-  return jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret_key') as { id: string; email: string; profile: string };
+  return verifyToken(token) as { id: string; email: string; profile: string };
 }
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    await connectDB();
     const decoded = getAuthUser(request);
     const { id } = await params;
 
@@ -19,7 +21,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     const { currentPassword, newPassword } = await request.json();
-    const user: any = await User.findByPk(id);
+    const user: any = await User.findById(id);
     if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
 
     const checkPassword = await user.checkPassword(currentPassword);

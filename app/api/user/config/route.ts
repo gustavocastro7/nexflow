@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
+import { connectDB } from '@/lib/config/database';
+import { verifyToken } from '@/lib/utils/jwt';
 import UserConfig from '@/lib/models/UserConfig';
 import Workspace from '@/lib/models/Workspace';
 
@@ -7,20 +8,20 @@ function getAuthUser(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
   if (!authHeader) throw new Error('Token not provided');
   const [, token] = authHeader.split(' ');
-  return jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret_key') as { id: string; email: string; profile: string };
+  return verifyToken(token) as { id: string; email: string; profile: string };
 }
 
 export async function GET(request: NextRequest) {
   try {
+    await connectDB();
     const decoded = getAuthUser(request);
-    const config: any = await UserConfig.findOne({
-      where: { user_id: decoded.id },
-      include: [{ model: Workspace, as: 'lastWorkspace' }]
-    });
+    const config: any = await UserConfig.findOne({ user_id: decoded.id });
 
     if (!config) {
       return NextResponse.json({ error: 'User configuration not found' }, { status: 404 });
     }
+
+    const lastWorkspace = config.last_workspace_id ? await Workspace.findById(config.last_workspace_id) : null;
 
     return NextResponse.json({
       theme_mode: config.theme_mode,
@@ -28,6 +29,7 @@ export async function GET(request: NextRequest) {
       last_workspace_id: config.last_workspace_id,
       menu_behavior: config.menu_behavior,
       last_login: config.last_login,
+      lastWorkspace,
     });
   } catch (error: any) {
     if (error.message === 'Token not provided' || error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
@@ -39,10 +41,11 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    await connectDB();
     const decoded = getAuthUser(request);
     const { theme_mode, language, last_workspace_id, menu_behavior } = await request.json();
 
-    let config: any = await UserConfig.findOne({ where: { user_id: decoded.id } });
+    let config: any = await UserConfig.findOne({ user_id: decoded.id });
 
     if (!config) {
       config = await UserConfig.create({
@@ -57,10 +60,10 @@ export async function PUT(request: NextRequest) {
       await config.save();
     }
 
-    return NextResponse.json(config.toJSON());
+    return NextResponse.json(config.toObject());
   } catch (error: any) {
-    if (error.name === 'SequelizeValidationError') {
-      return NextResponse.json({ error: error.errors.map((e: any) => e.message).join(', ') }, { status: 400 });
+    if (error.name === 'ValidationError') {
+      return NextResponse.json({ error: error.message }, { status: 400 });
     }
     if (error.message === 'Token not provided' || error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

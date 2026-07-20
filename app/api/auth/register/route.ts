@@ -1,16 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { connectDB } from '@/lib/config/database';
 import User from '@/lib/models/User';
 import { logOperation } from '@/lib/utils/auditLogger';
 
 export async function POST(request: NextRequest) {
   try {
+    await connectDB();
     const { name, email, password } = await request.json();
 
     if (!name || !email || !password) {
       return NextResponse.json({ error: 'Name, email and password are required' }, { status: 400 });
     }
 
-    const userExists: any = await User.findOne({ where: { email } });
+    const userExists: any = await User.findOne({ email });
     if (userExists) {
       return NextResponse.json({ error: 'User already exists' }, { status: 400 });
     }
@@ -24,7 +26,7 @@ export async function POST(request: NextRequest) {
 
     await logOperation({
       user_id: user.id,
-      workspace_id: user.default_workspace_id || '00000000-0000-0000-0000-000000000000',
+      workspace_id: user.default_workspace_id || null,
       action: 'REGISTER',
       entity: 'User',
       entity_id: user.id,

@@ -7,9 +7,13 @@ import {
 } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { apiPost } from '../../lib/api/client';
+import { useLanguage } from '../i18n/LanguageContext';
+import type { Language } from '../i18n/dictionaries';
+import { SUPPORTED_LANGUAGES } from '../i18n/dictionaries';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { t, setLanguage } = useLanguage();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -30,14 +34,14 @@ export default function LoginPage() {
         if (user.config.theme_mode) {
           localStorage.setItem('themeMode', user.config.theme_mode);
         }
-        if (user.config.language) {
-          localStorage.setItem('i18nextLng', user.config.language);
+        if (SUPPORTED_LANGUAGES.includes(user.config.language)) {
+          setLanguage(user.config.language as Language);
         }
       }
 
       router.push('/dashboard');
     } catch (err: any) {
-      const message = err?.response?.data?.error || 'Erro ao fazer login';
+      const message = err?.response?.data?.error || t('login.error');
       setError(message);
     }
   };
@@ -53,17 +57,17 @@ export default function LoginPage() {
             Nexflow - Teleen
           </Typography>
           <Typography variant="body2" color="textSecondary" gutterBottom sx={{ mb: 3, textAlign: 'center' }}>
-            Faça login para acessar o sistema
+            {t('login.subtitle')}
           </Typography>
 
           <Box component="form" onSubmit={handleLogin} sx={{ mt: 1, width: '100%' }}>
             {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
-            <TextField margin="normal" required fullWidth id="email" label="Email" name="email"
+            <TextField margin="normal" required fullWidth id="email" label={t('login.email')} name="email"
               autoComplete="email" autoFocus value={email} onChange={(e) => setEmail(e.target.value)}
               variant="outlined" sx={{ bgcolor: '#F8FAFC' }} />
 
-            <TextField margin="normal" required fullWidth name="password" label="Senha"
+            <TextField margin="normal" required fullWidth name="password" label={t('login.password')}
               type={showPassword ? 'text' : 'password'} id="password" autoComplete="current-password"
               value={password} onChange={(e) => setPassword(e.target.value)}
               variant="outlined" sx={{ bgcolor: '#F8FAFC' }}
@@ -81,7 +85,7 @@ export default function LoginPage() {
 
             <Button type="submit" fullWidth variant="contained" color="primary"
               sx={{ mt: 4, mb: 2, height: 50, fontSize: '1rem', fontWeight: 700 }}>
-              Entrar
+              {t('login.submit')}
             </Button>
           </Box>
         </Paper>

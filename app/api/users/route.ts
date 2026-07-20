@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
+import { connectDB } from '@/lib/config/database';
+import { verifyToken } from '@/lib/utils/jwt';
 import User from '@/lib/models/User';
-import UserConfig from '@/lib/models/UserConfig';
 import UserWorkspace from '@/lib/models/UserWorkspace';
 import Workspace from '@/lib/models/Workspace';
 import { logOperation } from '@/lib/utils/auditLogger';
@@ -10,11 +10,12 @@ function getAuthUser(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
   if (!authHeader) throw new Error('Token not provided');
   const [, token] = authHeader.split(' ');
-  return jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret_key') as { id: string; email: string; profile: string };
+  return verifyToken(token) as { id: string; email: string; profile: string };
 }
 
 export async function GET(request: NextRequest) {
   try {
+    await connectDB();
     const decoded = getAuthUser(request);
     const workspaceId = request.nextUrl.searchParams.get('workspaceId');
     const includeInactive = request.nextUrl.searchParams.get('includeInactive');
@@ -23,24 +24,18 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'workspaceId is required' }, { status: 400 });
     }
 
-    const whereClause: Record<string, any> = {};
-    if (includeInactive !== 'true') whereClause.active = true;
+    const wsExists = await Workspace.findById(workspaceId);
+    if (!wsExists) return NextResponse.json({ error: 'Workspace not found' }, { status: 404 });
 
-    const workspace: any = await Workspace.findByPk(workspaceId, {
-      include: [{
-        model: User, as: 'users', where: whereClause,
-        through: { attributes: [] },
-        attributes: ['id', 'name', 'email', 'profile', 'active', 'default_workspace_id']
-      }]
-    });
+    const associations: any[] = await UserWorkspace.find({ workspace_id: workspaceId });
+    const userIds = associations.map((a) => a.user_id);
 
-    if (!workspace) {
-      const wsExists = await Workspace.findByPk(workspaceId);
-      if (!wsExists) return NextResponse.json({ error: 'Workspace not found' }, { status: 404 });
-      return NextResponse.json([]);
-    }
+    const filter: Record<string, any> = { _id: { $in: userIds } };
+    if (includeInactive !== 'true') filter.active = true;
 
-    return NextResponse.json(workspace.users || []);
+    const users = await User.find(filter).select('name email profile active default_workspace_id');
+
+    return NextResponse.json(users);
   } catch (error: any) {
     if (error.message === 'Token not provided' || error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -51,6 +46,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    await connectDB();
     const decoded = getAuthUser(request);
     if (decoded.profile !== 'admin' && decoded.profile !== 'jedi') {
       return NextResponse.json({ error: 'Permission denied. Only admins can create users.' }, { status: 403 });
@@ -62,13 +58,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'workspaceId is required' }, { status: 400 });
     }
 
-    let user: any = await User.findOne({ where: { email } });
+    let user: any = await User.findOne({ email });
     let isNew = false;
 
     if (user) {
-      const association: any = await UserWorkspace.findOne({
-        where: { user_id: user.id, workspace_id: workspaceId }
-      });
+      const association: any = await UserWorkspace.findOne({ user_id: user.id, workspace_id: workspaceId });
       if (association) {
         return NextResponse.json({ error: 'User already associated with this workspace' }, { status: 400 });
       }

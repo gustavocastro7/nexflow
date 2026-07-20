@@ -1,17 +1,13 @@
 services:
-  mysql:
-    image: mysql:8.0
-    container_name: nexflow-mysql-debug
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nexflow-app
+    env_file:
+      - .env
     environment:
-      MYSQL_ROOT_PASSWORD: root_password
-      MYSQL_DATABASE: nexflow_db
-      MYSQL_USER: nexflow_user
-      MYSQL_PASSWORD: nexflow_password
+      NODE_ENV: production
     ports:
-      - "3306:3306"
-    volumes:
-      - mysql_debug_data:/var/lib/mysql
+      - "3002:3000"
     restart: unless-stopped
-
-volumes:
-  mysql_debug_data:

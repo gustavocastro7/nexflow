@@ -1,31 +1,28 @@
 import 'dotenv/config';
-import { getSequelize } from '../lib/config/database.js';
-import { initModels, getModel } from '../lib/models/registry.js';
+import mongoose from 'mongoose';
+import { connectDB } from '../lib/config/database.js';
+import { findOrCreate } from '../lib/utils/db.js';
+import User from '../lib/models/User.js';
+import Workspace from '../lib/models/Workspace.js';
+import CostCenter from '../lib/models/CostCenter.js';
+import UserWorkspace from '../lib/models/UserWorkspace.js';
 
 async function seed() {
-  const sequelize = getSequelize();
-
-  await sequelize.authenticate();
+  await connectDB();
   console.log('Database connected.');
 
-  initModels();
-  await sequelize.sync({ force: false, alter: false });
-  console.log('Models synced.');
+  await mongoose.connection.syncIndexes();
+  console.log('Indexes synced.');
 
-  const User = getModel('User');
-  const Workspace = getModel('Workspace');
-  const CostCenter = getModel('CostCenter');
-  const UserWorkspace = getModel('UserWorkspace');
-
-  const [defaultWorkspace] = await Workspace.findOrCreate({
-    where: { name: 'Nexflow Matriz' },
-    defaults: { name: 'Nexflow Matriz', schema_name: 'nexflow_matriz', status: 'active' }
+  const [defaultWorkspace] = await findOrCreate(Workspace, { name: 'Nexflow Matriz' }, {
+    schema_name: 'nexflow_matriz',
+    status: 'active'
   });
   console.log(`Workspace "${defaultWorkspace.name}" ready.`);
 
-  const ccCount = await CostCenter.count({ where: { workspace_id: defaultWorkspace.id } });
+  const ccCount = await CostCenter.countDocuments({ workspace_id: defaultWorkspace.id });
   if (ccCount === 0) {
-    await CostCenter.bulkCreate([
+    await CostCenter.insertMany([
       { name: 'Diretoria', description: 'Centro de custo da diretoria', workspace_id: defaultWorkspace.id },
       { name: 'TI', description: 'Centro de custo de infraestrutura e TI', workspace_id: defaultWorkspace.id },
       { name: 'Financeiro', description: 'Centro de custo do financeiro', workspace_id: defaultWorkspace.id },
@@ -41,7 +38,7 @@ async function seed() {
   }
 
   for (const u of jediUsers) {
-    const existing = await User.findOne({ where: { email: u.email } });
+    const existing = await User.findOne({ email: u.email });
     if (!existing) {
       const user = await User.create({
         name: u.name,
@@ -50,9 +47,7 @@ async function seed() {
         profile: u.profile || 'jedi',
         default_workspace_id: defaultWorkspace.id
       });
-      await UserWorkspace.findOrCreate({
-        where: { user_id: user.id, workspace_id: defaultWorkspace.id }
-      });
+      await findOrCreate(UserWorkspace, { user_id: user.id, workspace_id: defaultWorkspace.id });
       console.log(`Jedi user "${u.name}" seeded.`);
     }
   }
