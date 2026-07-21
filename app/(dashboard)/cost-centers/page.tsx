@@ -205,11 +205,11 @@ export default function CostCentersPage() {
           {editingLine && (
             <Stack spacing={3} sx={{ mt: 1 }}>
               <Typography variant="h6" color="primary">{editingLine.phone_number}</Typography>
-              <TextField select label={t('costCenters.collaborator')} fullWidth slotProps={{ select: { native: true } }} value={editingLine.collaborator_id || ''} onChange={(e) => setEditingLine({...editingLine, collaborator_id: e.target.value})}>
+              <TextField select label={t('costCenters.collaborator')} fullWidth slotProps={{ select: { native: true }, inputLabel: { shrink: true } }} value={editingLine.collaborator_id || ''} onChange={(e) => setEditingLine({...editingLine, collaborator_id: e.target.value})}>
                 <option value="">{t('costCenters.none')}</option>
                 {collaborators.map(c => (<option key={c.id} value={c.id}>{c.name}</option>))}
               </TextField>
-              <TextField select label={t('costCenters.costCenter')} fullWidth slotProps={{ select: { native: true } }} value={editingLine.cost_center_id || ''} onChange={(e) => setEditingLine({...editingLine, cost_center_id: e.target.value})}>
+              <TextField select label={t('costCenters.costCenter')} fullWidth slotProps={{ select: { native: true }, inputLabel: { shrink: true } }} value={editingLine.cost_center_id || ''} onChange={(e) => setEditingLine({...editingLine, cost_center_id: e.target.value})}>
                 <option value="">{t('costCenters.none')}</option>
                 {costCenters.map(cc => (<option key={cc.id} value={cc.id}>{cc.name}</option>))}
               </TextField>

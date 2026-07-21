@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Box, Typography, Paper, Container, Card, CardContent, Button,
-  Skeleton, List, ListItem, ListItemText,
+  Skeleton, List, ListItem, ListItemText, CircularProgress,
 } from '@mui/material';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import GetAppIcon from '@mui/icons-material/GetApp';
@@ -14,6 +14,8 @@ import { apiGet } from '@/lib/api/client';
 import { useLanguage } from '@/app/i18n/LanguageContext';
 
 const COLORS = ['#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#6366F1'];
+const CACHE_DURATION = 5 * 60 * 1000;
+const AUTO_REFRESH_INTERVAL = 2 * 60 * 1000;
 
 interface Workspace { id: string; name: string; }
 
@@ -24,10 +26,26 @@ interface DashboardData {
     costsByDepartment: Array<{ name: string; total: number }>;
     monthlyTrends: Array<{ month: string; data_mb: number; voice_min: number; total_spent: number }>;
     expensiveLines: Array<{ phone: string; total: number }>;
-    topDataLines: Array<{ phone: string; responsible: string; total_mb: number }>;
+    topDataLines: Array<{ phone: string; responsible: string; total_gb: number }>;
   };
   opportunities: Array<{ type: string; description: string; impact: number }>;
   errors: Array<{ type: string; description: string; count: number }>;
+}
+
+function getCacheKey(wsId: string) { return `dashboard_cache_${wsId}`; }
+
+function getCachedData(wsId: string): { data: DashboardData; timestamp: number } | null {
+  try {
+    const raw = sessionStorage.getItem(getCacheKey(wsId));
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch { return null; }
+}
+
+function setCachedData(wsId: string, data: DashboardData) {
+  try {
+    sessionStorage.setItem(getCacheKey(wsId), JSON.stringify({ data, timestamp: Date.now() }));
+  } catch {}
 }
 
 const formatCurrency = (val: number) =>
@@ -36,8 +54,10 @@ const formatCurrency = (val: number) =>
 export default function DashboardPage() {
   const { t } = useLanguage();
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [activeWorkspace, setActiveWorkspace] = useState<Workspace | null>(null);
   const [data, setData] = useState<DashboardData | null>(null);
+  const refreshTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     try {
@@ -46,20 +66,45 @@ export default function DashboardPage() {
     } catch {}
   }, []);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (background = false) => {
     if (!activeWorkspace?.id) return;
-    setLoading(true);
+    if (background) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
     try {
       const response = await apiGet(`/reports/dashboard-stats?workspaceId=${activeWorkspace.id}`);
       setData(response);
+      setCachedData(activeWorkspace.id, response);
     } catch (err) {
       console.error('Error fetching dashboard data', err);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, [activeWorkspace]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    if (!activeWorkspace?.id) return;
+
+    const cached = getCachedData(activeWorkspace.id);
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+      setData(cached.data);
+      setLoading(false);
+      fetchData(true);
+    } else {
+      fetchData();
+    }
+
+    refreshTimer.current = setInterval(() => {
+      fetchData(true);
+    }, AUTO_REFRESH_INTERVAL);
+
+    return () => {
+      if (refreshTimer.current) clearInterval(refreshTimer.current);
+    };
+  }, [activeWorkspace?.id, fetchData]);
 
   if (!activeWorkspace) {
     return (
@@ -75,6 +120,12 @@ export default function DashboardPage() {
         <Typography variant="h5" sx={{ fontWeight: 800, color: '#1e293b' }}>
           {t('dashboard.title')}
         </Typography>
+        {refreshing && (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <CircularProgress size={14} />
+            <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 500 }}>{t('dashboard.updating')}</Typography>
+          </Box>
+        )}
       </Box>
 
       <Paper elevation={0} sx={{ p: 2, mb: 3, borderRadius: 3, border: '1px solid #e2e8f0' }}>
@@ -99,7 +150,7 @@ export default function DashboardPage() {
             <Box sx={{ bgcolor: '#f1f5f9', px: 3, py: 1.5, borderRadius: 2, textAlign: 'center', minWidth: 120 }}>
               <Typography variant="caption" sx={{ display: 'block', color: '#64748b', fontWeight: 600 }}>{t('dashboard.data')}</Typography>
               <Typography variant="h6" sx={{ fontWeight: 800, color: '#1e293b' }}>
-                {loading ? <Skeleton /> : `${(data?.summary?.dataUsage ?? 0).toFixed(1)} MB`}
+                  {loading ? <Skeleton /> : `${(data?.summary?.dataUsage ?? 0).toFixed(1)} GB`}
               </Typography>
             </Box>
             <Box sx={{ bgcolor: '#f1f5f9', px: 3, py: 1.5, borderRadius: 2, textAlign: 'center', minWidth: 120 }}>
@@ -180,7 +231,7 @@ export default function DashboardPage() {
                   <ListItem key={i} divider={i < (data?.charts.topDataLines?.length ?? 0) - 1} sx={{ px: 0, py: 1.5 }}>
                     <ListItemText primary={line.phone} secondary={line.responsible}
                       slotProps={{ primary: { sx: { fontWeight: 600, fontSize: '0.9rem' } }, secondary: { sx: { fontSize: '0.75rem', color: '#64748b' } } }} />
-                    <Typography sx={{ fontWeight: 800, color: '#3B82F6' }}>{(line.total_mb ?? 0).toFixed(2)} MB</Typography>
+                    <Typography sx={{ fontWeight: 800, color: '#3B82F6' }}>{(line.total_gb ?? 0).toFixed(2)} GB</Typography>
                   </ListItem>
                 ))}
               </List>
