@@ -34,3 +34,5 @@ next-env.d.ts
 # Deploy artifacts
 deploy/nexflow.zip
 deploy/tmp_nexflow/
+.vercel
+.env*

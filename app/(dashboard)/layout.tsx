@@ -115,15 +115,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           if (selected) {
             sessionStorage.setItem('activeWorkspace', JSON.stringify(selected));
             setActiveWorkspace(selected);
+          } else {
+            router.push('/workspaces');
+            return;
           }
         }
+        setIsLoading(false);
       }).catch(() => {
         if (wsStr) {
           try { setActiveWorkspace(JSON.parse(wsStr)); } catch {}
+          setIsLoading(false);
+        } else {
+          router.push('/workspaces');
         }
       });
-
-      setIsLoading(false);
     } catch {
       sessionStorage.clear();
       router.push('/login');
